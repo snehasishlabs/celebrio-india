@@ -1,3 +1,5 @@
+process.env.VITE_CONFIG_NATIVE_IGNORE_WARNING = 'true'
+
 import { defineConfig } from 'vitest/config'
 import type { Plugin } from 'vite'
 import { loadEnv } from 'vite'

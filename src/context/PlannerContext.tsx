@@ -20,7 +20,7 @@ import { SAMPLE_ALERTS } from '@/services/storage/sampleData'
 import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
 import { generateCelebrationConcepts, fetchServerHealth } from '@/services/ai/aiPlanningService'
 import { calculateBudgetSummary, sanitizeAmount } from '@/utils/budgetGuardian'
-import { generatePreparationTasks } from '@/utils/timelineEngine'
+import { generatePreparationTasks, addDays } from '@/utils/timelineEngine'
 import {
   syncVendorToBudgetItems,
   generateDefaultPaymentMilestones,
@@ -65,6 +65,7 @@ interface PlannerContextType {
   resetWorkspace: () => void
   addEvent: (input: NewCelebrationInput) => CelebrationEvent
   updateActiveEvent: (updates: Partial<CelebrationEvent>) => void
+  deleteEvent: (eventId: string) => void
 
   // Timeline Task Operations
   updateTaskStatus: (taskId: string, isCompleted: boolean) => void
@@ -865,8 +866,42 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const updatedEvents = events.map((e) => (e.id === activeEvent.id ? updated : e))
       setEvents(updatedEvents)
       StorageService.saveEvents(updatedEvents)
+
+      // When event date changes, shift all uncompleted task deadlines automatically
+      if (updates.date && updates.date !== activeEvent.date) {
+        const oldTime = new Date(activeEvent.date).getTime()
+        const newTime = new Date(updates.date).getTime()
+        const daysDelta = Math.round((newTime - oldTime) / (1000 * 60 * 60 * 24))
+        if (!isNaN(daysDelta) && daysDelta !== 0) {
+          const shiftedTasks = timelineTasks.map((task) => {
+            if (task.status === 'completed') return task
+            const nextTarget = addDays(task.targetDate, daysDelta)
+            return {
+              ...task,
+              targetDate: nextTarget,
+              deadline: task.deadline ? addDays(task.deadline, daysDelta) : nextTarget,
+            }
+          })
+          setTimelineTasks(shiftedTasks)
+          StorageService.saveTasksForEvent(activeEvent.id, shiftedTasks)
+        }
+      }
     },
-    [activeEvent, events],
+    [activeEvent, events, timelineTasks],
+  )
+
+  const deleteEvent = useCallback(
+    (eventId: string) => {
+      StorageService.deleteEvent(eventId)
+      const remainingEvents = StorageService.getEvents()
+      setEvents(remainingEvents)
+      const nextActiveId = StorageService.getActiveEventId()
+      setActiveEventIdState(nextActiveId)
+      setBudgetItems(StorageService.getBudgetItems(nextActiveId))
+      setTimelineTasks(StorageService.getTasks(nextActiveId))
+      setVendors(StorageService.getVendors(nextActiveId))
+    },
+    [],
   )
 
   const applyScenario = useCallback(
@@ -1020,6 +1055,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     resetWorkspace,
     addEvent,
     updateActiveEvent,
+    deleteEvent,
     updateTaskStatus,
     addTimelineTask,
     updateTimelineTask,

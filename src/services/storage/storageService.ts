@@ -66,6 +66,39 @@ export const StorageService = {
     setRaw(STORAGE_KEYS.EVENTS, JSON.stringify(events))
   },
 
+  deleteEvent(eventId: string): void {
+    const events = this.getEvents().filter((e) => e.id !== eventId)
+    // Always preserve at least a sample event if all are deleted
+    const safeEvents = events.length > 0 ? events : [SAMPLE_EVENT]
+    this.saveEvents(safeEvents)
+
+    // Clean up associated items
+    const budgetItems = this.getBudgetItems().filter((item) => item.eventId !== eventId)
+    this.saveBudgetItems(budgetItems)
+
+    const tasks = this.getTasks().filter((task) => task.eventId !== eventId)
+    this.saveTasks(tasks)
+
+    const vendors = this.getVendors().filter((v) => v.eventId !== eventId)
+    this.saveVendors(vendors)
+
+    // Remove concepts key
+    const conceptKey = `${STORAGE_KEYS.CONCEPTS_PREFIX}${eventId}`
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.removeItem(conceptKey)
+      }
+      delete memoryStore[conceptKey]
+    } catch {
+      delete memoryStore[conceptKey]
+    }
+
+    // Reset active ID if deleted
+    if (this.getActiveEventId() === eventId) {
+      this.setActiveEventId(safeEvents[0].id)
+    }
+  },
+
   getActiveEventId(): string {
     const raw = getRaw(STORAGE_KEYS.ACTIVE_EVENT_ID)
     if (!raw) {

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Calendar,
   MapPin,
@@ -11,6 +11,9 @@ import {
   ShieldCheck,
   Palette,
   ArrowRight,
+  Edit3,
+  Trash2,
+  X,
 } from 'lucide-react'
 import { usePlanner, EventDetailTab } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
@@ -36,6 +39,7 @@ const TABS: { id: EventDetailTab; label: string; icon: typeof Calendar }[] = [
 
 export const EventDetailsView: React.FC = () => {
   const {
+    events,
     activeEvent,
     activeTab,
     setActiveTab,
@@ -44,7 +48,60 @@ export const EventDetailsView: React.FC = () => {
     vendors,
     selectedConcept,
     setCurrentSection,
+    updateActiveEvent,
+    deleteEvent,
   } = usePlanner()
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editGuestCount, setEditGuestCount] = useState('')
+  const [editCity, setEditCity] = useState('')
+  const [editVenue, setEditVenue] = useState('')
+  const [isConfirmDelete, setIsConfirmDelete] = useState(false)
+
+  const handleOpenEdit = () => {
+    if (!activeEvent) return
+    setEditTitle(activeEvent.title)
+    setEditDate(activeEvent.date)
+    setEditGuestCount(String(activeEvent.targetGuestCount))
+    setEditCity(activeEvent.location.city)
+    setEditVenue(activeEvent.location.venueName)
+    setIsConfirmDelete(false)
+    setIsEditModalOpen(true)
+  }
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!activeEvent || !editTitle.trim()) return
+    updateActiveEvent({
+      title: editTitle.trim(),
+      date: editDate.trim() || activeEvent.date,
+      targetGuestCount: Math.max(1, parseInt(editGuestCount, 10) || activeEvent.targetGuestCount),
+      location: {
+        ...activeEvent.location,
+        city: editCity.trim() || activeEvent.location.city,
+        venueName: editVenue.trim() || activeEvent.location.venueName,
+      },
+    })
+    setIsEditModalOpen(false)
+  }
+
+  const handleDelete = () => {
+    if (!activeEvent) return
+    deleteEvent(activeEvent.id)
+    setIsEditModalOpen(false)
+    setCurrentSection('dashboard')
+  }
+
+  useEffect(() => {
+    if (!isEditModalOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsEditModalOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isEditModalOpen])
 
   if (!activeEvent) return null
 
@@ -104,7 +161,7 @@ export const EventDetailsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
             <Button
               variant="terracotta"
               size="sm"
@@ -120,6 +177,14 @@ export const EventDetailsView: React.FC = () => {
               leftIcon={<Palette className="w-3.5 h-3.5 text-forest-700" />}
             >
               Explore Ideas
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleOpenEdit}
+              leftIcon={<Edit3 className="w-3.5 h-3.5 text-forest-700" />}
+            >
+              Edit Plan
             </Button>
           </div>
         </div>
@@ -363,6 +428,172 @@ export const EventDetailsView: React.FC = () => {
       {activeTab === 'guest-experience' && <GuestExperienceView />}
 
       {activeTab === 'contingency' && <ContingencyPlanView />}
+
+      {/* Edit Event Modal */}
+      {isEditModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-event-modal-title"
+          className="fixed inset-0 z-50 bg-charcoal-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <Card
+            variant="default"
+            className="w-full max-w-lg p-6 bg-ivory-50 max-h-[90vh] overflow-y-auto shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-ivory-300">
+              <h3 id="edit-event-modal-title" className="font-serif font-bold text-lg text-charcoal-900">
+                Edit Celebration Plan
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="text-xs text-charcoal-500 hover:text-charcoal-900 p-1 rounded-lg"
+                aria-label="Close edit celebration modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label htmlFor="edit-title" className="block text-xs font-semibold text-charcoal-700 mb-1">
+                  Celebration Name *
+                </label>
+                <input
+                  id="edit-title"
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit-date" className="block text-xs font-semibold text-charcoal-700 mb-1">
+                    Event Date *
+                  </label>
+                  <input
+                    id="edit-date"
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+                  />
+                  <span className="text-[10px] text-charcoal-500 mt-1 block">
+                    Changing the date auto-shifts milestone deadlines.
+                  </span>
+                </div>
+
+                <div>
+                  <label htmlFor="edit-guests" className="block text-xs font-semibold text-charcoal-700 mb-1">
+                    Target Guest Count *
+                  </label>
+                  <input
+                    id="edit-guests"
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={editGuestCount}
+                    onChange={(e) => setEditGuestCount(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit-city" className="block text-xs font-semibold text-charcoal-700 mb-1">
+                    City / Destination
+                  </label>
+                  <input
+                    id="edit-city"
+                    type="text"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit-venue" className="block text-xs font-semibold text-charcoal-700 mb-1">
+                    Venue Name
+                  </label>
+                  <input
+                    id="edit-venue"
+                    type="text"
+                    value={editVenue}
+                    onChange={(e) => setEditVenue(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+                  />
+                </div>
+              </div>
+
+              {/* Danger Zone: Delete Plan */}
+              {events.length > 1 && (
+                <div className="pt-3 border-t border-ivory-300">
+                  {!isConfirmDelete ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsConfirmDelete(true)}
+                      className="text-xs text-rose-700 hover:text-rose-900 font-semibold flex items-center gap-1.5"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete this celebration
+                    </button>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 space-y-2">
+                      <p className="text-xs text-rose-800">
+                        Are you sure you want to delete &ldquo;{activeEvent.title}&rdquo;? All linked budget items, milestones, and suppliers will be removed.
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={handleDelete}
+                        >
+                          Confirm Delete
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setIsConfirmDelete(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-ivory-300">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsEditModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

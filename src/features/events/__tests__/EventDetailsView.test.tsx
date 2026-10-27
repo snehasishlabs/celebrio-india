@@ -49,5 +49,23 @@ describe('EventDetailsView Component', () => {
       screen.getByText(/Contingency & Disruption Playbook/i),
     ).toBeInTheDocument()
   })
+
+  it('opens Edit Celebration Plan modal when clicking Edit Plan and closes on Escape', () => {
+    render(
+      <PlannerProvider>
+        <EventDetailsView />
+      </PlannerProvider>,
+    )
+
+    const editBtn = screen.getByRole('button', { name: /edit plan/i })
+    fireEvent.click(editBtn)
+
+    expect(screen.getByRole('heading', { name: /edit celebration plan/i })).toBeInTheDocument()
+    expect(screen.getByLabelText(/celebration name \*/i)).toBeInTheDocument()
+
+    // Test Escape key closes modal
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' })
+    expect(screen.queryByRole('heading', { name: /edit celebration plan/i })).not.toBeInTheDocument()
+  })
 })
 

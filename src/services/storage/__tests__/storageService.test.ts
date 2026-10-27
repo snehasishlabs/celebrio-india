@@ -101,6 +101,56 @@ describe('StorageService (Persistence Engine)', () => {
     expect(reloaded[0].title).toMatch(/^Customized:/)
   })
 
+  it('deletes an event and cleans up its associated budget items and tasks', () => {
+    const eventA: CelebrationEvent = {
+      ...SAMPLE_EVENT,
+      id: 'evt-to-delete-1',
+      title: 'Temporary Celebration',
+    }
+    const eventB: CelebrationEvent = {
+      ...SAMPLE_EVENT,
+      id: 'evt-to-keep-2',
+      title: 'Persistent Celebration',
+    }
+
+    StorageService.saveEvents([eventA, eventB])
+    StorageService.setActiveEventId('evt-to-delete-1')
+    StorageService.saveBudgetItemsForEvent('evt-to-delete-1', [
+      {
+        id: 'b-del-1',
+        eventId: 'evt-to-delete-1',
+        category: 'venue',
+        name: 'Venue to delete',
+        costStatus: 'estimated',
+        estimatedAmount: 5000,
+        quotedAmount: 5000,
+        confirmedAmount: 0,
+        allocatedAmount: 5000,
+        actualAmount: 0,
+        paidAmount: 0,
+        paymentStatus: 'planned',
+      },
+    ])
+
+    // Verify it exists before deletion
+    expect(StorageService.getEvents()).toHaveLength(2)
+    expect(StorageService.getBudgetItems('evt-to-delete-1')).toHaveLength(1)
+
+    // Execute deletion
+    StorageService.deleteEvent('evt-to-delete-1')
+
+    // Verify event is removed
+    const remainingEvents = StorageService.getEvents()
+    expect(remainingEvents).toHaveLength(1)
+    expect(remainingEvents[0].id).toBe('evt-to-keep-2')
+
+    // Active event switched to remaining event
+    expect(StorageService.getActiveEventId()).toBe('evt-to-keep-2')
+
+    // Associated budget items are cleaned up
+    expect(StorageService.getBudgetItems('evt-to-delete-1')).toHaveLength(0)
+  })
+
   it('resets all data back to the clean showcase baseline', () => {
     StorageService.setActiveEventId('temp-deleted-event')
     StorageService.resetAllData()
