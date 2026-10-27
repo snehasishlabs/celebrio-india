@@ -8,8 +8,11 @@ import {
   ThemeConcept,
   BudgetItem,
   TimelineTask,
+  TaskPriority,
   Vendor,
   PlanSyncAlert,
+  ScenarioInput,
+  ScenarioSimulationResult,
 } from '@/types'
 import { StorageService } from '@/services/storage/storageService'
 import { SAMPLE_ALERTS } from '@/services/storage/sampleData'
@@ -76,6 +79,9 @@ interface PlannerContextType {
   updateVendor: (vendorId: string, updates: Partial<Vendor>) => void
   deleteVendor: (vendorId: string) => void
   toggleMilestonePaid: (vendorId: string, milestoneId: string) => void
+
+  // Adaptive Scenario Simulator
+  applyScenario: (input: ScenarioInput, result: ScenarioSimulationResult) => void
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined)
@@ -808,6 +814,108 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [activeEvent, events],
   )
 
+  const applyScenario = useCallback(
+    (input: ScenarioInput, result: ScenarioSimulationResult) => {
+      if (!activeEvent) return
+
+      const safeBudget = sanitizeAmount(input.totalBudget)
+      const safeGuests = Math.max(1, Math.round(input.guestCount))
+      const safeDate = input.eventDate.trim() || activeEvent.date
+
+      // 1. Update active event
+      const nextSyncState: SyncState = result.hasCriticalWarnings ? 'drift-detected' : 'in-sync'
+      const updatedEvent: CelebrationEvent = {
+        ...activeEvent,
+        totalBudget: safeBudget,
+        targetGuestCount: safeGuests,
+        date: safeDate,
+        themePreference: input.themePreference?.trim() || activeEvent.themePreference,
+        preferences: {
+          ...activeEvent.preferences,
+          indoorOutdoor: input.venueType || activeEvent.preferences.indoorOutdoor,
+        },
+        dietaryRequirements: input.dietaryRequirements || activeEvent.dietaryRequirements,
+        accessibilityRequirements: input.accessibilityRequirements || activeEvent.accessibilityRequirements,
+        syncState: nextSyncState,
+        syncSummary: result.summary,
+        updatedAt: new Date().toISOString(),
+      }
+
+      // 2. Update budget items based on simulated proposed allocations (preserving confirmed decisions)
+      const updatedBudgetItems = budgetItems.map((item) => {
+        // Never overwrite confirmed allocations silently
+        if (item.costStatus === 'confirmed') return item
+
+        const affected = result.affectedCategories.find((c) => c.category === item.category)
+        if (affected && affected.proposedAllocation > 0) {
+          return {
+            ...item,
+            allocatedAmount: affected.proposedAllocation,
+            actualAmount: item.costStatus === 'quoted' ? item.actualAmount : affected.proposedAllocation,
+          }
+        }
+        return item
+      })
+
+      // 3. Update timeline tasks with shifted deadlines (preserving completed tasks)
+      const updatedTasks = timelineTasks.map((task) => {
+        if (task.status === 'completed') return task
+
+        const affected = result.affectedTasks.find((t) => t.taskId === task.id)
+        if (affected && affected.proposedDeadline) {
+          return {
+            ...task,
+            targetDate: affected.proposedDeadline,
+            deadline: affected.proposedDeadline,
+            priority: (affected.proposedPriority as TaskPriority) || task.priority,
+          }
+        }
+        return task
+      })
+
+      // 4. Update vendor notes with date shift advisories
+      const updatedVendors = vendors.map((vendor) => {
+        const affected = result.affectedVendors.find((v) => v.vendorId === vendor.id)
+        if (affected && affected.uncertaintyFlag) {
+          return {
+            ...vendor,
+            notes: vendor.notes
+              ? `${vendor.notes} | [Date Shift Advisory]: ${affected.actionAdvice}`
+              : `[Date Shift Advisory]: ${affected.actionAdvice}`,
+          }
+        }
+        return vendor
+      })
+
+      // 5. Persist all updated state
+      const updatedEvents = events.map((e) => (e.id === activeEvent.id ? updatedEvent : e))
+      setEvents(updatedEvents)
+      StorageService.saveEvents(updatedEvents)
+
+      setBudgetItems(updatedBudgetItems)
+      StorageService.saveBudgetItemsForEvent(activeEvent.id, updatedBudgetItems)
+
+      setTimelineTasks(updatedTasks)
+      StorageService.saveTasksForEvent(activeEvent.id, updatedTasks)
+
+      setVendors(updatedVendors)
+      StorageService.saveVendorsForEvent(activeEvent.id, updatedVendors)
+
+      // 6. Log audit activity
+      const activity: ActivityLogItem = {
+        id: `act-${Date.now()}`,
+        eventId: activeEvent.id,
+        type: 'sync-recalculated',
+        title: 'Adaptive Scenario Applied',
+        description: `Applied what-if scenario: Budget adjusted to $${safeBudget.toLocaleString()}, guests to ${safeGuests}, date to ${safeDate}. ${result.userConfirmedDecisionsPreserved} confirmed decisions preserved.`,
+        timestamp: 'Just now',
+      }
+      StorageService.addActivity(activity)
+      setActivities(StorageService.getActivities())
+    },
+    [activeEvent, budgetItems, timelineTasks, vendors, events],
+  )
+
   const triggerManualSync = useCallback(() => {
     setIsSyncing(true)
     setTimeout(() => {
@@ -867,6 +975,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     updateVendor,
     deleteVendor,
     toggleMilestonePaid,
+    applyScenario,
   }
 
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>

@@ -1,475 +1,821 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   SlidersHorizontal,
-  Sparkles,
-  ArrowRight,
   TrendingDown,
   TrendingUp,
   AlertTriangle,
   CheckCircle2,
+  Calendar,
+  Users,
+  DollarSign,
+  ShieldAlert,
+  RotateCcw,
+  Sparkles,
+  Info,
+  Check,
+  X,
+  Lock,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
-import { TradeoffRecommendation } from '@/types/simulation'
-
-type ScenarioType = 'budget-cut' | 'guest-surge' | 'timeline-compression' | 'venue-spike'
+import { ScenarioInput } from '@/types/simulation'
+import { formatCurrency } from '@/utils/budgetGuardian'
+import { simulateScenario } from '@/utils/scenarioEngine'
 
 export const SimulatorView: React.FC = () => {
-  const { activeEvent } = usePlanner()
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioType>('budget-cut')
-  const [budgetCutPercent, setBudgetCutPercent] = useState<number>(15)
-  const [extraGuests, setExtraGuests] = useState<number>(30)
-  const [compressedDays, setCompressedDays] = useState<number>(14)
-  const [appliedNotification, setAppliedNotification] = useState<string | null>(null)
+  const {
+    activeEvent,
+    budgetItems,
+    timelineTasks,
+    vendors,
+    applyScenario,
+  } = usePlanner()
 
-  if (!activeEvent) return null
+  // Base state from activeEvent
+  const [totalBudget, setTotalBudget] = useState<number>(() => activeEvent?.totalBudget || 45000)
+  const [guestCount, setGuestCount] = useState<number>(() => activeEvent?.targetGuestCount || 80)
+  const [eventDate, setEventDate] = useState<string>(() => activeEvent?.date || '')
+  const [themePreference, setThemePreference] = useState<string>(() => activeEvent?.themePreference || '')
+  const [venueType, setVenueType] = useState<'indoor' | 'outdoor' | 'hybrid'>(
+    () => activeEvent?.preferences?.indoorOutdoor || 'indoor',
+  )
+  const [categoryAdjustments, setCategoryAdjustments] = useState<Record<string, number>>({})
 
-  const currentTotal = activeEvent.totalBudget
+  // UI Flow State
+  const [isConfirmApplyOpen, setIsConfirmApplyOpen] = useState(false)
+  const [appliedNotice, setAppliedNotice] = useState<string | null>(null)
 
-  // Dynamic calculations based on scenario
-  let simulatedBudgetVariance = 0
-  let simulatedStressScore = 20
-  let affectedTaskCount = 2
-  let affectedVendorCount = 2
-  let recommendations: TradeoffRecommendation[] = []
+  // Construct ScenarioInput
+  const scenarioInput: ScenarioInput = useMemo(
+    () => ({
+      totalBudget,
+      guestCount,
+      eventDate,
+      themePreference,
+      venueType,
+      categoryAdjustments,
+      dietaryRequirements: activeEvent?.dietaryRequirements,
+      accessibilityRequirements: activeEvent?.accessibilityRequirements,
+    }),
+    [
+      totalBudget,
+      guestCount,
+      eventDate,
+      themePreference,
+      venueType,
+      categoryAdjustments,
+      activeEvent,
+    ],
+  )
 
-  if (selectedScenario === 'budget-cut') {
-    simulatedBudgetVariance = -Math.round((currentTotal * budgetCutPercent) / 100)
-    simulatedStressScore = 65
-    affectedTaskCount = 3
-    affectedVendorCount = 3
-    recommendations = [
-      {
-        id: 'rec-1',
-        category: 'Floral & Decor',
-        actionTitle: 'Transition to Architectural Greenery & Candlelight',
-        rationale: 'Replace out-of-season cut florals with olive branches and brass urns; preserves editorial atmosphere.',
-        costDelta: -Math.round(Math.abs(simulatedBudgetVariance) * 0.45),
-        timelineDeltaDays: 0,
-        riskLevel: 'low',
-        isRecommended: true,
-      },
-      {
-        id: 'rec-2',
-        category: 'Entertainment',
-        actionTitle: 'Consolidate Music Ensemble Hours',
-        rationale: 'Retain 6-piece jazz band for 3 peak hours instead of 5; utilize curated playlist during aperitifs.',
-        costDelta: -Math.round(Math.abs(simulatedBudgetVariance) * 0.35),
-        timelineDeltaDays: 0,
-        riskLevel: 'low',
-        isRecommended: true,
-      },
-      {
-        id: 'rec-3',
-        category: 'Stationery',
-        actionTitle: 'Digital Interactive RSVP Concierge',
-        rationale: 'Streamline physical paper suite into letterpress invitation + QR RSVP concierge.',
-        costDelta: -Math.round(Math.abs(simulatedBudgetVariance) * 0.2),
-        timelineDeltaDays: -4,
-        riskLevel: 'low',
-        isRecommended: true,
-      },
-    ]
-  } else if (selectedScenario === 'guest-surge') {
-    const costPerGuest = 125 // catering + rentals
-    simulatedBudgetVariance = extraGuests * costPerGuest
-    simulatedStressScore = 78
-    affectedTaskCount = 4
-    affectedVendorCount = 3
-    recommendations = [
-      {
-        id: 'rec-g1',
-        category: 'Catering & Dining',
-        actionTitle: 'Deploy Passed Tasting Course Station',
-        rationale: 'Switch first course to passed gourmet hors d\'oeuvres to expand capacity without additional table seating rentals.',
-        costDelta: -1400,
-        timelineDeltaDays: 0,
-        riskLevel: 'low',
-        isRecommended: true,
-      },
-      {
-        id: 'rec-g2',
-        category: 'Rentals & Furniture',
-        actionTitle: 'Lock Additional Table Linens 14 Days Ahead',
-        rationale: 'Secure second tier delivery now before rush expedite surcharges apply.',
-        costDelta: 600,
-        timelineDeltaDays: -2,
-        riskLevel: 'moderate',
-        isRecommended: true,
-      },
-    ]
-  } else if (selectedScenario === 'timeline-compression') {
-    simulatedBudgetVariance = 1800 // expedited vendor fees
-    simulatedStressScore = 88
-    affectedTaskCount = 6
-    affectedVendorCount = 4
-    recommendations = [
-      {
-        id: 'rec-t1',
-        category: 'Critical Path',
-        actionTitle: 'Parallelize Menu Tasting & Rigging Inspection',
-        rationale: 'Conduct on-site engineering check and menu tasting concurrently to reclaim 8 days on the schedule.',
-        costDelta: 0,
-        timelineDeltaDays: -8,
-        riskLevel: 'low',
-        isRecommended: true,
-      },
-      {
-        id: 'rec-t2',
-        category: 'Logistics',
-        actionTitle: 'Advance RSVP Closing Date by 10 Days',
-        rationale: 'Give catering kitchen adequate lead time without paying overtime prep premiums.',
-        costDelta: 0,
-        timelineDeltaDays: -10,
-        riskLevel: 'low',
-        isRecommended: true,
-      },
-    ]
-  } else {
-    // venue spike
-    simulatedBudgetVariance = 2800
-    simulatedStressScore = 55
-    affectedTaskCount = 2
-    affectedVendorCount = 1
-    recommendations = [
-      {
-        id: 'rec-v1',
-        category: 'Contingency Allocation',
-        actionTitle: 'Absorb Surge from $5,000 Protected Contingency',
-        rationale: 'Protected contingency reserve was specifically budgeted for venue surcharge defense.',
-        costDelta: -2800,
-        timelineDeltaDays: 0,
-        riskLevel: 'low',
-        isRecommended: true,
-      },
-    ]
+  // Run pure simulation engine
+  const simulationResult = useMemo(() => {
+    if (!activeEvent) return null
+    return simulateScenario(activeEvent, budgetItems, timelineTasks, vendors, scenarioInput)
+  }, [activeEvent, budgetItems, timelineTasks, vendors, scenarioInput])
+
+  if (!activeEvent || !simulationResult) {
+    return (
+      <div className="p-8 text-center text-charcoal-600">
+        No active celebration found. Select or create an event to simulate what-if scenarios.
+      </div>
+    )
   }
 
-  const newEstimatedTotal = currentTotal + simulatedBudgetVariance
+  const currency = activeEvent.currency || 'USD'
+  const { comparison } = simulationResult
+  const { deltas } = comparison
 
-  const handleApplyTradeoff = (rec: TradeoffRecommendation) => {
-    setAppliedNotification(
-      `Applied tradeoff: "${rec.actionTitle}". Plan sync updated with savings of $${Math.abs(
-        rec.costDelta,
-      ).toLocaleString()}.`,
+  // Check if scenario has diverged from baseline
+  const isDirty =
+    totalBudget !== activeEvent.totalBudget ||
+    guestCount !== activeEvent.targetGuestCount ||
+    eventDate !== activeEvent.date ||
+    themePreference !== (activeEvent.themePreference || '') ||
+    venueType !== activeEvent.preferences.indoorOutdoor ||
+    Object.keys(categoryAdjustments).length > 0
+
+  const handleDiscardScenario = () => {
+    setTotalBudget(activeEvent.totalBudget)
+    setGuestCount(activeEvent.targetGuestCount)
+    setEventDate(activeEvent.date)
+    setThemePreference(activeEvent.themePreference || '')
+    setVenueType(activeEvent.preferences.indoorOutdoor)
+    setCategoryAdjustments({})
+    setAppliedNotice('Scenario discarded. Baseline plan restored.')
+    setTimeout(() => setAppliedNotice(null), 3000)
+  }
+
+  const handleExecuteApply = () => {
+    applyScenario(scenarioInput, simulationResult)
+    setIsConfirmApplyOpen(false)
+    setAppliedNotice(
+      `Scenario applied successfully! Plan synchronized: Budget $${totalBudget.toLocaleString()}, ${guestCount} guests, Date: ${eventDate}.`,
     )
-    setTimeout(() => {
-      setAppliedNotification(null)
-    }, 4000)
+    setTimeout(() => setAppliedNotice(null), 4000)
+  }
+
+  // Preset Scenario Handlers
+  const handleApplyPreset = (preset: 'cut-15' | 'surge-30' | 'compress-date' | 'expand-budget') => {
+    switch (preset) {
+      case 'cut-15':
+        setTotalBudget(Math.round(activeEvent.totalBudget * 0.85))
+        break
+      case 'surge-30':
+        setGuestCount(Math.round(activeEvent.targetGuestCount + 30))
+        break
+      case 'compress-date': {
+        const d = new Date(activeEvent.date)
+        d.setDate(d.getDate() - 21) // 3 weeks earlier
+        setEventDate(d.toISOString().split('T')[0])
+        break
+      }
+      case 'expand-budget':
+        setTotalBudget(Math.round(activeEvent.totalBudget * 1.2))
+        break
+    }
   }
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
-      {/* Header with USP */}
-      <div className="pb-4 border-b border-ivory-300">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Badge variant="terracotta" size="sm">
-            Core Engine
-          </Badge>
-          <span className="text-xs font-semibold text-gold-700">
-            Real-time Cross-Module Impact Simulation
-          </span>
+      {/* 1. Header with USP */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ivory-300">
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <Badge variant="terracotta" size="sm">
+              Adaptive Planning Engine
+            </Badge>
+            <span className="text-xs font-semibold text-gold-700 bg-gold-100/70 px-2.5 py-0.5 rounded-full">
+              WHAT-IF &rarr; RECALCULATE &rarr; REPLAN
+            </span>
+          </div>
+          <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
+            Adaptive What-If Scenario Simulator
+          </h2>
+          <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-3xl">
+            Plans change. Budgets shift. Deadlines shrink. Stress-test unexpected pivots safely in a
+            sandbox without altering verified vendor contracts or confirmed tasks.
+          </p>
         </div>
-        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
-          Adaptive What-If Simulator
-        </h2>
-        <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-2xl">
-          &ldquo;Plans change. Budgets shift. Deadlines shrink. Celebrio AI keeps your entire
-          celebration plan in sync.&rdquo; Stress-test unexpected shifts and preview intelligent
-          tradeoffs.
-        </p>
+
+        {/* Global Action Buttons */}
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleDiscardScenario}
+            disabled={!isDirty}
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1" />
+            Discard Scenario
+          </Button>
+
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => setIsConfirmApplyOpen(true)}
+            disabled={!isDirty}
+          >
+            <Check className="w-4 h-4 mr-1" />
+            Review &amp; Apply Changes
+          </Button>
+        </div>
       </div>
 
-      {/* Applied Feedback Banner */}
-      {appliedNotification && (
-        <div className="p-4 rounded-xl bg-forest-100 border border-forest-300 text-forest-900 text-xs sm:text-sm flex items-center gap-2 animate-in fade-in">
+      {/* Applied Notice Banner */}
+      {appliedNotice && (
+        <div className="p-3.5 rounded-xl bg-forest-100 border border-forest-300 text-forest-900 text-xs sm:text-sm flex items-center gap-2 animate-in fade-in shadow-sm">
           <CheckCircle2 className="w-4 h-4 shrink-0 text-forest-700" />
-          <span>{appliedNotification}</span>
+          <span>{appliedNotice}</span>
         </div>
       )}
 
-      {/* Scenario Presets Selector */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <button
-          onClick={() => setSelectedScenario('budget-cut')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            selectedScenario === 'budget-cut'
-              ? 'bg-ivory-50 border-terracotta-500 shadow-card ring-1 ring-terracotta-500'
-              : 'bg-ivory-50/70 border-ivory-300 hover:border-ivory-400'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold uppercase text-terracotta-600">Shift</span>
-            <TrendingDown className="w-4 h-4 text-terracotta-500" />
+      {/* 2. Preservation of User Intent & Realistic Constraints Banner */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-3.5 rounded-xl bg-forest-50 border border-forest-200 flex items-start gap-2.5 text-xs text-forest-900">
+          <Lock className="w-4 h-4 text-forest-700 shrink-0 mt-0.5" />
+          <div>
+            <strong>Preserving User Intent:</strong>{' '}
+            {simulationResult.userConfirmedDecisionsPreserved} user-confirmed contracts, approved
+            allocations, and completed milestones are locked and protected from arbitrary reduction.
           </div>
-          <h3 className="font-serif font-bold text-sm text-charcoal-900">
-            Budget Reduction
-          </h3>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">
-            Test 10% – 25% cost contraction
-          </p>
-        </button>
+        </div>
 
-        <button
-          onClick={() => setSelectedScenario('guest-surge')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            selectedScenario === 'guest-surge'
-              ? 'bg-ivory-50 border-terracotta-500 shadow-card ring-1 ring-terracotta-500'
-              : 'bg-ivory-50/70 border-ivory-300 hover:border-ivory-400'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold uppercase text-forest-700">Surge</span>
-            <TrendingUp className="w-4 h-4 text-forest-600" />
+        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-xs text-amber-950">
+          <Info className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <div>
+            <strong>Realistic Constraints:</strong> Celebrio AI flags date shifts and supplier
+            capacity limits. We never fabricate vendor availability without direct confirmation.
           </div>
-          <h3 className="font-serif font-bold text-sm text-charcoal-900">
-            Guest Count Surge
-          </h3>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">
-            High RSVP acceptance impact
-          </p>
-        </button>
-
-        <button
-          onClick={() => setSelectedScenario('timeline-compression')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            selectedScenario === 'timeline-compression'
-              ? 'bg-ivory-50 border-terracotta-500 shadow-card ring-1 ring-terracotta-500'
-              : 'bg-ivory-50/70 border-ivory-300 hover:border-ivory-400'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold uppercase text-gold-700">Compress</span>
-            <AlertTriangle className="w-4 h-4 text-gold-600" />
-          </div>
-          <h3 className="font-serif font-bold text-sm text-charcoal-900">
-            Compressed Timeline
-          </h3>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">
-            Date brought forward by weeks
-          </p>
-        </button>
-
-        <button
-          onClick={() => setSelectedScenario('venue-spike')}
-          className={`p-4 rounded-2xl border text-left transition-all ${
-            selectedScenario === 'venue-spike'
-              ? 'bg-ivory-50 border-terracotta-500 shadow-card ring-1 ring-terracotta-500'
-              : 'bg-ivory-50/70 border-ivory-300 hover:border-ivory-400'
-          }`}
-        >
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold uppercase text-charcoal-600">Surprise</span>
-            <Sparkles className="w-4 h-4 text-charcoal-600" />
-          </div>
-          <h3 className="font-serif font-bold text-sm text-charcoal-900">
-            Vendor Rate Spike
-          </h3>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">
-            Unexpected fee adjustment
-          </p>
-        </button>
-      </div>
-
-      {/* Simulator Control & Impact Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Controls Card */}
-        <Card variant="default" className="p-5 sm:p-6 space-y-5">
-          <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-forest-700" />
-            <span>Scenario Parameters</span>
-          </h3>
-
-          {selectedScenario === 'budget-cut' && (
-            <div className="space-y-3">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-charcoal-600">Budget Reduction</span>
-                <span className="font-bold text-terracotta-600">{budgetCutPercent}%</span>
-              </div>
-              <input
-                type="range"
-                min="5"
-                max="30"
-                step="5"
-                value={budgetCutPercent}
-                onChange={(e) => setBudgetCutPercent(Number(e.target.value))}
-                className="w-full accent-terracotta-500 cursor-pointer"
-              />
-              <div className="flex justify-between text-[11px] text-charcoal-400">
-                <span>-5% ($3,250)</span>
-                <span>-30% ($19,500)</span>
-              </div>
-            </div>
-          )}
-
-          {selectedScenario === 'guest-surge' && (
-            <div className="space-y-3">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-charcoal-600">Additional Guests</span>
-                <span className="font-bold text-forest-700">+{extraGuests} Attendees</span>
-              </div>
-              <input
-                type="range"
-                min="10"
-                max="60"
-                step="5"
-                value={extraGuests}
-                onChange={(e) => setExtraGuests(Number(e.target.value))}
-                className="w-full accent-forest-700 cursor-pointer"
-              />
-              <div className="flex justify-between text-[11px] text-charcoal-400">
-                <span>+10 Guests</span>
-                <span>+60 Guests</span>
-              </div>
-            </div>
-          )}
-
-          {selectedScenario === 'timeline-compression' && (
-            <div className="space-y-3">
-              <div className="flex justify-between text-xs font-medium">
-                <span className="text-charcoal-600">Schedule Compression</span>
-                <span className="font-bold text-gold-700">-{compressedDays} Days Early</span>
-              </div>
-              <input
-                type="range"
-                min="7"
-                max="30"
-                step="7"
-                value={compressedDays}
-                onChange={(e) => setCompressedDays(Number(e.target.value))}
-                className="w-full accent-gold-600 cursor-pointer"
-              />
-              <div className="flex justify-between text-[11px] text-charcoal-400">
-                <span>-1 Week</span>
-                <span>-4 Weeks</span>
-              </div>
-            </div>
-          )}
-
-          {selectedScenario === 'venue-spike' && (
-            <div className="p-3 rounded-xl bg-ivory-100 text-xs text-charcoal-700">
-              Simulating an unpredicted +$2,800 historic venue overtime surcharge.
-            </div>
-          )}
-
-          <div className="pt-3 border-t border-ivory-200 text-xs text-charcoal-500">
-            Calculations executed on client memory; existing committed plan remains untouched until tradeoffs are applied.
-          </div>
-        </Card>
-
-        {/* Impact Vitals Card */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card variant="default" className="p-5 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
-              Projected Variance
-            </span>
-            <div
-              className={`font-serif text-2xl font-bold my-2 ${
-                simulatedBudgetVariance < 0
-                  ? 'text-terracotta-600'
-                  : simulatedBudgetVariance > 0
-                  ? 'text-amber-700'
-                  : 'text-charcoal-900'
-              }`}
-            >
-              {simulatedBudgetVariance >= 0 ? '+' : ''}$
-              {simulatedBudgetVariance.toLocaleString()}
-            </div>
-            <span className="text-xs text-charcoal-500">
-              New Total: ${newEstimatedTotal.toLocaleString()}
-            </span>
-          </Card>
-
-          <Card variant="default" className="p-5 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
-              Timeline Stress Score
-            </span>
-            <div className="font-serif text-2xl font-bold my-2 text-charcoal-900 flex items-baseline gap-1">
-              <span>{simulatedStressScore}</span>
-              <span className="text-xs font-normal text-charcoal-400">/ 100</span>
-            </div>
-            <span className="text-xs text-charcoal-500">
-              {simulatedStressScore > 70 ? 'High schedule compression' : 'Manageable buffer'}
-            </span>
-          </Card>
-
-          <Card variant="default" className="p-5 flex flex-col justify-between">
-            <span className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
-              Ripple Scope
-            </span>
-            <div className="font-serif text-2xl font-bold my-2 text-forest-800">
-              {affectedTaskCount} Tasks · {affectedVendorCount} Vendors
-            </div>
-            <span className="text-xs text-charcoal-500">
-              Directly impacted lines
-            </span>
-          </Card>
         </div>
       </div>
 
-      {/* AI Adaptive Tradeoff Recommendations */}
+      {/* 3. Quick Scenario Presets */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <button
+          type="button"
+          onClick={() => handleApplyPreset('cut-15')}
+          className="p-3.5 rounded-2xl border text-left transition-all bg-ivory-50/80 border-ivory-300 hover:border-terracotta-400 hover:shadow-subtle"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-bold uppercase text-terracotta-700">Contraction</span>
+            <TrendingDown className="w-3.5 h-3.5 text-terracotta-600" />
+          </div>
+          <div className="font-serif font-bold text-sm text-charcoal-900">-15% Budget Cut</div>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">Test expenditure compression</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleApplyPreset('surge-30')}
+          className="p-3.5 rounded-2xl border text-left transition-all bg-ivory-50/80 border-ivory-300 hover:border-forest-400 hover:shadow-subtle"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-bold uppercase text-forest-700">Attendance</span>
+            <TrendingUp className="w-3.5 h-3.5 text-forest-600" />
+          </div>
+          <div className="font-serif font-bold text-sm text-charcoal-900">+30 Guest Surge</div>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">High RSVP acceptance test</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleApplyPreset('compress-date')}
+          className="p-3.5 rounded-2xl border text-left transition-all bg-ivory-50/80 border-ivory-300 hover:border-gold-400 hover:shadow-subtle"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-bold uppercase text-gold-700">Acceleration</span>
+            <AlertTriangle className="w-3.5 h-3.5 text-gold-600" />
+          </div>
+          <div className="font-serif font-bold text-sm text-charcoal-900">-3 Weeks Earlier</div>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">Test accelerated deadlines</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleApplyPreset('expand-budget')}
+          className="p-3.5 rounded-2xl border text-left transition-all bg-ivory-50/80 border-ivory-300 hover:border-forest-400 hover:shadow-subtle"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-bold uppercase text-forest-700">Investment</span>
+            <DollarSign className="w-3.5 h-3.5 text-forest-600" />
+          </div>
+          <div className="font-serif font-bold text-sm text-charcoal-900">+20% Luxury Tier</div>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">Expand decor and music hours</p>
+        </button>
+      </div>
+
+      {/* 4. Interactive Sandbox Controls */}
+      <Card variant="default" className="p-5 sm:p-6 space-y-5 border-forest-200">
+        <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+          <SlidersHorizontal className="w-4 h-4 text-forest-700" />
+          <span>Interactive Constraint Controls</span>
+        </h3>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Control 1: Total Budget */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label
+                htmlFor="sim-budget-input"
+                className="text-xs font-semibold text-charcoal-700 uppercase"
+              >
+                Total Budget ({currency})
+              </label>
+              <span className="text-xs font-bold text-forest-800">
+                {formatCurrency(totalBudget, currency)}
+              </span>
+            </div>
+            <input
+              id="sim-budget-input"
+              type="number"
+              value={totalBudget}
+              onChange={(e) => setTotalBudget(Number(e.target.value))}
+              min="1000"
+              step="500"
+              className="w-full px-3 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-sm font-semibold focus:ring-2 focus:ring-forest-700"
+            />
+          </div>
+
+          {/* Control 2: Guest Count */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label
+                htmlFor="sim-guest-input"
+                className="text-xs font-semibold text-charcoal-700 uppercase"
+              >
+                Target Guest Count
+              </label>
+              <span className="text-xs font-bold text-forest-800">{guestCount} Guests</span>
+            </div>
+            <input
+              id="sim-guest-input"
+              type="number"
+              value={guestCount}
+              onChange={(e) => setGuestCount(Number(e.target.value))}
+              min="1"
+              max="1000"
+              className="w-full px-3 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-sm font-semibold focus:ring-2 focus:ring-forest-700"
+            />
+          </div>
+
+          {/* Control 3: Event Date */}
+          <div>
+            <label
+              htmlFor="sim-date-input"
+              className="block text-xs font-semibold text-charcoal-700 uppercase mb-1"
+            >
+              Celebration Target Date
+            </label>
+            <input
+              id="sim-date-input"
+              type="date"
+              value={eventDate}
+              onChange={(e) => setEventDate(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-sm focus:ring-2 focus:ring-forest-700"
+            />
+          </div>
+
+          {/* Control 4: Venue Type */}
+          <div>
+            <label
+              htmlFor="sim-venue-type-select"
+              className="block text-xs font-semibold text-charcoal-700 uppercase mb-1"
+            >
+              Venue Environment
+            </label>
+            <select
+              id="sim-venue-type-select"
+              value={venueType}
+              onChange={(e) => setVenueType(e.target.value as 'indoor' | 'outdoor' | 'hybrid')}
+              className="w-full px-3 py-2 rounded-xl bg-ivory-50 border border-ivory-300 text-sm focus:ring-2 focus:ring-forest-700"
+            >
+              <option value="indoor">Indoor (Weather Protected)</option>
+              <option value="outdoor">Outdoor (Requires Rain Plan)</option>
+              <option value="hybrid">Hybrid (Indoor + Grounds)</option>
+            </select>
+          </div>
+        </div>
+      </Card>
+
+      {/* 5. SIDE-BY-SIDE PLAN COMPARISON */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-serif text-lg font-bold text-charcoal-900 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-terracotta-500" />
-            <span>AI Adaptive Tradeoff Solutions</span>
+          <h3 className="font-serif font-bold text-lg text-charcoal-900">
+            Side-by-Side Impact Analysis
           </h3>
           <span className="text-xs text-charcoal-500">
-            Harmonized to keep celebration aesthetic uncompromised
+            Compares Current Plan vs Proposed What-If Scenario
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {recommendations.map((rec) => (
-            <Card
-              key={rec.id}
-              variant="default"
-              className="p-5 flex flex-col justify-between border-forest-200/80 hover:border-forest-400 transition-all"
-            >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Card A: Original Plan Baseline */}
+          <Card variant="default" className="p-5 sm:p-6 space-y-4 bg-ivory-100/50 border-ivory-300">
+            <div className="flex items-center justify-between pb-3 border-b border-ivory-300">
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-forest-100 text-forest-800">
-                    {rec.category}
-                  </span>
-                  <Badge variant={rec.riskLevel === 'low' ? 'forest' : 'warning'} size="sm">
-                    {rec.riskLevel} risk
-                  </Badge>
-                </div>
-
-                <h4 className="font-semibold text-sm text-charcoal-900 mb-1.5">
-                  {rec.actionTitle}
+                <span className="text-[10px] uppercase font-bold text-charcoal-500 tracking-wider">
+                  Baseline Plan
+                </span>
+                <h4 className="font-serif font-bold text-lg text-charcoal-900">
+                  Current Committed State
                 </h4>
-
-                <p className="text-xs text-charcoal-600 leading-relaxed mb-4">
-                  {rec.rationale}
-                </p>
               </div>
+              <Badge variant="neutral" size="sm">
+                Active Event
+              </Badge>
+            </div>
 
-              <div className="pt-3 border-t border-ivory-200/80 flex items-center justify-between gap-2">
-                <div className="text-xs">
-                  <span className="text-charcoal-400 block text-[10px]">Impact</span>
-                  <span className="font-bold text-forest-800">
-                    {rec.costDelta <= 0
-                      ? `Saves $${Math.abs(rec.costDelta).toLocaleString()}`
-                      : `+$${rec.costDelta.toLocaleString()}`}
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-charcoal-500 block">Total Budget Cap</span>
+                <span className="font-serif font-bold text-base text-charcoal-900">
+                  {formatCurrency(comparison.original.totalBudget, currency)}
+                </span>
+              </div>
+              <div>
+                <span className="text-charcoal-500 block">Per-Guest Cost Ceiling</span>
+                <span className="font-serif font-bold text-base text-charcoal-900">
+                  {formatCurrency(comparison.original.perGuestCost, currency)} / guest
+                </span>
+              </div>
+              <div>
+                <span className="text-charcoal-500 block">Guest Count</span>
+                <span className="font-semibold text-charcoal-800">
+                  {comparison.original.guestCount} Guests
+                </span>
+              </div>
+              <div>
+                <span className="text-charcoal-500 block">Celebration Date</span>
+                <span className="font-semibold text-charcoal-800">
+                  {comparison.original.eventDate || 'Pending'}
+                </span>
+              </div>
+              <div>
+                <span className="text-charcoal-500 block">Contingency Reserve</span>
+                <span className="font-semibold text-gold-800">
+                  {formatCurrency(comparison.original.contingencyReserve, currency)}
+                </span>
+              </div>
+              <div>
+                <span className="text-charcoal-500 block">Remaining Headroom</span>
+                <span className="font-semibold text-forest-800">
+                  {formatCurrency(comparison.original.remainingBalance, currency)}
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Card B: Proposed What-If Scenario */}
+          <Card
+            variant="default"
+            className={`p-5 sm:p-6 space-y-4 border-2 ${
+              simulationResult.hasCriticalWarnings
+                ? 'bg-rose-50/30 border-rose-400'
+                : 'bg-forest-50/30 border-forest-600 shadow-md'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-ivory-300">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-forest-800 tracking-wider">
+                  What-If Simulation
+                </span>
+                <h4 className="font-serif font-bold text-lg text-charcoal-900">
+                  Proposed Scenario State
+                </h4>
+              </div>
+              <Badge
+                variant={simulationResult.hasCriticalWarnings ? 'warning' : 'forest'}
+                size="sm"
+              >
+                {simulationResult.hasCriticalWarnings ? 'Action Required' : 'Feasible & Balanced'}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-charcoal-500 block">Proposed Budget</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-serif font-bold text-base text-charcoal-900">
+                    {formatCurrency(comparison.proposed.totalBudget, currency)}
                   </span>
+                  {deltas.budgetDelta !== 0 && (
+                    <span
+                      className={`text-[11px] font-bold ${
+                        deltas.budgetDelta < 0 ? 'text-terracotta-600' : 'text-forest-700'
+                      }`}
+                    >
+                      ({deltas.budgetDelta > 0 ? '+' : ''}
+                      {formatCurrency(deltas.budgetDelta, currency)})
+                    </span>
+                  )}
                 </div>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => handleApplyTradeoff(rec)}
-                  rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
-                >
-                  Apply Tradeoff
-                </Button>
               </div>
-            </Card>
-          ))}
+
+              <div>
+                <span className="text-charcoal-500 block">Per-Guest Cost</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-serif font-bold text-base text-charcoal-900">
+                    {formatCurrency(comparison.proposed.perGuestCost, currency)} / guest
+                  </span>
+                  {deltas.perGuestCostDelta !== 0 && (
+                    <span
+                      className={`text-[11px] font-bold ${
+                        deltas.perGuestCostDelta > 0 ? 'text-amber-700' : 'text-forest-700'
+                      }`}
+                    >
+                      ({deltas.perGuestCostDelta > 0 ? '+' : ''}
+                      {formatCurrency(deltas.perGuestCostDelta, currency)})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-charcoal-500 block">Simulated Guests</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-semibold text-charcoal-800">
+                    {comparison.proposed.guestCount} Guests
+                  </span>
+                  {deltas.guestCountDelta !== 0 && (
+                    <span className="text-[11px] font-bold text-forest-700">
+                      ({deltas.guestCountDelta > 0 ? '+' : ''}
+                      {deltas.guestCountDelta})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-charcoal-500 block">Proposed Target Date</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="font-semibold text-charcoal-800">
+                    {comparison.proposed.eventDate}
+                  </span>
+                  {deltas.daysDelta !== 0 && (
+                    <span
+                      className={`text-[11px] font-bold ${
+                        deltas.daysDelta < 0 ? 'text-gold-700' : 'text-forest-700'
+                      }`}
+                    >
+                      ({deltas.daysDelta > 0 ? `+${deltas.daysDelta}d` : `${deltas.daysDelta}d`})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-charcoal-500 block">Contingency Impact</span>
+                <span className="font-semibold text-gold-800">
+                  {formatCurrency(comparison.proposed.contingencyReserve, currency)}{' '}
+                  {deltas.contingencyDelta !== 0 && (
+                    <span className="text-[11px] font-normal text-charcoal-500">
+                      ({deltas.contingencyDelta > 0 ? '+' : ''}
+                      {formatCurrency(deltas.contingencyDelta, currency)})
+                    </span>
+                  )}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-charcoal-500 block">Balance / Deficit</span>
+                <span
+                  className={`font-semibold ${
+                    comparison.proposed.remainingBalance < 0
+                      ? 'text-rose-700 font-bold'
+                      : 'text-forest-800'
+                  }`}
+                >
+                  {formatCurrency(comparison.proposed.remainingBalance, currency)}{' '}
+                  {comparison.proposed.remainingBalance < 0 ? '(Deficit)' : '(Headroom)'}
+                </span>
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
+
+      {/* 6. Critical Warnings & Infeasibility Flags */}
+      {simulationResult.infeasibilityReasons.length > 0 && (
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-300 space-y-2 text-xs text-rose-900">
+          <div className="flex items-center gap-2 font-bold text-sm text-rose-950">
+            <ShieldAlert className="w-4 h-4 text-rose-700" />
+            <span>Scenario Warnings &amp; Tradeoff Triggers</span>
+          </div>
+          <ul className="list-disc pl-5 space-y-1">
+            {simulationResult.infeasibilityReasons.map((reason, idx) => (
+              <li key={idx}>{reason}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 7. Category Allocation Impacts */}
+      <Card variant="default" className="p-5 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-ivory-200">
+          <div>
+            <h4 className="font-serif font-bold text-base text-charcoal-900">
+              Category Allocation Impacts
+            </h4>
+            <p className="text-xs text-charcoal-500">
+              Shows how category lines adjust proportionally or exceed allocations.
+            </p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="border-b border-ivory-300 text-charcoal-500 font-semibold uppercase tracking-wider text-[11px]">
+                <th className="py-2.5 px-3">Category</th>
+                <th className="py-2.5 px-3">Baseline</th>
+                <th className="py-2.5 px-3">Proposed</th>
+                <th className="py-2.5 px-3">Variance</th>
+                <th className="py-2.5 px-3">Impact Analysis</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ivory-200">
+              {simulationResult.affectedCategories.map((cat) => (
+                <tr key={cat.category} className="hover:bg-ivory-100/40">
+                  <td className="py-2.5 px-3 font-semibold text-charcoal-800">
+                    {cat.categoryName}
+                  </td>
+                  <td className="py-2.5 px-3 text-charcoal-600">
+                    {formatCurrency(cat.originalAllocation, currency)}
+                  </td>
+                  <td className="py-2.5 px-3 font-bold text-charcoal-900">
+                    {formatCurrency(cat.proposedAllocation, currency)}
+                  </td>
+                  <td
+                    className={`py-2.5 px-3 font-semibold ${
+                      cat.variance > 0
+                        ? 'text-amber-700'
+                        : cat.variance < 0
+                        ? 'text-forest-700'
+                        : 'text-charcoal-400'
+                    }`}
+                  >
+                    {cat.variance > 0 ? '+' : ''}
+                    {formatCurrency(cat.variance, currency)}
+                  </td>
+                  <td className="py-2.5 px-3 text-charcoal-600">{cat.notes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* 8. Ripple-Effect Replanning: Tasks & Vendors */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Affected Tasks */}
+        <Card variant="default" className="p-5 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-ivory-200">
+            <h4 className="font-serif font-bold text-sm text-charcoal-900 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-forest-700" />
+              <span>Timeline Milestone Recomputation</span>
+            </h4>
+            <span className="text-[11px] text-charcoal-500">
+              {simulationResult.affectedTasks.length} Milestones
+            </span>
+          </div>
+
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {simulationResult.affectedTasks.map((t) => (
+              <div
+                key={t.taskId}
+                className={`p-2.5 rounded-lg border text-xs space-y-1 ${
+                  t.isInfeasible
+                    ? 'bg-rose-50 border-rose-300 text-rose-950'
+                    : t.isNowUrgent
+                    ? 'bg-amber-50 border-amber-300 text-amber-950'
+                    : 'bg-ivory-50 border-ivory-200 text-charcoal-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold">{t.title}</span>
+                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-ivory-200">
+                    {t.proposedPriority}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-[11px] text-charcoal-500">
+                  <span>Orig: {t.originalDeadline}</span>
+                  <span>&rarr;</span>
+                  <span className="font-semibold text-charcoal-800">
+                    New: {t.proposedDeadline}
+                  </span>
+                </div>
+                <p className="text-[11px] text-charcoal-600">{t.reason}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Affected Vendors */}
+        <Card variant="default" className="p-5 space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-ivory-200">
+            <h4 className="font-serif font-bold text-sm text-charcoal-900 flex items-center gap-2">
+              <Users className="w-4 h-4 text-forest-700" />
+              <span>Vendor Commitments &amp; Constraints</span>
+            </h4>
+            <span className="text-[11px] text-charcoal-500">
+              {simulationResult.affectedVendors.length} Suppliers
+            </span>
+          </div>
+
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {simulationResult.affectedVendors.map((v) => (
+              <div
+                key={v.vendorId}
+                className={`p-2.5 rounded-lg border text-xs space-y-1 ${
+                  v.uncertaintyFlag
+                    ? 'bg-amber-50 border-amber-300 text-amber-950'
+                    : 'bg-ivory-50 border-ivory-200 text-charcoal-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-charcoal-900">{v.vendorName}</span>
+                  <Badge variant={v.isContractLocked ? 'forest' : 'neutral'} size="sm">
+                    {v.contractStatus}
+                  </Badge>
+                </div>
+                <div className="text-[11px] text-charcoal-500">
+                  Agreed Cost: {formatCurrency(v.originalCost, currency)}
+                </div>
+                <p className="text-[11px] text-charcoal-600">{v.actionAdvice}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* 9. Recommended Trade-offs */}
+      {simulationResult.tradeoffs.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-terracotta-600" />
+            <span>Recommended Strategic Trade-Offs</span>
+          </h4>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {simulationResult.tradeoffs.map((to) => (
+              <Card key={to.id} variant="default" className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-forest-800 bg-forest-100 px-2 py-0.5 rounded">
+                    {to.category}
+                  </span>
+                  <span className="text-xs font-bold text-forest-700">
+                    {to.savingsOrCost > 0
+                      ? `Saves ${formatCurrency(to.savingsOrCost, currency)}`
+                      : 'Schedule Buffer'}
+                  </span>
+                </div>
+                <h5 className="font-bold text-xs text-charcoal-900">{to.title}</h5>
+                <p className="text-xs text-charcoal-600">{to.description}</p>
+                <div className="text-[11px] text-charcoal-500 italic pt-1 border-t border-ivory-200">
+                  Tradeoff: {to.compromiseSummary}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 10. Confirmation Modal for Applying Scenario */}
+      {isConfirmApplyOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-charcoal-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+        >
+          <Card
+            variant="default"
+            className="w-full max-w-lg p-6 bg-ivory-50 max-h-[90vh] overflow-y-auto shadow-2xl space-y-4"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-ivory-300">
+              <h3 className="font-serif font-bold text-lg text-charcoal-900">
+                Confirm Scenario Application
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsConfirmApplyOpen(false)}
+                className="text-xs text-charcoal-500 hover:text-charcoal-900"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-charcoal-600 leading-relaxed">
+              Applying this scenario will synchronize the event budget limit to{' '}
+              <strong>{formatCurrency(totalBudget, currency)}</strong>, guest count to{' '}
+              <strong>{guestCount}</strong>, and target date to <strong>{eventDate}</strong>.
+            </p>
+
+            <div className="p-3 rounded-xl bg-forest-50 border border-forest-200 text-xs text-forest-900 space-y-1">
+              <div className="font-bold flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5" />
+                Guaranteed Intent Preservation
+              </div>
+              <p>
+                {simulationResult.userConfirmedDecisionsPreserved} confirmed vendor contracts,
+                locked allocations, and completed milestones will NOT be silently deleted or
+                reduced.
+              </p>
+            </div>
+
+            {simulationResult.hasCriticalWarnings && (
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
+                <strong>Attention:</strong> This scenario creates a deficit or supplier date
+                uncertainty. The event sync indicator will be flagged as &ldquo;Action Required&rdquo;
+                until negotiations are complete.
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-ivory-300">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsConfirmApplyOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={handleExecuteApply}
+              >
+                Confirm &amp; Apply Changes
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

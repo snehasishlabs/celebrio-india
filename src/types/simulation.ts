@@ -39,3 +39,106 @@ export interface ScenarioImpactResult {
   summaryNote: string;
 }
 
+export interface ScenarioInput {
+  totalBudget: number;
+  guestCount: number;
+  eventDate: string;
+  themePreference?: string;
+  venueType: 'indoor' | 'outdoor' | 'hybrid';
+  categoryAdjustments?: Record<string, number>; // categoryId -> adjusted allocation amount
+  dietaryRequirements?: string[];
+  accessibilityRequirements?: string[];
+}
+
+export interface PlanComparisonSideBySide {
+  original: {
+    totalBudget: number;
+    guestCount: number;
+    eventDate: string;
+    perGuestCost: number;
+    contingencyReserve: number;
+    plannedSpending: number;
+    remainingBalance: number;
+    planningHorizon: string;
+    overdueTaskCount: number;
+    dueSoonTaskCount: number;
+    confirmedVendorCount: number;
+  };
+  proposed: {
+    totalBudget: number;
+    guestCount: number;
+    eventDate: string;
+    perGuestCost: number;
+    contingencyReserve: number;
+    plannedSpending: number;
+    remainingBalance: number;
+    planningHorizon: string;
+    overdueTaskCount: number;
+    dueSoonTaskCount: number;
+    confirmedVendorCount: number;
+  };
+  deltas: {
+    budgetDelta: number;
+    perGuestCostDelta: number;
+    contingencyDelta: number;
+    daysDelta: number;
+    guestCountDelta: number;
+  };
+}
+
+export interface AffectedCategoryImpact {
+  category: string;
+  categoryName: string;
+  originalAllocation: number;
+  proposedAllocation: number;
+  isOverAllocated: boolean;
+  variance: number;
+  notes: string;
+}
+
+export interface AffectedTaskImpact {
+  taskId: string;
+  title: string;
+  originalDeadline: string;
+  proposedDeadline: string;
+  originalPriority: string;
+  proposedPriority: string;
+  isNowUrgent: boolean;
+  isInfeasible: boolean;
+  reason: string;
+}
+
+export interface AffectedVendorImpact {
+  vendorId: string;
+  vendorName: string;
+  service: string;
+  contractStatus: string;
+  originalCost: number;
+  proposedCost: number;
+  isContractLocked: boolean; // Confirmed decisions preserved!
+  uncertaintyFlag: boolean; // Realistic constraint: flag date/capacity uncertainty!
+  actionAdvice: string;
+}
+
+export interface ScenarioTradeoff {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  savingsOrCost: number;
+  impactType: 'savings' | 'cost' | 'neutral';
+  compromiseSummary: string;
+}
+
+export interface ScenarioSimulationResult {
+  comparison: PlanComparisonSideBySide;
+  affectedCategories: AffectedCategoryImpact[];
+  affectedTasks: AffectedTaskImpact[];
+  affectedVendors: AffectedVendorImpact[];
+  tradeoffs: ScenarioTradeoff[];
+  hasCriticalWarnings: boolean;
+  infeasibilityReasons: string[];
+  userConfirmedDecisionsPreserved: number; // Count of confirmed items protected
+  summary: string;
+}
+
