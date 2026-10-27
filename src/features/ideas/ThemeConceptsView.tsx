@@ -10,12 +10,15 @@ import {
   HeartHandshake,
   CheckCircle2,
   ShieldAlert,
+  RefreshCw,
+  Cpu,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { ThemeConcept, ConceptTier } from '@/types/concept'
 import { Card, CardHeader, CardBody } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 interface ThemeConceptsViewProps {
   onSelectConcept?: (conceptId: string) => void
@@ -43,7 +46,15 @@ const TIER_BADGES: Record<
 }
 
 export const ThemeConceptsView: React.FC<ThemeConceptsViewProps> = ({ onSelectConcept }) => {
-  const { activeEvent, themeConcepts, selectThemeConcept } = usePlanner()
+  const {
+    activeEvent,
+    themeConcepts,
+    selectThemeConcept,
+    aiPlanningSource,
+    aiModelName,
+    isGeneratingIdeas,
+    regenerateIdeasWithAI,
+  } = usePlanner()
 
   if (!activeEvent) {
     return (
@@ -60,35 +71,92 @@ export const ThemeConceptsView: React.FC<ThemeConceptsViewProps> = ({ onSelectCo
     }
   }
 
+  const isLiveAI = aiPlanningSource === 'gemini-live'
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
       {/* Editorial Header */}
       <div className="pb-4 border-b border-ivory-300">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Badge variant="terracotta" size="sm">
-            AI Architectural Curation
-          </Badge>
-          <span className="text-xs text-charcoal-500">
-            Tailored to {activeEvent.title} ({activeEvent.category.replace('-', ' ')})
-          </span>
-        </div>
-        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
-          Personalized Theme Concepts
-        </h2>
-        <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-3xl leading-relaxed">
-          Three custom celebration concepts designed for your ${activeEvent.totalBudget.toLocaleString()}{' '}
-          budget, {activeEvent.targetGuestCount} guests, and designated priorities. Select a concept to
-          anchor your design language and budget allocations.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
+              <Badge variant="terracotta" size="sm">
+                AI Architectural Curation
+              </Badge>
 
-        {/* Global Price Disclaimer Banner */}
-        <div className="mt-4 p-3 rounded-xl bg-ivory-50 border border-ivory-300/80 flex items-start gap-2.5 text-xs text-charcoal-600">
-          <ShieldAlert className="w-4 h-4 text-gold-600 shrink-0 mt-0.5" />
-          <span>
-            <strong>Pricing Notice:</strong> All figures displayed are intelligent estimate approximations
-            derived from regional benchmarks and seasonal supplier averages. They are intended for
-            strategic budgeting and are not formal vendor quotations.
-          </span>
+              {/* Live vs Demo AI Source Badge */}
+              {isLiveAI ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Gemini 2.5 Flash
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100/80 text-amber-900 border border-amber-300 shadow-xs">
+                  <Cpu className="w-3.5 h-3.5 text-amber-700" />
+                  Deterministic Demo Mode
+                </span>
+              )}
+
+              <span className="text-xs text-charcoal-500">
+                Tailored to {activeEvent.title} ({activeEvent.category.replace('-', ' ')})
+              </span>
+            </div>
+
+            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
+              Personalized Theme Concepts
+            </h2>
+            <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-3xl leading-relaxed">
+              Three custom celebration concepts designed for your ${activeEvent.totalBudget.toLocaleString()}{' '}
+              budget, {activeEvent.targetGuestCount} guests, and designated priorities. Select a concept to
+              anchor your design language and budget allocations.
+            </p>
+          </div>
+
+          {/* Regenerate Action Button */}
+          <div className="shrink-0 self-start sm:self-center">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={regenerateIdeasWithAI}
+              disabled={isGeneratingIdeas}
+              className="bg-ivory-100/80 hover:bg-ivory-200"
+              leftIcon={
+                isGeneratingIdeas ? (
+                  <LoadingSpinner size="sm" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 text-forest-700" />
+                )
+              }
+            >
+              {isGeneratingIdeas ? 'Synthesizing with AI...' : 'Regenerate Concepts'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Informational Banner on AI Mode & Financial Disclaimer */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Engine Status Note */}
+          <div className="p-3 rounded-xl bg-ivory-50 border border-ivory-300/80 flex items-start gap-2.5 text-xs text-charcoal-600">
+            <Sparkles className="w-4 h-4 text-forest-700 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-charcoal-800">
+                {isLiveAI ? 'Connected to Google Gemini:' : 'Operating in Demo Mode:'}
+              </strong>{' '}
+              {isLiveAI
+                ? `Themes and menus dynamically generated by ${aiModelName} using server-side secure credentials.`
+                : 'Using high-fidelity deterministic rule templates. To enable live Google Gemini 2.5 Flash, add GEMINI_API_KEY to your server .env.'}
+            </div>
+          </div>
+
+          {/* Pricing Notice */}
+          <div className="p-3 rounded-xl bg-ivory-50 border border-ivory-300/80 flex items-start gap-2.5 text-xs text-charcoal-600">
+            <ShieldAlert className="w-4 h-4 text-gold-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-charcoal-800">Pricing Notice:</strong> All figures displayed are
+              intelligent estimate approximations derived from spending limits and regional supplier
+              benchmarks. They are intended for strategic budgeting and are not formal vendor quotations.
+            </div>
+          </div>
         </div>
       </div>
 
@@ -256,7 +324,7 @@ export const ThemeConceptsView: React.FC<ThemeConceptsViewProps> = ({ onSelectCo
                   </div>
                 </div>
 
-                {/* 6. Cost Estimation */}
+                {/* 6. Cost Estimation (Deterministic) */}
                 <div className="p-3.5 rounded-xl bg-forest-50/60 border border-forest-200">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-semibold text-forest-900 flex items-center gap-1">
@@ -341,4 +409,3 @@ export const ThemeConceptsView: React.FC<ThemeConceptsViewProps> = ({ onSelectCo
     </div>
   )
 }
-

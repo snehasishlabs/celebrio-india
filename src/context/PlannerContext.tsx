@@ -13,10 +13,12 @@ import {
   PlanSyncAlert,
   ScenarioInput,
   ScenarioSimulationResult,
+  AIPlanningSource,
 } from '@/types'
 import { StorageService } from '@/services/storage/storageService'
 import { SAMPLE_ALERTS } from '@/services/storage/sampleData'
 import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
+import { generateCelebrationConcepts, fetchServerHealth } from '@/services/ai/aiPlanningService'
 import { calculateBudgetSummary, sanitizeAmount } from '@/utils/budgetGuardian'
 import { generatePreparationTasks } from '@/utils/timelineEngine'
 import {
@@ -49,6 +51,10 @@ interface PlannerContextType {
   themeConcepts: ThemeConcept[]
   selectedConcept: ThemeConcept | null
   selectThemeConcept: (conceptId: string) => void
+  aiPlanningSource: AIPlanningSource
+  aiModelName: string
+  isGeneratingIdeas: boolean
+  regenerateIdeasWithAI: () => Promise<void>
   alerts: PlanSyncAlert[]
   isMobileNavOpen: boolean
   setIsMobileNavOpen: (open: boolean) => void
@@ -99,6 +105,34 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false)
   const [isCreateEventOpen, setIsCreateEventOpen] = useState<boolean>(false)
   const [isSyncing, setIsSyncing] = useState<boolean>(false)
+  const [customConcepts, setCustomConcepts] = useState<Record<string, ThemeConcept[]>>({})
+  const [aiPlanningSource, setAiPlanningSource] = useState<AIPlanningSource>('deterministic-demo')
+  const [aiModelName, setAiModelName] = useState<string>('demo-rule-engine')
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState<boolean>(false)
+
+  // Probe server configuration mode on mount
+  useEffect(() => {
+    let isMounted = true
+    fetchServerHealth()
+      .then((health) => {
+        if (!isMounted) return
+        if (health.hasGeminiKey) {
+          setAiPlanningSource('gemini-live')
+          setAiModelName(health.model || 'gemini-2.5-flash')
+        } else {
+          setAiPlanningSource('deterministic-demo')
+          setAiModelName('demo-rule-engine')
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return
+        setAiPlanningSource('deterministic-demo')
+        setAiModelName('demo-rule-engine')
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Load initial data
   useEffect(() => {
@@ -131,8 +165,8 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // Get theme concepts for the active event
   const themeConcepts = useMemo(() => {
     if (!activeEvent) return []
-    return StorageService.getConcepts(activeEvent)
-  }, [activeEvent])
+    return customConcepts[activeEvent.id] || StorageService.getConcepts(activeEvent)
+  }, [activeEvent, customConcepts])
 
   const selectedConcept = useMemo(() => {
     if (!activeEvent) return null
@@ -143,6 +177,32 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       null
     )
   }, [activeEvent, themeConcepts])
+
+  // Regenerate ideas with live Gemini AI (or deterministic demo engine if offline/unconfigured)
+  const regenerateIdeasWithAI = useCallback(async () => {
+    if (!activeEvent) return
+    setIsGeneratingIdeas(true)
+    try {
+      const res = await generateCelebrationConcepts(activeEvent)
+      setCustomConcepts((prev) => ({ ...prev, [activeEvent.id]: res.concepts }))
+      setAiPlanningSource(res.source)
+      setAiModelName(res.model)
+      StorageService.saveConcepts(activeEvent.id, res.concepts)
+
+      const newActivity: ActivityLogItem = {
+        id: `act-${Date.now()}`,
+        eventId: activeEvent.id,
+        type: 'concept-selected',
+        title: res.source === 'gemini-live' ? 'Live Gemini Concepts Generated' : 'Demo Concepts Refreshed',
+        description: `Generated 3 celebration concepts via ${res.model}.`,
+        timestamp: new Date().toISOString(),
+      }
+      StorageService.addActivity(newActivity)
+      setActivities(StorageService.getActivities(activeEvent.id))
+    } finally {
+      setIsGeneratingIdeas(false)
+    }
+  }, [activeEvent])
 
   // Concept selection action
   const selectThemeConcept = useCallback(
@@ -951,6 +1011,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     themeConcepts,
     selectedConcept,
     selectThemeConcept,
+    aiPlanningSource,
+    aiModelName,
+    isGeneratingIdeas,
+    regenerateIdeasWithAI,
     alerts,
     isMobileNavOpen,
     setIsMobileNavOpen,

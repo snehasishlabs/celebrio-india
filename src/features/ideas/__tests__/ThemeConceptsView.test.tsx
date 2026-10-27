@@ -30,6 +30,31 @@ describe('ThemeConceptsView Component', () => {
     ).toBeInTheDocument()
   })
 
+  it('displays the honest AI source badge', () => {
+    render(
+      <PlannerProvider>
+        <ThemeConceptsView />
+      </PlannerProvider>,
+    )
+
+    // In default test environment without key, it displays Deterministic Demo Mode
+    expect(
+      screen.getByText(/Deterministic Demo Mode|Live Gemini/i),
+    ).toBeInTheDocument()
+  })
+
+  it('renders the Regenerate Concepts button and allows clicking', () => {
+    render(
+      <PlannerProvider>
+        <ThemeConceptsView />
+      </PlannerProvider>,
+    )
+
+    const regenBtn = screen.getByRole('button', { name: /Regenerate Concepts/i })
+    expect(regenBtn).toBeInTheDocument()
+    fireEvent.click(regenBtn)
+  })
+
   it('allows user to click Select This Concept and updates state', () => {
     render(
       <PlannerProvider>
@@ -48,4 +73,3 @@ describe('ThemeConceptsView Component', () => {
     expect(screen.getByText(/Active Concept Selected/i)).toBeInTheDocument()
   })
 })
-

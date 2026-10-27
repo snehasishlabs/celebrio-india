@@ -15,12 +15,19 @@ import {
   Check,
   X,
   Lock,
+  Utensils,
+  Music,
+  Lightbulb,
+  ShieldCheck,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
+import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ScenarioInput } from '@/types/simulation'
+import { AITradeoffExplanationResponse } from '@/types/ai'
+import { explainScenarioTradeoffs } from '@/services/ai/aiPlanningService'
 import { formatCurrency } from '@/utils/budgetGuardian'
 import { simulateScenario } from '@/utils/scenarioEngine'
 
@@ -46,6 +53,8 @@ export const SimulatorView: React.FC = () => {
   // UI Flow State
   const [isConfirmApplyOpen, setIsConfirmApplyOpen] = useState(false)
   const [appliedNotice, setAppliedNotice] = useState<string | null>(null)
+  const [aiTradeoff, setAiTradeoff] = useState<AITradeoffExplanationResponse | null>(null)
+  const [isLoadingAiTradeoff, setIsLoadingAiTradeoff] = useState(false)
 
   // Construct ScenarioInput
   const scenarioInput: ScenarioInput = useMemo(
@@ -104,8 +113,39 @@ export const SimulatorView: React.FC = () => {
     setThemePreference(activeEvent.themePreference || '')
     setVenueType(activeEvent.preferences.indoorOutdoor)
     setCategoryAdjustments({})
+    setAiTradeoff(null)
     setAppliedNotice('Scenario discarded. Baseline plan restored.')
     setTimeout(() => setAppliedNotice(null), 3000)
+  }
+
+  const handleFetchAiTradeoff = async () => {
+    if (!activeEvent || !simulationResult) return
+    setIsLoadingAiTradeoff(true)
+    try {
+      const res = await explainScenarioTradeoffs({
+        eventId: activeEvent.id,
+        baseline: {
+          category: activeEvent.category,
+          totalBudget: activeEvent.totalBudget,
+          guestCount: activeEvent.targetGuestCount,
+        },
+        proposed: {
+          totalBudget,
+          guestCount,
+          dateDeltaDays: deltas.daysDelta,
+          venueType,
+        },
+        deltas: {
+          budgetDelta: deltas.budgetDelta,
+          perGuestDelta: deltas.perGuestCostDelta,
+          contingencyDelta: deltas.contingencyDelta,
+        },
+        affectedCategories: simulationResult.affectedCategories.map((c) => c.categoryName),
+      })
+      setAiTradeoff(res)
+    } finally {
+      setIsLoadingAiTradeoff(false)
+    }
   }
 
   const handleExecuteApply = () => {
@@ -744,6 +784,125 @@ export const SimulatorView: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 9b. AI Scenario Replanning Narrative & Culinary/Entertainment Pivots */}
+      <Card variant="default" className="p-5 sm:p-6 space-y-4 bg-ivory-50/90 border-forest-200">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-ivory-200">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h4 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-forest-700" />
+                <span>AI Scenario Advisory &amp; Experience Pivots</span>
+              </h4>
+              {aiTradeoff && (
+                aiTradeoff.source === 'gemini-live' ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Gemini 2.5 Flash
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                    Deterministic Demo Mode
+                  </span>
+                )
+              )}
+            </div>
+            <p className="text-xs text-charcoal-600">
+              Synthesizes custom hospitality pivots, menu adaptations, and sound alternatives for your simulated parameters.
+            </p>
+          </div>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleFetchAiTradeoff}
+            disabled={isLoadingAiTradeoff}
+            leftIcon={
+              isLoadingAiTradeoff ? (
+                <LoadingSpinner size="sm" />
+              ) : (
+                <Sparkles className="w-3.5 h-3.5 text-gold-300" />
+              )
+            }
+          >
+            {isLoadingAiTradeoff
+              ? 'Synthesizing Pivots...'
+              : aiTradeoff
+              ? 'Refresh AI Advisory'
+              : 'Analyze Scenario with AI'}
+          </Button>
+        </div>
+
+        {aiTradeoff ? (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Strategic Narrative Summary */}
+            <div className="p-3.5 rounded-xl bg-forest-900/5 border border-forest-700/20 text-xs text-charcoal-800 leading-relaxed">
+              <strong className="text-forest-900 block font-semibold mb-1">
+                Executive Scenario Assessment:
+              </strong>
+              {aiTradeoff.strategicSummary}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* Culinary & Beverage Pivots */}
+              <div className="p-3.5 rounded-xl bg-ivory-100/80 border border-ivory-200 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-charcoal-900">
+                  <Utensils className="w-3.5 h-3.5 text-forest-700" />
+                  <span>Culinary &amp; Beverage Adaptations</span>
+                </div>
+                <ul className="space-y-1.5 text-charcoal-700 pl-4 list-disc">
+                  {aiTradeoff.culinaryRecommendations.map((item, idx) => (
+                    <li key={idx} className="leading-relaxed">{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Entertainment & Sound Alternatives */}
+              <div className="p-3.5 rounded-xl bg-ivory-100/80 border border-ivory-200 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-charcoal-900">
+                  <Music className="w-3.5 h-3.5 text-gold-600" />
+                  <span>Entertainment &amp; Sound Alternatives</span>
+                </div>
+                <ul className="space-y-1.5 text-charcoal-700 pl-4 list-disc">
+                  {aiTradeoff.entertainmentAlternatives.map((item, idx) => (
+                    <li key={idx} className="leading-relaxed">{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Smart Budget-Saving Tips */}
+              <div className="p-3.5 rounded-xl bg-ivory-100/80 border border-ivory-200 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-charcoal-900">
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Smart Budget-Saving Opportunities</span>
+                </div>
+                <ul className="space-y-1.5 text-charcoal-700 pl-4 list-disc">
+                  {aiTradeoff.budgetSavingTips.map((item, idx) => (
+                    <li key={idx} className="leading-relaxed">{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Guest Experience Safeguards */}
+              <div className="p-3.5 rounded-xl bg-ivory-100/80 border border-ivory-200 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-charcoal-900">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Guest Experience &amp; Risk Safeguards</span>
+                </div>
+                <ul className="space-y-1.5 text-charcoal-700 pl-4 list-disc">
+                  {aiTradeoff.guestExperienceRiskMitigation.map((item, idx) => (
+                    <li key={idx} className="leading-relaxed">{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="py-4 text-center text-xs text-charcoal-500 bg-ivory-100/40 rounded-xl border border-dashed border-ivory-300">
+            Click <strong>&quot;Analyze Scenario with AI&quot;</strong> above to generate tailored culinary adaptations, entertainment compromises, and smart savings based on this specific what-if delta.
+          </div>
+        )}
+      </Card>
 
       {/* 10. Confirmation Modal for Applying Scenario */}
       {isConfirmApplyOpen && (
