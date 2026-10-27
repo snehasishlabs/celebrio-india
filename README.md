@@ -122,7 +122,7 @@ npm run dev
 
 ### Automated Testing
 ```bash
-# Run Vitest test suite (137 tests across 22 suites)
+# Run Vitest test suite (145 tests across 23 suites)
 npm test
 ```
 
@@ -139,7 +139,8 @@ node server/index.ts
 
 ## 🧪 Test Coverage Summary
 
-- **22 Test Suites, 137 Tests Passing (100% pass rate)**
+- **23 Test Suites, 145 Tests Passing (100% pass rate)**
+- `src/services/storage/__tests__/storageService.test.ts`: LocalStorage isolation, corrupted JSON resilience, 30-item rolling activity log, multi-event budget partitioning, workspace wipe.
 - `server/__tests__/geminiFailures.test.ts`: Provider 429 quota exhaustion, 500 errors, malformed non-JSON recovery, schema recovery, and timeout handling.
 - `server/__tests__/validator.test.ts`: Bounded inputs, range constraints, rate limiting.
 - `server/__tests__/geminiService.test.ts`: Demo mode fallback, deterministic budget calculations, error & timeout recovery.
