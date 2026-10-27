@@ -17,3 +17,4 @@ export interface AISuggestionResponse {
   overallHealthScore: number; // 0 - 100
   nextActionRecommendation: string;
 }
+

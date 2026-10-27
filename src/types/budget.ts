@@ -39,3 +39,4 @@ export interface BudgetSummary {
   isOverAllocated: boolean;
   allocationPercentage: number;
 }
+

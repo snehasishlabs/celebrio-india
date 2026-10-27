@@ -38,3 +38,4 @@ export interface Vendor {
   notes?: string;
   rating?: number; // 1-5 stars
 }
+

@@ -1,4 +1,4 @@
-import { CelebrationEvent } from '@/types/event'
+import { CelebrationEvent, ActivityLogItem } from '@/types/event'
 import { BudgetItem } from '@/types/budget'
 import { TimelineTask } from '@/types/timeline'
 import { Vendor } from '@/types/vendor'
@@ -24,9 +24,57 @@ export const SAMPLE_EVENT: CelebrationEvent = {
   status: 'planning',
   syncState: 'in-sync',
   syncSummary: 'All milestones aligned. Budget allocated within target reserve margin.',
+  themePreference: 'Glasshouse Conservatory Elegance',
+  selectedConceptId: 'concept-ev-conservatory-gala-creative',
+  priorities: ['Culinary Excellence', 'Architectural Botanicals', 'Acoustic Jazz'],
+  dietaryRequirements: ['Vegetarian', 'Gluten-Free', 'Nut-Free'],
+  dietaryNotes: '3 guests with severe nut allergies; 18 vegetarian dinners confirmed.',
+  accessibilityRequirements: ['Wheelchair Accessible', 'Step-Free Entrance'],
+  accessibilityNotes: 'Step-free ramp confirmed at Palm Terrace west pavilion.',
+  preferences: {
+    indoorOutdoor: 'indoor',
+    dressCode: 'Black Tie Optional',
+    musicVibe: 'Sophisticated Acoustic Jazz & Warm Soul',
+    specialNotes: 'Silent auction concludes at 21:00 before the final dessert reveal.',
+  },
   createdAt: '2026-08-15T10:00:00Z',
   updatedAt: '2026-10-27T12:00:00Z',
 }
+
+export const SAMPLE_ACTIVITIES: ActivityLogItem[] = [
+  {
+    id: 'act-1',
+    eventId: 'ev-conservatory-gala',
+    type: 'concept-selected',
+    title: 'Theme Concept Selected',
+    description: 'Active design concept set to "Artisan Glasshouse & Terracotta Twilight".',
+    timestamp: '2 hours ago',
+  },
+  {
+    id: 'act-2',
+    eventId: 'ev-conservatory-gala',
+    type: 'vendor-contracted',
+    title: 'Catering Deposit Executed',
+    description: 'Heirloom Table Gastronomy deposit of $6,000 confirmed in budget ledger.',
+    timestamp: 'Yesterday at 16:45',
+  },
+  {
+    id: 'act-3',
+    eventId: 'ev-conservatory-gala',
+    type: 'task-completed',
+    title: 'Menu Tasting Finalized',
+    description: 'Four-course sommelier pairing approved by planning committee.',
+    timestamp: '3 days ago',
+  },
+  {
+    id: 'act-4',
+    eventId: 'ev-conservatory-gala',
+    type: 'budget-updated',
+    title: 'Contingency Reserve Locked',
+    description: '$5,000 (7.7%) buffer ring-fenced against unexpected surge fees.',
+    timestamp: 'Last week',
+  },
+]
 
 export const SAMPLE_BUDGET_ITEMS: BudgetItem[] = [
   {

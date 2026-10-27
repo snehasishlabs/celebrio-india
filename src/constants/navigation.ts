@@ -62,3 +62,4 @@ export const NAVIGATION_ITEMS: NavItemDef[] = [
     icon: Settings,
   },
 ]
+

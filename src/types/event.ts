@@ -1,8 +1,9 @@
 export type EventCategory =
   | 'wedding'
-  | 'gala'
+  | 'birthday'
   | 'anniversary'
-  | 'milestone-birthday'
+  | 'community'
+  | 'gala'
   | 'corporate-summit'
   | 'product-launch'
   | 'private-celebration';
@@ -10,6 +11,13 @@ export type EventCategory =
 export type EventStatus = 'draft' | 'planning' | 'confirmed' | 'completed' | 'archived';
 
 export type SyncState = 'in-sync' | 'drift-detected' | 'syncing' | 'action-required';
+
+export interface EventPreferences {
+  indoorOutdoor: 'indoor' | 'outdoor' | 'hybrid';
+  dressCode?: string;
+  musicVibe?: string;
+  specialNotes?: string;
+}
 
 export interface CelebrationEvent {
   id: string;
@@ -31,8 +39,32 @@ export interface CelebrationEvent {
   status: EventStatus;
   syncState: SyncState;
   syncSummary?: string;
+  themePreference?: string;
+  selectedConceptId?: string;
+  priorities: string[];
+  dietaryRequirements: string[];
+  dietaryNotes?: string;
+  accessibilityRequirements: string[];
+  accessibilityNotes?: string;
+  preferences: EventPreferences;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ActivityLogItem {
+  id: string;
+  eventId: string;
+  type:
+    | 'event-created'
+    | 'budget-updated'
+    | 'task-completed'
+    | 'vendor-contracted'
+    | 'concept-selected'
+    | 'guest-updated'
+    | 'sync-recalculated';
+  title: string;
+  description: string;
+  timestamp: string;
 }
 
 export interface NewCelebrationInput {
@@ -42,5 +74,15 @@ export interface NewCelebrationInput {
   venueName: string;
   city: string;
   totalBudget: number;
+  currency: string;
   targetGuestCount: number;
+  themePreference?: string;
+  priorities: string[];
+  dietaryRequirements: string[];
+  dietaryNotes?: string;
+  accessibilityRequirements: string[];
+  accessibilityNotes?: string;
+  indoorOutdoor: 'indoor' | 'outdoor' | 'hybrid';
+  dressCode?: string;
+  specialNotes?: string;
 }

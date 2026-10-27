@@ -6,120 +6,220 @@ import {
   Sparkles,
   AlertCircle,
   ArrowRight,
-  TrendingUp,
-  MapPin,
-  Users,
+  Calendar,
+  Plus,
+  Palette,
+  ShieldCheck,
+  History,
+  PartyPopper,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Card, CardBody } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
+import { EmptyState } from '@/components/common/EmptyState'
 
 export const DashboardView: React.FC = () => {
   const {
+    events,
     activeEvent,
+    setActiveEventId,
     budgetItems,
     timelineTasks,
     vendors,
+    activities,
     alerts,
+    selectedConcept,
     setCurrentSection,
+    setActiveTab,
+    setIsCreateEventOpen,
   } = usePlanner()
 
-  if (!activeEvent) return null
+  // Empty State if no events exist
+  if (!activeEvent || events.length === 0) {
+    return (
+      <div className="py-12">
+        <EmptyState
+          icon={<PartyPopper className="w-6 h-6 text-forest-700" />}
+          title="Welcome to Celebrio AI"
+          description="You don't have any celebrations planned yet. Create your first wedding, birthday, anniversary, or community event to generate personalized concepts and adaptive budgets."
+          actionLabel="Create First Celebration"
+          onAction={() => setIsCreateEventOpen(true)}
+        />
+      </div>
+    )
+  }
 
   // Financial calculations
+  const totalBudget = activeEvent.totalBudget
   const totalAllocated = budgetItems.reduce((acc, item) => acc + item.allocatedAmount, 0)
   const totalPaid = budgetItems.reduce((acc, item) => acc + item.paidAmount, 0)
+  const remainingBudget = totalBudget - totalAllocated
   const contingencyItem = budgetItems.find((i) => i.isContingency)
   const contingencyFund = contingencyItem ? contingencyItem.allocatedAmount : 0
   const allocationPercent = Math.min(
     100,
-    Math.round((totalAllocated / activeEvent.totalBudget) * 100),
+    Math.round((totalAllocated / totalBudget) * 100),
   )
 
   // Timeline calculations
-  const completedTasks = timelineTasks.filter((t) => t.status === 'completed').length
+  const pendingTasks = timelineTasks.filter((t) => t.status !== 'completed')
+  const completedTasks = timelineTasks.filter((t) => t.status === 'completed')
   const totalTasks = timelineTasks.length
-  const timelinePercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+  const timelinePercent = totalTasks > 0 ? Math.round((completedTasks.length / totalTasks) * 100) : 0
+  const nextUpcomingTask = pendingTasks[0] || null
 
   // Vendor calculations
   const signedVendors = vendors.filter(
     (v) => v.contractStatus === 'contract-signed' || v.contractStatus === 'deposit-paid',
   ).length
+  const totalVendors = vendors.length
+  const vendorPercent = totalVendors > 0 ? Math.round((signedVendors / totalVendors) * 100) : 0
+
+  // Days remaining
+  const daysRemaining = Math.max(
+    0,
+    Math.ceil(
+      (new Date(activeEvent.date).getTime() - new Date().getTime()) /
+        (1000 * 60 * 60 * 24),
+    ),
+  )
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
-      {/* Editorial Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-ivory-300">
+      {/* 1. Welcome Heading & Action */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-ivory-300">
         <div>
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-xs uppercase tracking-wider font-semibold text-terracotta-600 bg-terracotta-50 px-2 py-0.5 rounded border border-terracotta-200">
-              Active Celebration Plan
+            <span className="text-xs uppercase tracking-wider font-semibold text-forest-800 bg-forest-100 px-2 py-0.5 rounded border border-forest-200 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Active Plan Workspace
             </span>
             <Badge variant="gold" size="sm">
               Health Score: 96/100
             </Badge>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
-            {activeEvent.title}
+            Welcome to Celebrio AI
           </h2>
-          <div className="flex flex-wrap items-center gap-4 text-xs sm:text-sm text-charcoal-600 mt-2">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-forest-700" />
-              {activeEvent.location.venueName}, {activeEvent.location.city}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-forest-700" />
-              {activeEvent.confirmedGuestCount} / {activeEvent.targetGuestCount} Guests Confirmed
-            </span>
-          </div>
+          <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-2xl">
+            Currently orchestrating{' '}
+            <strong className="text-charcoal-900 font-semibold">{activeEvent.title}</strong>{' '}
+            <span className="text-forest-700 font-medium">({daysRemaining} days away)</span>.{' '}
+            All budgets, timelines, and vendor commitments are synchronized in real time.
+          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <Button
             variant="terracotta"
             size="sm"
             onClick={() => setCurrentSection('simulator')}
-            leftIcon={<Sparkles className="w-4 h-4" />}
+            leftIcon={<Sparkles className="w-4 h-4 text-ivory-50" />}
           >
             What-If Simulator
           </Button>
           <Button
-            variant="secondary"
+            variant="primary"
             size="sm"
-            onClick={() => setCurrentSection('budget')}
+            onClick={() => setIsCreateEventOpen(true)}
+            leftIcon={<Plus className="w-4 h-4" />}
           >
-            Review Budget
+            Create Event
           </Button>
         </div>
       </div>
 
-      {/* Vital Metric Cards */}
+      {/* 2. Upcoming Events Portfolio Switcher */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-serif text-base font-bold text-charcoal-900 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-forest-700" />
+            <span>Upcoming Celebrations ({events.length})</span>
+          </h3>
+          <button
+            onClick={() => setCurrentSection('events')}
+            className="text-xs font-semibold text-forest-700 hover:text-forest-900 flex items-center gap-1"
+          >
+            <span>Manage All Events</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {events.map((ev) => {
+            const isSelected = ev.id === activeEvent.id
+            const daysAway = Math.max(
+              0,
+              Math.ceil(
+                (new Date(ev.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+              ),
+            )
+
+            return (
+              <div
+                key={ev.id}
+                onClick={() => {
+                  setActiveEventId(ev.id)
+                  setCurrentSection('events')
+                  setActiveTab('overview')
+                }}
+                className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-ivory-50 border-forest-400 ring-2 ring-forest-700/20 shadow-card'
+                    : 'bg-ivory-50/70 border-ivory-300 hover:border-ivory-400 hover:bg-ivory-50'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Badge variant={isSelected ? 'forest' : 'neutral'} size="sm" className="capitalize">
+                    {ev.category.replace('-', ' ')}
+                  </Badge>
+                  <span className="text-[11px] font-bold text-forest-800">
+                    {daysAway} days away
+                  </span>
+                </div>
+                <h4 className="font-serif font-bold text-sm text-charcoal-900 truncate mb-1">
+                  {ev.title}
+                </h4>
+                <div className="flex items-center justify-between text-xs text-charcoal-500">
+                  <span>{ev.date}</span>
+                  <span className="font-medium text-charcoal-800">
+                    ${ev.totalBudget.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 3. Vital Metrics: Spending, Remaining, Tasks, Vendors */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        {/* Budget Vital */}
+        {/* Metric 1: Total Planned Spending */}
         <Card
           variant="default"
           isInteractive
-          onClick={() => setCurrentSection('budget')}
+          onClick={() => {
+            setCurrentSection('events')
+            setActiveTab('budget')
+          }}
           className="group"
         >
           <CardBody className="p-5">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
-                Total Budget
+                Planned Spending
               </span>
               <div className="w-8 h-8 rounded-xl bg-forest-50 text-forest-700 flex items-center justify-center group-hover:bg-forest-100 transition-colors">
                 <Coins className="w-4 h-4" />
               </div>
             </div>
             <div className="font-serif text-2xl font-bold text-charcoal-900 mb-1">
-              ${activeEvent.totalBudget.toLocaleString()}
+              ${totalAllocated.toLocaleString()}
             </div>
             <div className="flex items-center justify-between text-xs text-charcoal-500 mb-2">
-              <span>{allocationPercent}% Allocated</span>
-              <span className="text-forest-700 font-medium">
-                ${contingencyFund.toLocaleString()} Buffer
-              </span>
+              <span>{allocationPercent}% of total cap</span>
+              <span className="text-forest-700 font-semibold">${totalPaid.toLocaleString()} paid</span>
             </div>
             <div className="w-full h-1.5 bg-ivory-200 rounded-full overflow-hidden">
               <div
@@ -130,28 +230,79 @@ export const DashboardView: React.FC = () => {
           </CardBody>
         </Card>
 
-        {/* Timeline Vital */}
+        {/* Metric 2: Remaining Budget */}
         <Card
           variant="default"
           isInteractive
-          onClick={() => setCurrentSection('timeline')}
+          onClick={() => {
+            setCurrentSection('events')
+            setActiveTab('budget')
+          }}
           className="group"
         >
           <CardBody className="p-5">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
-                Milestones & Tasks
+                Remaining Budget
+              </span>
+              <div className="w-8 h-8 rounded-xl bg-forest-50 text-forest-700 flex items-center justify-center group-hover:bg-forest-100 transition-colors">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+            </div>
+            <div
+              className={`font-serif text-2xl font-bold mb-1 ${
+                remainingBudget < 0 ? 'text-terracotta-600' : 'text-forest-800'
+              }`}
+            >
+              ${Math.max(0, remainingBudget).toLocaleString()}
+            </div>
+            <div className="flex items-center justify-between text-xs text-charcoal-500 mb-2">
+              <span>Buffer Protected</span>
+              <span className="text-gold-700 font-semibold">
+                ${contingencyFund.toLocaleString()} reserve
+              </span>
+            </div>
+            <div className="w-full h-1.5 bg-ivory-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gold-600 rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(100, (contingencyFund / totalBudget) * 100)}%`,
+                }}
+              />
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Metric 3: Pending Tasks */}
+        <Card
+          variant="default"
+          isInteractive
+          onClick={() => {
+            setCurrentSection('events')
+            setActiveTab('timeline')
+          }}
+          className="group"
+        >
+          <CardBody className="p-5">
+            <div className="flex items-center justify-between mb-2.5">
+              <span className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
+                Pending Tasks
               </span>
               <div className="w-8 h-8 rounded-xl bg-forest-50 text-forest-700 flex items-center justify-center group-hover:bg-forest-100 transition-colors">
                 <Clock className="w-4 h-4" />
               </div>
             </div>
             <div className="font-serif text-2xl font-bold text-charcoal-900 mb-1">
-              {completedTasks} / {totalTasks}
+              {pendingTasks.length}{' '}
+              <span className="text-xs font-normal text-charcoal-500 font-sans">
+                ({completedTasks.length} done)
+              </span>
             </div>
-            <div className="flex items-center justify-between text-xs text-charcoal-500 mb-2">
-              <span>{timelinePercent}% Completed</span>
-              <span className="text-forest-700 font-medium">On Schedule</span>
+            <div className="text-xs text-charcoal-500 truncate mb-2">
+              Next:{' '}
+              <span className="text-forest-800 font-medium">
+                {nextUpcomingTask ? nextUpcomingTask.title : 'All milestones up to date'}
+              </span>
             </div>
             <div className="w-full h-1.5 bg-ivory-200 rounded-full overflow-hidden">
               <div
@@ -162,15 +313,18 @@ export const DashboardView: React.FC = () => {
           </CardBody>
         </Card>
 
-        {/* Vendors Vital */}
+        {/* Metric 4: Vendor Booking Progress */}
         <Card
           variant="default"
           isInteractive
-          onClick={() => setCurrentSection('vendors')}
+          onClick={() => {
+            setCurrentSection('events')
+            setActiveTab('vendors')
+          }}
           className="group"
         >
           <CardBody className="p-5">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-semibold text-charcoal-500 uppercase tracking-wider">
                 Vendors Secured
               </span>
@@ -179,148 +333,170 @@ export const DashboardView: React.FC = () => {
               </div>
             </div>
             <div className="font-serif text-2xl font-bold text-charcoal-900 mb-1">
-              {signedVendors} / {vendors.length}
+              {signedVendors} / {totalVendors}
             </div>
             <div className="flex items-center justify-between text-xs text-charcoal-500 mb-2">
-              <span>Deposits Disbursed</span>
-              <span className="text-forest-700 font-medium">${totalPaid.toLocaleString()}</span>
+              <span>Booking Progress</span>
+              <span className="text-forest-800 font-semibold">{vendorPercent}% Secured</span>
             </div>
             <div className="w-full h-1.5 bg-ivory-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-forest-700 rounded-full transition-all duration-500"
-                style={{ width: `${(signedVendors / Math.max(1, vendors.length)) * 100}%` }}
+                style={{ width: `${vendorPercent}%` }}
               />
             </div>
           </CardBody>
         </Card>
-
-        {/* Adaptive Sync Vital */}
-        <Card
-          variant="forest-accent"
-          isInteractive
-          onClick={() => setCurrentSection('simulator')}
-          className="group cursor-pointer"
-        >
-          <CardBody className="p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-gold-300 uppercase tracking-wider">
-                Sync Engine
-              </span>
-              <div className="w-8 h-8 rounded-xl bg-forest-800 text-gold-400 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-            <div className="font-serif text-2xl font-bold text-ivory-50 mb-1">
-              Zero Drift
-            </div>
-            <p className="text-xs text-ivory-200 line-clamp-2">
-              Budgets, timelines, and vendor deliverables fully reconciled.
-            </p>
-          </CardBody>
-        </Card>
       </div>
 
-      {/* Sync Engine Insights & Action Recommendations */}
+      {/* 4. Active Theme Concept & Recent Activity Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Alerts / Proactive Sync Recommendations */}
+        {/* Active Theme Preview Card */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-serif text-lg font-bold text-charcoal-900 flex items-center gap-2">
-              <span>Proactive Plan Sync Insights</span>
-              <span className="text-xs font-sans font-normal px-2 py-0.5 rounded-full bg-forest-100 text-forest-800">
-                {alerts.length} Active Notes
-              </span>
+              <Palette className="w-4 h-4 text-forest-700" />
+              <span>Active Design Concept &amp; Aesthetic</span>
             </h3>
-            <button
-              onClick={() => setCurrentSection('simulator')}
-              className="text-xs font-semibold text-forest-700 hover:text-forest-900 flex items-center gap-1 group"
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setCurrentSection('events')
+                setActiveTab('ideas')
+              }}
+              rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
             >
-              <span>Explore Tradeoffs</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-            </button>
+              Explore 3 Concepts
+            </Button>
           </div>
 
-          <div className="space-y-3">
-            {alerts.map((alert) => (
+          {selectedConcept ? (
+            <Card variant="default" className="p-6 space-y-4 border-forest-200/80">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-ivory-200">
+                <div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-forest-100 text-forest-800">
+                    {selectedConcept.tier.replace('-', ' ')}
+                  </span>
+                  <h4 className="font-serif font-bold text-xl text-charcoal-900 mt-1">
+                    {selectedConcept.title}
+                  </h4>
+                  <p className="text-xs text-forest-800 italic">
+                    &ldquo;{selectedConcept.tagline}&rdquo;
+                  </p>
+                </div>
+                <div className="text-right sm:text-right">
+                  <span className="text-xs text-charcoal-500 block">Est. Implication</span>
+                  <span className="font-serif font-bold text-base text-forest-900">
+                    ${selectedConcept.costEstimation.estimatedTotal.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Swatches */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-charcoal-700 mr-1">Palette:</span>
+                {selectedConcept.colorPalette.map((color) => (
+                  <div
+                    key={color.name}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-ivory-100 border border-ivory-200 text-xs"
+                  >
+                    <span
+                      className="w-3.5 h-3.5 rounded-full border border-black/10 shadow-subtle shrink-0"
+                      style={{ backgroundColor: color.hex }}
+                    />
+                    <span className="text-[11px] font-medium text-charcoal-800">{color.name}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-xs text-charcoal-600">
+                <div className="p-3 rounded-xl bg-ivory-100/70 border border-ivory-200">
+                  <strong className="text-charcoal-900 block mb-0.5">Atmospheric Styling:</strong>
+                  {selectedConcept.decor.focalPoint}
+                </div>
+                <div className="p-3 rounded-xl bg-ivory-100/70 border border-ivory-200">
+                  <strong className="text-charcoal-900 block mb-0.5">Culinary Service:</strong>
+                  {selectedConcept.foodAndBeverage.serviceStyle}
+                </div>
+              </div>
+            </Card>
+          ) : (
+            <Card variant="default" className="p-6 text-center">
+              <p className="text-xs text-charcoal-500 mb-3">
+                No personalized concept selected yet. Review generated themes for this event.
+              </p>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setCurrentSection('events')
+                  setActiveTab('ideas')
+                }}
+              >
+                Review Generated Concepts
+              </Button>
+            </Card>
+          )}
+
+          {/* Sync Alerts */}
+          <div className="space-y-3 pt-2">
+            <h4 className="font-serif font-bold text-sm text-charcoal-900">
+              Proactive Plan Sync Warnings
+            </h4>
+            {alerts.slice(0, 2).map((alert) => (
               <div
                 key={alert.id}
-                className="p-4 sm:p-5 rounded-2xl bg-ivory-50 border border-ivory-300 shadow-subtle flex flex-col sm:flex-row sm:items-start gap-4 transition-all hover:border-forest-300"
+                className="p-4 rounded-xl bg-ivory-50 border border-ivory-300 flex items-start gap-3 text-xs"
               >
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    alert.severity === 'warning'
-                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                      : 'bg-forest-100 text-forest-800 border border-forest-200'
-                  }`}
-                >
-                  <AlertCircle className="w-5 h-5" />
+                <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-sm text-charcoal-900">
-                      {alert.title}
-                    </h4>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-ivory-200 text-charcoal-600">
-                      {alert.source}
-                    </span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-charcoal-600 mb-2 leading-relaxed">
-                    {alert.description}
-                  </p>
-                  <div className="bg-ivory-100/80 rounded-xl p-2.5 border border-ivory-200/80 text-xs">
-                    <span className="font-semibold text-forest-800">
-                      Suggested Action:{' '}
-                    </span>
-                    <span className="text-charcoal-700">{alert.suggestedAction}</span>
-                  </div>
+                  <div className="font-semibold text-charcoal-900">{alert.title}</div>
+                  <p className="text-charcoal-600 mt-0.5">{alert.description}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Quick What-If Simulation Trigger Card */}
+        {/* 5. Recent Planning Activity Log */}
         <div className="space-y-4">
-          <h3 className="font-serif text-lg font-bold text-charcoal-900">
-            Adaptive Contingency
-          </h3>
-          <Card variant="default" className="p-5 sm:p-6 space-y-4">
-            <div className="w-10 h-10 rounded-xl bg-terracotta-100 text-terracotta-700 flex items-center justify-center">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="font-serif font-bold text-base text-charcoal-900 mb-1">
-                Simulate Scenario Drifts
-              </h4>
-              <p className="text-xs text-charcoal-600 leading-relaxed mb-4">
-                What if your guest count increases by 30? Or vendor fees increase?
-                Celebrio calculates ripple effects across budget lines and schedules
-                instantly.
-              </p>
-            </div>
-            <div className="space-y-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-ivory-100 border border-ivory-200 flex items-center justify-between">
-                <span className="text-charcoal-700 font-medium">15% Budget Cut</span>
-                <span className="text-terracotta-600 font-semibold">Ready to test</span>
+          <div className="flex items-center justify-between">
+            <h3 className="font-serif text-lg font-bold text-charcoal-900 flex items-center gap-2">
+              <History className="w-4 h-4 text-forest-700" />
+              <span>Recent Activity</span>
+            </h3>
+            <span className="text-xs text-charcoal-500">Live Audit Trail</span>
+          </div>
+
+          <Card variant="default" className="p-5 space-y-4">
+            {activities.length > 0 ? (
+              <div className="space-y-3">
+                {activities.slice(0, 6).map((act) => (
+                  <div
+                    key={act.id}
+                    className="flex items-start gap-3 pb-3 border-b border-ivory-200/80 last:border-b-0 last:pb-0 text-xs"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-forest-600 mt-1.5 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-charcoal-900">{act.title}</div>
+                      <p className="text-charcoal-600 leading-snug mt-0.5 line-clamp-2">
+                        {act.description}
+                      </p>
+                      <span className="text-[10px] text-charcoal-400 mt-1 block">
+                        {act.timestamp}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="p-2.5 rounded-xl bg-ivory-100 border border-ivory-200 flex items-center justify-between">
-                <span className="text-charcoal-700 font-medium">Guest Surge (+40)</span>
-                <span className="text-terracotta-600 font-semibold">Ready to test</span>
+            ) : (
+              <div className="py-6 text-center text-xs text-charcoal-500">
+                No recent activity recorded yet.
               </div>
-              <div className="p-2.5 rounded-xl bg-ivory-100 border border-ivory-200 flex items-center justify-between">
-                <span className="text-charcoal-700 font-medium">Compress Timeline</span>
-                <span className="text-terracotta-600 font-semibold">Ready to test</span>
-              </div>
-            </div>
-            <Button
-              variant="terracotta"
-              size="sm"
-              onClick={() => setCurrentSection('simulator')}
-              className="w-full mt-2"
-              rightIcon={<ArrowRight className="w-4 h-4" />}
-            >
-              Launch What-If Engine
-            </Button>
+            )}
           </Card>
         </div>
       </div>

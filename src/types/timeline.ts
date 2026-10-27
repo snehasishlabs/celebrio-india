@@ -34,3 +34,4 @@ export interface ScheduleConflict {
   severity: 'low' | 'moderate' | 'critical';
   suggestedResolution?: string;
 }
+

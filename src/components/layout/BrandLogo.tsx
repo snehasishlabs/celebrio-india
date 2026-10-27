@@ -57,3 +57,4 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ collapsed = false, classNa
     </div>
   )
 }
+

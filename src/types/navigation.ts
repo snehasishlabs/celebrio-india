@@ -13,3 +13,4 @@ export interface NavItemConfig {
   description: string;
   badge?: string;
 }
+

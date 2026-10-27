@@ -3,14 +3,24 @@ import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { MobileNav } from './MobileNav'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { CreateEventModal } from '@/features/events/CreateEventModal'
+import { usePlanner } from '@/context/PlannerContext'
 
 export interface ShellProps {
   children: React.ReactNode
 }
 
 export const Shell: React.FC<ShellProps> = ({ children }) => {
+  const { isCreateEventOpen, setIsCreateEventOpen } = usePlanner()
+
   return (
     <div className="min-h-screen bg-ivory-100 flex flex-col md:flex-row antialiased text-charcoal-900">
+      {/* Event Creator Modal */}
+      <CreateEventModal
+        isOpen={isCreateEventOpen}
+        onClose={() => setIsCreateEventOpen(false)}
+      />
+
       {/* Mobile Drawer */}
       <MobileNav />
 

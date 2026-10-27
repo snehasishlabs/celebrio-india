@@ -38,3 +38,4 @@ export interface ScenarioImpactResult {
   recommendations: TradeoffRecommendation[];
   summaryNote: string;
 }
+

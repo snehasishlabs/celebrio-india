@@ -22,3 +22,4 @@ describe('Card Component', () => {
     expect(container.firstChild).toHaveClass('shadow-card')
   })
 })
+

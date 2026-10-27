@@ -35,3 +35,4 @@ describe('Sidebar Component', () => {
     ).toBeInTheDocument()
   })
 })
+

@@ -32,3 +32,4 @@ describe('Button Component', () => {
     expect(container.firstChild).toHaveClass('bg-terracotta-500')
   })
 })
+

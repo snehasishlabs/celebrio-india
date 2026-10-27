@@ -1,23 +1,28 @@
-import { CelebrationEvent } from '@/types/event'
+import { CelebrationEvent, ActivityLogItem } from '@/types/event'
 import { BudgetItem } from '@/types/budget'
 import { TimelineTask } from '@/types/timeline'
 import { Vendor } from '@/types/vendor'
+import { ThemeConcept } from '@/types/concept'
 import {
   SAMPLE_EVENT,
+  SAMPLE_ACTIVITIES,
   SAMPLE_BUDGET_ITEMS,
   SAMPLE_TIMELINE_TASKS,
   SAMPLE_VENDORS,
 } from './sampleData'
+import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
 
 const STORAGE_KEYS = {
-  EVENTS: 'celebrio_events_v1',
-  ACTIVE_EVENT_ID: 'celebrio_active_event_id_v1',
-  BUDGET_ITEMS: 'celebrio_budget_items_v1',
-  TASKS: 'celebrio_tasks_v1',
-  VENDORS: 'celebrio_vendors_v1',
+  EVENTS: 'celebrio_events_v2',
+  ACTIVE_EVENT_ID: 'celebrio_active_event_id_v2',
+  BUDGET_ITEMS: 'celebrio_budget_items_v2',
+  TASKS: 'celebrio_tasks_v2',
+  VENDORS: 'celebrio_vendors_v2',
+  ACTIVITIES: 'celebrio_activities_v2',
+  CONCEPTS_PREFIX: 'celebrio_concepts_v2_',
 } as const
 
-// Memory fallback if localStorage is unavailable (e.g., in strict test environments)
+// Memory fallback if localStorage is unavailable
 const memoryStore: Record<string, string> = {}
 
 function getRaw(key: string): string | null {
@@ -50,7 +55,8 @@ export const StorageService = {
       return [SAMPLE_EVENT]
     }
     try {
-      return JSON.parse(raw) as CelebrationEvent[]
+      const parsed = JSON.parse(raw) as CelebrationEvent[]
+      return parsed.length > 0 ? parsed : [SAMPLE_EVENT]
     } catch {
       return [SAMPLE_EVENT]
     }
@@ -127,11 +133,62 @@ export const StorageService = {
     setRaw(STORAGE_KEYS.VENDORS, JSON.stringify(vendors))
   },
 
+  getActivities(eventId?: string): ActivityLogItem[] {
+    const raw = getRaw(STORAGE_KEYS.ACTIVITIES)
+    if (!raw) {
+      this.saveActivities(SAMPLE_ACTIVITIES)
+      return eventId
+        ? SAMPLE_ACTIVITIES.filter((a) => a.eventId === eventId)
+        : SAMPLE_ACTIVITIES
+    }
+    try {
+      const all = JSON.parse(raw) as ActivityLogItem[]
+      return eventId ? all.filter((a) => a.eventId === eventId) : all
+    } catch {
+      return eventId
+        ? SAMPLE_ACTIVITIES.filter((a) => a.eventId === eventId)
+        : SAMPLE_ACTIVITIES
+    }
+  },
+
+  saveActivities(activities: ActivityLogItem[]): void {
+    setRaw(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities))
+  },
+
+  addActivity(item: ActivityLogItem): void {
+    const current = this.getActivities()
+    const updated = [item, ...current].slice(0, 30) // keep last 30 activities
+    this.saveActivities(updated)
+  },
+
+  getConcepts(event: CelebrationEvent): ThemeConcept[] {
+    const key = `${STORAGE_KEYS.CONCEPTS_PREFIX}${event.id}`
+    const raw = getRaw(key)
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as ThemeConcept[]
+        if (parsed.length > 0) return parsed
+      } catch {
+        // regenerate
+      }
+    }
+    const generated = generateThemeConcepts(event)
+    setRaw(key, JSON.stringify(generated))
+    return generated
+  },
+
+  saveConcepts(eventId: string, concepts: ThemeConcept[]): void {
+    const key = `${STORAGE_KEYS.CONCEPTS_PREFIX}${eventId}`
+    setRaw(key, JSON.stringify(concepts))
+  },
+
   resetAllData(): void {
     this.saveEvents([SAMPLE_EVENT])
     this.setActiveEventId(SAMPLE_EVENT.id)
     this.saveBudgetItems(SAMPLE_BUDGET_ITEMS)
     this.saveTasks(SAMPLE_TIMELINE_TASKS)
     this.saveVendors(SAMPLE_VENDORS)
+    this.saveActivities(SAMPLE_ACTIVITIES)
+    this.saveConcepts(SAMPLE_EVENT.id, generateThemeConcepts(SAMPLE_EVENT))
   },
 }

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Menu, CheckCircle2, RefreshCw, Calendar, Sparkles } from 'lucide-react'
+import { Menu, CheckCircle2, RefreshCw, Calendar, Sparkles, Plus } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
@@ -12,6 +12,7 @@ export const Header: React.FC = () => {
     isSyncing,
     triggerManualSync,
     setCurrentSection,
+    setIsCreateEventOpen,
   } = usePlanner()
 
   // Calculate days remaining
@@ -43,7 +44,7 @@ export const Header: React.FC = () => {
             <h1 className="font-serif font-bold text-base sm:text-lg text-charcoal-900 truncate">
               {activeEvent ? activeEvent.title : 'Celebration Workspace'}
             </h1>
-            <Badge variant="forest" size="sm" className="hidden sm:inline-flex">
+            <Badge variant="forest" size="sm" className="hidden sm:inline-flex capitalize">
               {activeEvent?.category.replace('-', ' ') || 'Event'}
             </Badge>
           </div>
@@ -99,18 +100,29 @@ export const Header: React.FC = () => {
           size="sm"
           onClick={() => setCurrentSection('simulator')}
           leftIcon={<Sparkles className="w-3.5 h-3.5 text-terracotta-500" />}
-          className="hidden lg:inline-flex"
+          className="hidden xl:inline-flex"
         >
           Simulate Changes
         </Button>
 
-        {/* Create / Switch Event */}
+        {/* Switch / View Events */}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setCurrentSection('events')}
+          className="hidden sm:inline-flex"
+        >
+          My Events
+        </Button>
+
+        {/* Create Event Trigger */}
         <Button
           variant="primary"
           size="sm"
-          onClick={() => setCurrentSection('events')}
+          onClick={() => setIsCreateEventOpen(true)}
+          leftIcon={<Plus className="w-3.5 h-3.5" />}
         >
-          My Events
+          Create Event
         </Button>
       </div>
     </header>

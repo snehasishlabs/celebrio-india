@@ -1,5 +1,5 @@
 import React from 'react'
-import { Mail, Phone } from 'lucide-react'
+import { Mail, Phone, Info } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
@@ -20,20 +20,34 @@ export const VendorsView: React.FC = () => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-ivory-300">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-ivory-300">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="forest" size="sm">
               Vendor Collective
             </Badge>
             <span className="text-xs text-charcoal-500">
-              ${totalContracted.toLocaleString()} Total Commitments · ${totalDepositsPaid.toLocaleString()} Deposits Paid
+              ${totalContracted.toLocaleString()} Commitments · ${totalDepositsPaid.toLocaleString()} Deposits Paid
             </span>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
             Curated Vendor Portfolio
           </h2>
+          <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-2xl">
+            Track contracts, deposit commitments, and service deliverables. All payment lines link
+            directly to the deterministic budget engine.
+          </p>
         </div>
+      </div>
+
+      {/* Demonstrative Data Disclaimer Banner */}
+      <div className="p-3.5 rounded-xl bg-ivory-50 border border-ivory-300 flex items-start gap-2.5 text-xs text-charcoal-600">
+        <Info className="w-4 h-4 text-forest-700 shrink-0 mt-0.5" />
+        <span>
+          <strong>Demonstrative Sample Data:</strong> The vendor profiles displayed below are realistic
+          architectural archetypes for demonstration and planning simulations. They do not represent
+          verified commercial contracts or registered businesses.
+        </span>
       </div>
 
       {/* Vendors Grid */}
@@ -42,9 +56,14 @@ export const VendorsView: React.FC = () => {
           <Card key={vendor.id} variant="default" className="p-5 sm:p-6 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <Badge variant="neutral" size="sm" className="mb-1.5 capitalize">
-                  {vendor.service.replace('-', ' ')}
-                </Badge>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Badge variant="neutral" size="sm" className="capitalize">
+                    {vendor.service.replace('-', ' ')}
+                  </Badge>
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-ivory-200 text-charcoal-600">
+                    Sample Profile
+                  </span>
+                </div>
                 <h3 className="font-serif font-bold text-lg text-charcoal-900">
                   {vendor.name}
                 </h3>
