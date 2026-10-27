@@ -74,7 +74,7 @@ describe('Gemini Service Provider Failures & Malformed Output Recovery', () => {
   it('recovers gracefully when request times out', async () => {
     mockGenerateContent.mockImplementation(
       () =>
-        new Promise((resolve) => {
+        new Promise(() => {
           // Intentionally do not resolve or reject to trigger timeout
         }),
     )
@@ -90,3 +90,4 @@ describe('Gemini Service Provider Failures & Malformed Output Recovery', () => {
     expect(result.concepts).toHaveLength(3)
   })
 })
+

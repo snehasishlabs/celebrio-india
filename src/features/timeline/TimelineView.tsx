@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   CheckCircle2,
   Circle,
@@ -56,6 +56,16 @@ export const TimelineView: React.FC = () => {
   const [isMilestone, setIsMilestone] = useState(false)
   const [isCriticalPath, setIsCriticalPath] = useState(false)
   const [formError, setFormError] = useState('')
+
+  // Keyboard Escape listener for modal
+  useEffect(() => {
+    if (!isModalOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsModalOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isModalOpen])
 
   // Filtered Tasks
   const filteredTasks = useMemo(() => {

@@ -3,6 +3,7 @@ import { Menu, CheckCircle2, RefreshCw, Calendar, Sparkles, Plus } from 'lucide-
 import { usePlanner } from '@/context/PlannerContext'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
+import { calculateDaysRemaining } from '@/utils/timelineEngine'
 
 export const Header: React.FC = () => {
   const {
@@ -17,13 +18,7 @@ export const Header: React.FC = () => {
 
   // Calculate days remaining
   const daysRemaining = activeEvent?.date
-    ? Math.max(
-        0,
-        Math.ceil(
-          (new Date(activeEvent.date).getTime() - new Date().getTime()) /
-            (1000 * 60 * 60 * 24),
-        ),
-      )
+    ? Math.max(0, calculateDaysRemaining(activeEvent.date) ?? 0)
     : 0
 
   return (

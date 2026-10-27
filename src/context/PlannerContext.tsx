@@ -95,12 +95,21 @@ const PlannerContext = createContext<PlannerContextType | undefined>(undefined)
 export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentSection, setCurrentSection] = useState<NavSection>('dashboard')
   const [activeTab, setActiveTab] = useState<EventDetailTab>('overview')
-  const [events, setEvents] = useState<CelebrationEvent[]>([])
-  const [activeEventId, setActiveEventIdState] = useState<string>('')
-  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([])
-  const [timelineTasks, setTimelineTasks] = useState<TimelineTask[]>([])
-  const [vendors, setVendors] = useState<Vendor[]>([])
-  const [activities, setActivities] = useState<ActivityLogItem[]>([])
+  const [events, setEvents] = useState<CelebrationEvent[]>(() => StorageService.getEvents())
+  const [activeEventId, setActiveEventIdState] = useState<string>(() => StorageService.getActiveEventId())
+  const [budgetItems, setBudgetItems] = useState<BudgetItem[]>(() => {
+    const id = StorageService.getActiveEventId()
+    return StorageService.getBudgetItems(id)
+  })
+  const [timelineTasks, setTimelineTasks] = useState<TimelineTask[]>(() => {
+    const id = StorageService.getActiveEventId()
+    return StorageService.getTasks(id)
+  })
+  const [vendors, setVendors] = useState<Vendor[]>(() => {
+    const id = StorageService.getActiveEventId()
+    return StorageService.getVendors(id)
+  })
+  const [activities, setActivities] = useState<ActivityLogItem[]>(() => StorageService.getActivities())
   const [alerts, setAlerts] = useState<PlanSyncAlert[]>(SAMPLE_ALERTS)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false)
   const [isCreateEventOpen, setIsCreateEventOpen] = useState<boolean>(false)
@@ -132,20 +141,6 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => {
       isMounted = false
     }
-  }, [])
-
-  // Load initial data
-  useEffect(() => {
-    const loadedEvents = StorageService.getEvents()
-    setEvents(loadedEvents)
-
-    const activeId = StorageService.getActiveEventId()
-    setActiveEventIdState(activeId)
-
-    setBudgetItems(StorageService.getBudgetItems(activeId))
-    setTimelineTasks(StorageService.getTasks(activeId))
-    setVendors(StorageService.getVendors(activeId))
-    setActivities(StorageService.getActivities())
   }, [])
 
   // Switch active event

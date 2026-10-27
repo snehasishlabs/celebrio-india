@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   SlidersHorizontal,
   TrendingDown,
@@ -55,6 +55,17 @@ export const SimulatorView: React.FC = () => {
   const [appliedNotice, setAppliedNotice] = useState<string | null>(null)
   const [aiTradeoff, setAiTradeoff] = useState<AITradeoffExplanationResponse | null>(null)
   const [isLoadingAiTradeoff, setIsLoadingAiTradeoff] = useState(false)
+
+  useEffect(() => {
+    if (!isConfirmApplyOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsConfirmApplyOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isConfirmApplyOpen])
 
   // Construct ScenarioInput
   const scenarioInput: ScenarioInput = useMemo(

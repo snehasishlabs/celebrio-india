@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Plus,
   ShieldCheck,
@@ -52,6 +52,16 @@ export const BudgetView: React.FC = () => {
 
   // Filter state for line items
   const [statusFilter, setStatusFilter] = useState<'all' | CostStatus>('all')
+
+  // Keyboard Escape listener for modal
+  useEffect(() => {
+    if (!isModalOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsModalOpen(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isModalOpen])
 
   if (!activeEvent) return null
 

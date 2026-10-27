@@ -18,6 +18,7 @@ import { Card, CardBody } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 import { EmptyState } from '@/components/common/EmptyState'
+import { calculateDaysRemaining } from '@/utils/timelineEngine'
 
 export const DashboardView: React.FC = () => {
   const {
@@ -77,13 +78,7 @@ export const DashboardView: React.FC = () => {
   const vendorPercent = totalVendors > 0 ? Math.round((signedVendors / totalVendors) * 100) : 0
 
   // Days remaining
-  const daysRemaining = Math.max(
-    0,
-    Math.ceil(
-      (new Date(activeEvent.date).getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24),
-    ),
-  )
+  const daysRemaining = Math.max(0, calculateDaysRemaining(activeEvent.date) ?? 0)
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">
@@ -149,12 +144,7 @@ export const DashboardView: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {events.map((ev) => {
             const isSelected = ev.id === activeEvent.id
-            const daysAway = Math.max(
-              0,
-              Math.ceil(
-                (new Date(ev.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
-              ),
-            )
+            const daysAway = Math.max(0, calculateDaysRemaining(ev.date) ?? 0)
 
             return (
               <div

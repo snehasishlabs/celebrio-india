@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   X,
   Sparkles,
@@ -15,6 +15,7 @@ import {
 import { usePlanner } from '@/context/PlannerContext'
 import { EventCategory, NewCelebrationInput } from '@/types/event'
 import { Button } from '@/components/common/Button'
+import { addDays, formatDateIso } from '@/utils/timelineEngine'
 
 interface CreateEventModalProps {
   isOpen: boolean
@@ -65,15 +66,10 @@ const THEME_PRESET_SUGGESTIONS = [
 export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onClose }) => {
   const { addEvent, setCurrentSection, setActiveTab } = usePlanner()
 
-  // Default date to 90 days in the future
-  const defaultDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split('T')[0]
-
   // Form State
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<EventCategory>('wedding')
-  const [date, setDate] = useState(defaultDate)
+  const [date, setDate] = useState(() => addDays(formatDateIso(new Date()), 90))
   const [city, setCity] = useState('')
   const [venueName, setVenueName] = useState('')
   const [budget, setBudget] = useState('35000')
@@ -101,6 +97,18 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Keyboard Escape listener
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 

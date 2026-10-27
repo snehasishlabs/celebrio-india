@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Mail,
   Phone,
@@ -69,6 +69,17 @@ export const VendorsView: React.FC = () => {
   const [linkedTaskId, setLinkedTaskId] = useState('')
   const [linkedBudgetItemId, setLinkedBudgetItemId] = useState('')
   const [formError, setFormError] = useState('')
+
+  useEffect(() => {
+    if (!isModalOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsModalOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isModalOpen])
 
   if (!activeEvent) {
     return (

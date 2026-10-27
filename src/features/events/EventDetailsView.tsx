@@ -22,6 +22,7 @@ import { TimelineView } from '@/features/timeline/TimelineView'
 import { VendorsView } from '@/features/vendors/VendorsView'
 import { GuestExperienceView } from '@/features/events/GuestExperienceView'
 import { ContingencyPlanView } from '@/features/events/ContingencyPlanView'
+import { calculateDaysRemaining } from '@/utils/timelineEngine'
 
 const TABS: { id: EventDetailTab; label: string; icon: typeof Calendar }[] = [
   { id: 'overview', label: 'Overview', icon: Calendar },
@@ -61,13 +62,7 @@ export const EventDetailsView: React.FC = () => {
   ).length
 
   // Days remaining
-  const daysRemaining = Math.max(
-    0,
-    Math.ceil(
-      (new Date(activeEvent.date).getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24),
-    ),
-  )
+  const daysRemaining = Math.max(0, calculateDaysRemaining(activeEvent.date) ?? 0)
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
