@@ -31,3 +31,4 @@ server.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`[Celebrio Server] AI Planning Service running at http://localhost:${PORT}`)
 })
+

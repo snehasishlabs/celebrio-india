@@ -16,7 +16,9 @@ export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
     req.on('data', (chunk) => {
       receivedBytes += chunk.length
       if (receivedBytes > MAX_BODY_BYTES) {
-        req.destroy()
+        if (typeof req.destroy === 'function') {
+          req.destroy()
+        }
         reject(new Error('PAYLOAD_TOO_LARGE: Request exceeds 64KB limit'))
         return
       }

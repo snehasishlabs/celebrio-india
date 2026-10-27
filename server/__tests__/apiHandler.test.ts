@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { handleApiRequest } from '../apiHandler'
@@ -9,6 +9,7 @@ function createMockReq(method: string, url: string, body?: any): IncomingMessage
   req.url = url
   req.headers = { 'content-type': 'application/json' }
   req.socket = { remoteAddress: '127.0.0.1' }
+  req.destroy = vi.fn()
 
   process.nextTick(() => {
     if (body !== undefined) {
@@ -120,6 +121,40 @@ describe('Server API Request Handler (apiHandler.ts)', () => {
       expect(body.error).toMatch(/Invalid planning parameters/i)
       expect(body.details.length).toBeGreaterThan(0)
     })
+
+    it('returns 413 Payload Too Large when request body exceeds 64KB', async () => {
+      const oversizedPayload = {
+        eventId: 'evt-oversized',
+        title: 'Huge Plan',
+        category: 'wedding',
+        targetGuestCount: 100,
+        totalBudget: 50000,
+        currency: 'USD',
+        bloat: 'x'.repeat(70 * 1024), // 70 KB
+      }
+
+      const req = createMockReq('POST', '/api/plan/generate-concepts', oversizedPayload)
+      const { res, getStatusCode, getJsonBody } = createMockRes()
+
+      const handled = await handleApiRequest(req, res)
+      expect(handled).toBe(true)
+      expect(getStatusCode()).toBe(413)
+
+      const body = getJsonBody()
+      expect(body.error).toMatch(/Payload too large/i)
+    })
+
+    it('returns 400 when request contains malformed JSON', async () => {
+      const req = createMockReq('POST', '/api/plan/generate-concepts', '{ bad json: invalid ')
+      const { res, getStatusCode, getJsonBody } = createMockRes()
+
+      const handled = await handleApiRequest(req, res)
+      expect(handled).toBe(true)
+      expect(getStatusCode()).toBe(400)
+
+      const body = getJsonBody()
+      expect(body.error).toMatch(/Malformed JSON/i)
+    })
   })
 
   describe('POST /api/plan/explain-tradeoffs', () => {
@@ -156,3 +191,4 @@ describe('Server API Request Handler (apiHandler.ts)', () => {
     })
   })
 })
+
