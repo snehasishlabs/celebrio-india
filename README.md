@@ -205,7 +205,7 @@ npm run dev
 # Run Oxlint static analysis (0 errors)
 npm run lint
 
-# Run Vitest automated test suite (145 tests across 23 test suites)
+# Run Vitest automated test suite (147 tests across 23 test suites)
 npm test
 
 # Run Vitest in interactive watch mode
@@ -274,12 +274,13 @@ Deploy `dist/` to any static host (Firebase Hosting, Vercel, Netlify, Cloudflare
 
 ## 🧪 Automated Test Suite Summary
 
-- **23 Test Suites, 145 Tests Passing (100% pass rate)**
+- **23 Test Suites, 147 Tests Passing (100% pass rate)**
 - **Deterministic Budget Arithmetic:** [`src/utils/__tests__/budgetGuardian.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/budgetGuardian.test.ts) (18 tests covering multi-currency handling, contingency isolation, and deficit warnings).
 - **Critical-Path Scheduling:** [`src/utils/__tests__/timelineEngine.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/timelineEngine.test.ts) (18 tests covering 7, 30, 90, and 180-day dynamic horizon adaptation).
 - **Vendor Portfolio & Contracts:** [`src/utils/__tests__/vendorEngine.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/vendorEngine.test.ts) (10 tests covering milestone tracking and category question banks).
 - **What-If Simulation Engine:** [`src/utils/__tests__/scenarioEngine.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/scenarioEngine.test.ts) (8 tests covering ripple effects, baseline restoration, and locked decision preservation).
-- **Storage Resilience:** [`src/services/storage/__tests__/storageService.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/services/storage/__tests__/storageService.test.ts) (8 tests covering corrupted JSON recovery, 30-item rolling log limit, multi-event isolation, and workspace reset).
+- **Storage & Lifecycle Resilience:** [`src/services/storage/__tests__/storageService.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/services/storage/__tests__/storageService.test.ts) (9 tests covering event deletion cleanup, corrupted JSON recovery, 30-item rolling log limit, multi-event isolation, and workspace reset).
+- **Event Lifecycle & Editing:** [`src/features/events/__tests__/EventDetailsView.test.tsx`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/features/events/__tests__/EventDetailsView.test.tsx) (4 tests covering tab switching, inline editing modal, and Escape key dismissal).
 - **Gemini Failures & Fallback Recovery:** [`server/__tests__/geminiFailures.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/server/__tests__/geminiFailures.test.ts) (4 tests covering 429 quota exhaustion, 500 errors, non-JSON output, and 15s timeouts).
 - **Server Request Validation & Security:** [`server/__tests__/validator.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/server/__tests__/validator.test.ts) (12 tests) and [`server/__tests__/apiHandler.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/server/__tests__/apiHandler.test.ts) (8 tests covering 64 KB payload bounds, 413 responses, and rate limits).
 
