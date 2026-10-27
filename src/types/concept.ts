@@ -56,3 +56,4 @@ export interface ThemeConcept {
   costEstimation: CostEstimation;
   tradeoffs: TradeoffSummary;
 }
+

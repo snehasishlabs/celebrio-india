@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useCall
 import {
   NavSection,
   CelebrationEvent,
+  SyncState,
   NewCelebrationInput,
   ActivityLogItem,
   ThemeConcept,
@@ -13,6 +14,7 @@ import {
 import { StorageService } from '@/services/storage/storageService'
 import { SAMPLE_ALERTS } from '@/services/storage/sampleData'
 import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
+import { calculateBudgetSummary, sanitizeAmount } from '@/utils/budgetGuardian'
 
 export type EventDetailTab =
   | 'overview'
@@ -49,6 +51,10 @@ interface PlannerContextType {
   addEvent: (input: NewCelebrationInput) => CelebrationEvent
   updateActiveEvent: (updates: Partial<CelebrationEvent>) => void
   updateTaskStatus: (taskId: string, isCompleted: boolean) => void
+  addBudgetItem: (item: Omit<BudgetItem, 'id' | 'eventId'>) => BudgetItem
+  updateBudgetItem: (itemId: string, updates: Partial<BudgetItem>) => void
+  deleteBudgetItem: (itemId: string) => void
+  applyCostSavingAlternative: (itemId: string, newAmount: number, description: string) => void
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined)
@@ -105,7 +111,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!activeEvent) return null
     return (
       themeConcepts.find((c) => c.id === activeEvent.selectedConceptId) ||
-      themeConcepts[1] || // default to creative-distinctive
+      themeConcepts[1] ||
       themeConcepts[0] ||
       null
     )
@@ -173,6 +179,156 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [activeEvent, timelineTasks],
   )
 
+  // Budget item management with instant recalculation
+  const addBudgetItem = useCallback(
+    (itemInput: Omit<BudgetItem, 'id' | 'eventId'>): BudgetItem => {
+      if (!activeEvent) throw new Error('No active event selected')
+
+      const newItem: BudgetItem = {
+        ...itemInput,
+        id: `bgt-${Date.now()}`,
+        eventId: activeEvent.id,
+        costStatus: itemInput.costStatus || 'estimated',
+        estimatedAmount: sanitizeAmount(itemInput.estimatedAmount || itemInput.allocatedAmount),
+        quotedAmount: sanitizeAmount(itemInput.quotedAmount || itemInput.allocatedAmount),
+        confirmedAmount: sanitizeAmount(itemInput.confirmedAmount || 0),
+        allocatedAmount: sanitizeAmount(itemInput.allocatedAmount),
+        actualAmount: sanitizeAmount(itemInput.actualAmount || itemInput.allocatedAmount),
+        paidAmount: sanitizeAmount(itemInput.paidAmount || 0),
+        paymentStatus: itemInput.paymentStatus || 'planned',
+        isContingency: itemInput.isContingency ?? itemInput.category === 'contingency',
+      }
+
+      const updated = [...budgetItems, newItem]
+      setBudgetItems(updated)
+      StorageService.saveBudgetItems(updated)
+
+      // Recalculate summary and update event sync state
+      const summary = calculateBudgetSummary(activeEvent.totalBudget, updated)
+      const nextSyncState: SyncState = summary.isOverBudget ? 'drift-detected' : 'in-sync'
+      if (activeEvent.syncState !== nextSyncState) {
+        const updatedEvent: CelebrationEvent = { ...activeEvent, syncState: nextSyncState }
+        setEvents(events.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+        StorageService.saveEvents(events.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+      }
+
+      // Audit log
+      const activity: ActivityLogItem = {
+        id: `act-${Date.now()}`,
+        eventId: activeEvent.id,
+        type: 'budget-updated',
+        title: 'Budget Line Added',
+        description: `Added "${newItem.name}" (${newItem.category}) with allocation of $${newItem.allocatedAmount.toLocaleString()}.`,
+        timestamp: 'Just now',
+      }
+      StorageService.addActivity(activity)
+      setActivities(StorageService.getActivities())
+
+      return newItem
+    },
+    [activeEvent, budgetItems, events],
+  )
+
+  const updateBudgetItem = useCallback(
+    (itemId: string, updates: Partial<BudgetItem>) => {
+      if (!activeEvent) return
+
+      const updated = budgetItems.map((item) => {
+        if (item.id === itemId) {
+          const merged = { ...item, ...updates }
+          return {
+            ...merged,
+            allocatedAmount: sanitizeAmount(merged.allocatedAmount),
+            actualAmount: sanitizeAmount(merged.actualAmount),
+            paidAmount: sanitizeAmount(merged.paidAmount),
+            estimatedAmount: sanitizeAmount(merged.estimatedAmount || merged.allocatedAmount),
+            quotedAmount: sanitizeAmount(merged.quotedAmount || merged.allocatedAmount),
+            confirmedAmount: sanitizeAmount(merged.confirmedAmount || 0),
+          }
+        }
+        return item
+      })
+
+      setBudgetItems(updated)
+      StorageService.saveBudgetItems(updated)
+
+      const target = updated.find((i) => i.id === itemId)
+      if (target) {
+        const activity: ActivityLogItem = {
+          id: `act-${Date.now()}`,
+          eventId: activeEvent.id,
+          type: 'budget-updated',
+          title: 'Budget Line Updated',
+          description: `Updated "${target.name}" to $${target.allocatedAmount.toLocaleString()} (${target.costStatus}).`,
+          timestamp: 'Just now',
+        }
+        StorageService.addActivity(activity)
+        setActivities(StorageService.getActivities())
+      }
+    },
+    [activeEvent, budgetItems],
+  )
+
+  const deleteBudgetItem = useCallback(
+    (itemId: string) => {
+      if (!activeEvent) return
+      const target = budgetItems.find((i) => i.id === itemId)
+      const updated = budgetItems.filter((i) => i.id !== itemId)
+      setBudgetItems(updated)
+      StorageService.saveBudgetItems(updated)
+
+      if (target) {
+        const activity: ActivityLogItem = {
+          id: `act-${Date.now()}`,
+          eventId: activeEvent.id,
+          type: 'budget-updated',
+          title: 'Budget Line Removed',
+          description: `Removed "${target.name}" from budget ledger.`,
+          timestamp: 'Just now',
+        }
+        StorageService.addActivity(activity)
+        setActivities(StorageService.getActivities())
+      }
+    },
+    [activeEvent, budgetItems],
+  )
+
+  const applyCostSavingAlternative = useCallback(
+    (itemId: string, newAmount: number, description: string) => {
+      if (!activeEvent) return
+      const safeNewAmt = sanitizeAmount(newAmount)
+      const target = budgetItems.find((i) => i.id === itemId)
+      if (!target) return
+
+      const savings = Math.max(0, target.allocatedAmount - safeNewAmt)
+      const updated = budgetItems.map((i) => {
+        if (i.id === itemId) {
+          return {
+            ...i,
+            allocatedAmount: safeNewAmt,
+            notes: i.notes ? `${i.notes} | Optimized: ${description}` : `Optimized: ${description}`,
+          }
+        }
+        return i
+      })
+
+      setBudgetItems(updated)
+      StorageService.saveBudgetItems(updated)
+
+      const activity: ActivityLogItem = {
+        id: `act-${Date.now()}`,
+        eventId: activeEvent.id,
+        type: 'budget-updated',
+        title: 'Cost Alternative Applied',
+        description: `Applied optimization to "${target.name}", saving $${savings.toLocaleString()}.`,
+        timestamp: 'Just now',
+      }
+      StorageService.addActivity(activity)
+      setActivities(StorageService.getActivities())
+    },
+    [activeEvent, budgetItems],
+  )
+
   // Add a newly created event with baseline data
   const addEvent = useCallback(
     (input: NewCelebrationInput): CelebrationEvent => {
@@ -212,13 +368,17 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         updatedAt: new Date().toISOString(),
       }
 
-      // Generate initial budget items
+      // Generate initial budget items with full cost status & tracking
       const initialBudgetItems: BudgetItem[] = [
         {
           id: `bgt-${eventId}-venue`,
           eventId,
           category: 'venue',
           name: 'Venue Rental & Facilities Fee',
+          costStatus: 'estimated',
+          estimatedAmount: Math.round(budget * 0.28),
+          quotedAmount: Math.round(budget * 0.28),
+          confirmedAmount: 0,
           allocatedAmount: Math.round(budget * 0.28),
           actualAmount: Math.round(budget * 0.28),
           paidAmount: 0,
@@ -228,8 +388,12 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         {
           id: `bgt-${eventId}-catering`,
           eventId,
-          category: 'catering-beverage',
+          category: 'catering',
           name: 'Catering, Beverages & Hospitality Service',
+          costStatus: 'estimated',
+          estimatedAmount: Math.round(budget * 0.32),
+          quotedAmount: Math.round(budget * 0.32),
+          confirmedAmount: 0,
           allocatedAmount: Math.round(budget * 0.32),
           actualAmount: Math.round(budget * 0.32),
           paidAmount: 0,
@@ -239,8 +403,12 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         {
           id: `bgt-${eventId}-decor`,
           eventId,
-          category: 'decor-floral',
+          category: 'decor',
           name: 'Floral Design, Lighting & Ambiance Styling',
+          costStatus: 'estimated',
+          estimatedAmount: Math.round(budget * 0.14),
+          quotedAmount: Math.round(budget * 0.14),
+          confirmedAmount: 0,
           allocatedAmount: Math.round(budget * 0.14),
           actualAmount: Math.round(budget * 0.14),
           paidAmount: 0,
@@ -252,6 +420,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           eventId,
           category: 'entertainment',
           name: 'Live Music, Sound & Entertainment Acts',
+          costStatus: 'estimated',
+          estimatedAmount: Math.round(budget * 0.09),
+          quotedAmount: Math.round(budget * 0.09),
+          confirmedAmount: 0,
           allocatedAmount: Math.round(budget * 0.09),
           actualAmount: Math.round(budget * 0.09),
           paidAmount: 0,
@@ -260,8 +432,12 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         {
           id: `bgt-${eventId}-media`,
           eventId,
-          category: 'photography-media',
+          category: 'photography',
           name: 'Photography, Video & Memory Keepsakes',
+          costStatus: 'estimated',
+          estimatedAmount: Math.round(budget * 0.09),
+          quotedAmount: Math.round(budget * 0.09),
+          confirmedAmount: 0,
           allocatedAmount: Math.round(budget * 0.09),
           actualAmount: Math.round(budget * 0.09),
           paidAmount: 0,
@@ -272,16 +448,20 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           eventId,
           category: 'contingency',
           name: 'Deterministic Contingency Buffer (8%)',
+          costStatus: 'confirmed',
+          estimatedAmount: Math.round(budget * 0.08),
+          quotedAmount: Math.round(budget * 0.08),
+          confirmedAmount: Math.round(budget * 0.08),
           allocatedAmount: Math.round(budget * 0.08),
           actualAmount: 0,
           paidAmount: 0,
           paymentStatus: 'planned',
           isContingency: true,
-          notes: 'Protected cushion against vendor surcharges and emergency changes',
+          notes: 'Protected safety cushion for supplier surcharges and unexpected shifts',
         },
       ]
 
-      // Generate initial timeline milestones
+      // Initial timeline milestones
       const initialTasks: TimelineTask[] = [
         {
           id: `task-${eventId}-1`,
@@ -432,6 +612,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addEvent,
     updateActiveEvent,
     updateTaskStatus,
+    addBudgetItem,
+    updateBudgetItem,
+    deleteBudgetItem,
+    applyCostSavingAlternative,
   }
 
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>

@@ -51,3 +51,4 @@ describe('DashboardView Component', () => {
     expect(screen.getByText(/Live Audit Trail/i)).toBeInTheDocument()
   })
 })
+
