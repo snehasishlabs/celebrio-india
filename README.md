@@ -122,7 +122,7 @@ npm run dev
 
 ### Automated Testing
 ```bash
-# Run Vitest test suite (131 tests across 21 suites)
+# Run Vitest test suite (137 tests across 22 suites)
 npm test
 ```
 
@@ -139,10 +139,11 @@ node server/index.ts
 
 ## 🧪 Test Coverage Summary
 
-- **21 Test Suites, 131 Tests Passing (100% pass rate)**
+- **22 Test Suites, 137 Tests Passing (100% pass rate)**
+- `server/__tests__/geminiFailures.test.ts`: Provider 429 quota exhaustion, 500 errors, malformed non-JSON recovery, schema recovery, and timeout handling.
 - `server/__tests__/validator.test.ts`: Bounded inputs, range constraints, rate limiting.
 - `server/__tests__/geminiService.test.ts`: Demo mode fallback, deterministic budget calculations, error & timeout recovery.
-- `server/__tests__/apiHandler.test.ts`: Health check, 200/400/404/413/429 status codes, security headers.
+- `server/__tests__/apiHandler.test.ts`: Health check, 200/400/404/413/429 status codes, security headers, malformed JSON bodies, payload size limits.
 - `src/services/ai/__tests__/aiPlanningService.test.ts`: Client fetch, network error recovery, offline fallbacks.
 - `src/features/ideas/__tests__/ThemeConceptsView.test.tsx`: Live vs Demo badge rendering, regeneration flow, concept selection.
 - `src/features/simulator/__tests__/SimulatorView.test.tsx`: What-if simulation, trade-off advisor, baseline restoration.
