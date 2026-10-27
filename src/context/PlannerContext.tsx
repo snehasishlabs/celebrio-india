@@ -15,6 +15,12 @@ import { StorageService } from '@/services/storage/storageService'
 import { SAMPLE_ALERTS } from '@/services/storage/sampleData'
 import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
 import { calculateBudgetSummary, sanitizeAmount } from '@/utils/budgetGuardian'
+import { generatePreparationTasks } from '@/utils/timelineEngine'
+import {
+  syncVendorToBudgetItems,
+  generateDefaultPaymentMilestones,
+  getVendorCategoryQuestions,
+} from '@/utils/vendorEngine'
 
 export type EventDetailTab =
   | 'overview'
@@ -50,11 +56,26 @@ interface PlannerContextType {
   resetWorkspace: () => void
   addEvent: (input: NewCelebrationInput) => CelebrationEvent
   updateActiveEvent: (updates: Partial<CelebrationEvent>) => void
+
+  // Timeline Task Operations
   updateTaskStatus: (taskId: string, isCompleted: boolean) => void
+  addTimelineTask: (task: Omit<TimelineTask, 'id' | 'eventId'>) => TimelineTask
+  updateTimelineTask: (taskId: string, updates: Partial<TimelineTask>) => void
+  deleteTimelineTask: (taskId: string) => void
+  reopenTimelineTask: (taskId: string) => void
+  regenerateTimelineTasks: () => void
+
+  // Budget Item Operations
   addBudgetItem: (item: Omit<BudgetItem, 'id' | 'eventId'>) => BudgetItem
   updateBudgetItem: (itemId: string, updates: Partial<BudgetItem>) => void
   deleteBudgetItem: (itemId: string) => void
   applyCostSavingAlternative: (itemId: string, newAmount: number, description: string) => void
+
+  // Vendor Operations
+  addVendor: (vendor: Omit<Vendor, 'id' | 'eventId'>) => Vendor
+  updateVendor: (vendorId: string, updates: Partial<Vendor>) => void
+  deleteVendor: (vendorId: string) => void
+  toggleMilestonePaid: (vendorId: string, milestoneId: string) => void
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined)
@@ -160,16 +181,18 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return t
       })
       setTimelineTasks(updatedTasks)
-      StorageService.saveTasks(updatedTasks)
+      StorageService.saveTasksForEvent(activeEvent.id, updatedTasks)
 
       const task = timelineTasks.find((t) => t.id === taskId)
-      if (task && isCompleted) {
+      if (task) {
         const activity: ActivityLogItem = {
           id: `act-${Date.now()}`,
           eventId: activeEvent.id,
           type: 'task-completed',
-          title: 'Milestone Completed',
-          description: `Completed task "${task.title}".`,
+          title: isCompleted ? 'Milestone Completed' : 'Milestone Reopened',
+          description: isCompleted
+            ? `Completed task "${task.title}".`
+            : `Reopened task "${task.title}" for active tracking.`,
           timestamp: 'Just now',
         }
         StorageService.addActivity(activity)
@@ -178,6 +201,130 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     },
     [activeEvent, timelineTasks],
   )
+
+  const reopenTimelineTask = useCallback(
+    (taskId: string) => {
+      updateTaskStatus(taskId, false)
+    },
+    [updateTaskStatus],
+  )
+
+  const addTimelineTask = useCallback(
+    (taskInput: Omit<TimelineTask, 'id' | 'eventId'>): TimelineTask => {
+      if (!activeEvent) throw new Error('No active event selected')
+
+      const newTask: TimelineTask = {
+        ...taskInput,
+        id: `task-${Date.now()}`,
+        eventId: activeEvent.id,
+        deadline: taskInput.deadline || taskInput.targetDate,
+        owner: taskInput.owner || taskInput.assignedTo,
+        status: taskInput.status || 'todo',
+        priority: taskInput.priority || 'medium',
+        isMilestone: taskInput.isMilestone ?? false,
+        isCriticalPath: taskInput.isCriticalPath ?? false,
+        dependencyIds: taskInput.dependencyIds || [],
+      }
+
+      const updated = [...timelineTasks, newTask]
+      setTimelineTasks(updated)
+      StorageService.saveTasksForEvent(activeEvent.id, updated)
+
+      const activity: ActivityLogItem = {
+        id: `act-${Date.now()}`,
+        eventId: activeEvent.id,
+        type: 'task-completed',
+        title: 'Timeline Task Added',
+        description: `Added "${newTask.title}" scheduled for ${newTask.targetDate || 'TBD'}.`,
+        timestamp: 'Just now',
+      }
+      StorageService.addActivity(activity)
+      setActivities(StorageService.getActivities())
+
+      return newTask
+    },
+    [activeEvent, timelineTasks],
+  )
+
+  const updateTimelineTask = useCallback(
+    (taskId: string, updates: Partial<TimelineTask>) => {
+      if (!activeEvent) return
+
+      const updated = timelineTasks.map((task) => {
+        if (task.id === taskId) {
+          const merged = { ...task, ...updates }
+          if (updates.targetDate) {
+            merged.deadline = updates.targetDate
+          }
+          if (updates.assignedTo) {
+            merged.owner = updates.assignedTo
+          }
+          return merged
+        }
+        return task
+      })
+
+      setTimelineTasks(updated)
+      StorageService.saveTasksForEvent(activeEvent.id, updated)
+
+      const target = updated.find((t) => t.id === taskId)
+      if (target) {
+        const activity: ActivityLogItem = {
+          id: `act-${Date.now()}`,
+          eventId: activeEvent.id,
+          type: 'task-completed',
+          title: 'Timeline Milestone Updated',
+          description: `Updated "${target.title}" (target date: ${target.targetDate}, status: ${target.status}).`,
+          timestamp: 'Just now',
+        }
+        StorageService.addActivity(activity)
+        setActivities(StorageService.getActivities())
+      }
+    },
+    [activeEvent, timelineTasks],
+  )
+
+  const deleteTimelineTask = useCallback(
+    (taskId: string) => {
+      if (!activeEvent) return
+      const target = timelineTasks.find((t) => t.id === taskId)
+      const updated = timelineTasks.filter((t) => t.id !== taskId)
+      setTimelineTasks(updated)
+      StorageService.saveTasksForEvent(activeEvent.id, updated)
+
+      if (target) {
+        const activity: ActivityLogItem = {
+          id: `act-${Date.now()}`,
+          eventId: activeEvent.id,
+          type: 'task-completed',
+          title: 'Milestone Removed',
+          description: `Removed task "${target.title}" from timeline schedule.`,
+          timestamp: 'Just now',
+        }
+        StorageService.addActivity(activity)
+        setActivities(StorageService.getActivities())
+      }
+    },
+    [activeEvent, timelineTasks],
+  )
+
+  const regenerateTimelineTasks = useCallback(() => {
+    if (!activeEvent) return
+    const regenerated = generatePreparationTasks(activeEvent)
+    setTimelineTasks(regenerated)
+    StorageService.saveTasksForEvent(activeEvent.id, regenerated)
+
+    const activity: ActivityLogItem = {
+      id: `act-${Date.now()}`,
+      eventId: activeEvent.id,
+      type: 'task-completed',
+      title: 'Timeline Recalibrated',
+      description: `Regenerated preparation milestones tailored to ${activeEvent.category} celebration date (${activeEvent.date || 'TBD'}).`,
+      timestamp: 'Just now',
+    }
+    StorageService.addActivity(activity)
+    setActivities(StorageService.getActivities())
+  }, [activeEvent])
 
   // Budget item management with instant recalculation
   const addBudgetItem = useCallback(
@@ -329,6 +476,154 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [activeEvent, budgetItems],
   )
 
+  const addVendor = useCallback(
+    (vendorInput: Omit<Vendor, 'id' | 'eventId'>): Vendor => {
+      if (!activeEvent) throw new Error('No active event selected')
+
+      const newVendorId = `ven-${Date.now()}`
+      const standardQuestions = getVendorCategoryQuestions(vendorInput.service)
+      const standardMilestones =
+        vendorInput.paymentMilestones && vendorInput.paymentMilestones.length > 0
+          ? vendorInput.paymentMilestones
+          : generateDefaultPaymentMilestones(vendorInput.quotedCost, activeEvent.date)
+
+      const newVendor: Vendor = {
+        ...vendorInput,
+        id: newVendorId,
+        eventId: activeEvent.id,
+        quotedCost: sanitizeAmount(vendorInput.quotedCost),
+        finalCost: vendorInput.finalCost ? sanitizeAmount(vendorInput.finalCost) : undefined,
+        depositAmount: sanitizeAmount(vendorInput.depositAmount),
+        depositPaid: vendorInput.depositPaid ?? false,
+        contractStatus: vendorInput.contractStatus || 'researching',
+        questionsToAsk: vendorInput.questionsToAsk || standardQuestions,
+        paymentMilestones: standardMilestones,
+      }
+
+      const updatedVendors = [...vendors, newVendor]
+      setVendors(updatedVendors)
+      StorageService.saveVendorsForEvent(activeEvent.id, updatedVendors)
+
+      // Synchronize with budget items
+      const syncedBudget = syncVendorToBudgetItems(newVendor, budgetItems)
+      setBudgetItems(syncedBudget)
+      StorageService.saveBudgetItemsForEvent(activeEvent.id, syncedBudget)
+
+      const activity: ActivityLogItem = {
+        id: `act-${Date.now()}`,
+        eventId: activeEvent.id,
+        type: 'vendor-contracted',
+        title: 'Vendor Added',
+        description: `Added ${newVendor.name || 'supplier'} (${newVendor.service}) with quoted cost of $${newVendor.quotedCost.toLocaleString()}.`,
+        timestamp: 'Just now',
+      }
+      StorageService.addActivity(activity)
+      setActivities(StorageService.getActivities())
+
+      return newVendor
+    },
+    [activeEvent, vendors, budgetItems],
+  )
+
+  const updateVendor = useCallback(
+    (vendorId: string, updates: Partial<Vendor>) => {
+      if (!activeEvent) return
+
+      let updatedVendorObj: Vendor | null = null
+      const updatedVendors = vendors.map((v) => {
+        if (v.id === vendorId) {
+          const merged: Vendor = {
+            ...v,
+            ...updates,
+            quotedCost: updates.quotedCost !== undefined ? sanitizeAmount(updates.quotedCost) : v.quotedCost,
+            finalCost: updates.finalCost !== undefined ? sanitizeAmount(updates.finalCost) : v.finalCost,
+            depositAmount: updates.depositAmount !== undefined ? sanitizeAmount(updates.depositAmount) : v.depositAmount,
+          }
+          updatedVendorObj = merged
+          return merged
+        }
+        return v
+      })
+
+      setVendors(updatedVendors)
+      StorageService.saveVendorsForEvent(activeEvent.id, updatedVendors)
+
+      if (updatedVendorObj) {
+        // Instant bidirectional synchronization with budget items
+        const syncedBudget = syncVendorToBudgetItems(updatedVendorObj, budgetItems)
+        setBudgetItems(syncedBudget)
+        StorageService.saveBudgetItemsForEvent(activeEvent.id, syncedBudget)
+
+        // Check if sync state changed
+        const summary = calculateBudgetSummary(activeEvent.totalBudget, syncedBudget)
+        const nextSyncState: SyncState = summary.isOverBudget ? 'drift-detected' : 'in-sync'
+        if (activeEvent.syncState !== nextSyncState) {
+          const updatedEvent: CelebrationEvent = { ...activeEvent, syncState: nextSyncState }
+          setEvents(events.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+          StorageService.saveEvents(events.map((e) => (e.id === activeEvent.id ? updatedEvent : e)))
+        }
+
+        const activity: ActivityLogItem = {
+          id: `act-${Date.now()}`,
+          eventId: activeEvent.id,
+          type: 'vendor-contracted',
+          title: 'Vendor Updated',
+          description: `Updated ${(updatedVendorObj as Vendor).name || 'vendor'} (${(updatedVendorObj as Vendor).contractStatus}). Budget commitments re-synchronized.`,
+          timestamp: 'Just now',
+        }
+        StorageService.addActivity(activity)
+        setActivities(StorageService.getActivities())
+      }
+    },
+    [activeEvent, vendors, budgetItems, events],
+  )
+
+  const deleteVendor = useCallback(
+    (vendorId: string) => {
+      if (!activeEvent) return
+      const target = vendors.find((v) => v.id === vendorId)
+      const updatedVendors = vendors.filter((v) => v.id !== vendorId)
+      setVendors(updatedVendors)
+      StorageService.saveVendorsForEvent(activeEvent.id, updatedVendors)
+
+      if (target) {
+        const activity: ActivityLogItem = {
+          id: `act-${Date.now()}`,
+          eventId: activeEvent.id,
+          type: 'vendor-contracted',
+          title: 'Vendor Removed',
+          description: `Removed vendor "${target.name || 'supplier'}" from portfolio.`,
+          timestamp: 'Just now',
+        }
+        StorageService.addActivity(activity)
+        setActivities(StorageService.getActivities())
+      }
+    },
+    [activeEvent, vendors],
+  )
+
+  const toggleMilestonePaid = useCallback(
+    (vendorId: string, milestoneId: string) => {
+      if (!activeEvent) return
+      const targetVendor = vendors.find((v) => v.id === vendorId)
+      if (!targetVendor || !targetVendor.paymentMilestones) return
+
+      const updatedMilestones = targetVendor.paymentMilestones.map((m) => {
+        if (m.id === milestoneId) {
+          return {
+            ...m,
+            isPaid: !m.isPaid,
+            paidDate: !m.isPaid ? new Date().toISOString().split('T')[0] : undefined,
+          }
+        }
+        return m
+      })
+
+      updateVendor(vendorId, { paymentMilestones: updatedMilestones })
+    },
+    [activeEvent, vendors, updateVendor],
+  )
+
   // Add a newly created event with baseline data
   const addEvent = useCallback(
     (input: NewCelebrationInput): CelebrationEvent => {
@@ -461,61 +756,8 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         },
       ]
 
-      // Initial timeline milestones
-      const initialTasks: TimelineTask[] = [
-        {
-          id: `task-${eventId}-1`,
-          eventId,
-          phase: 'concept-planning',
-          title: 'Secure Venue & Confirm Date Hold',
-          description: `Contract executed with ${input.venueName || 'venue'} in ${input.city}.`,
-          targetDate: input.date,
-          status: 'todo',
-          priority: 'critical',
-          isMilestone: true,
-          isCriticalPath: true,
-          dependencyIds: [],
-        },
-        {
-          id: `task-${eventId}-2`,
-          eventId,
-          phase: 'vendor-curation',
-          title: 'Review Personalized Theme Concepts & Menu Selections',
-          description: `Evaluate 3 tailored concepts based on ${input.category} preferences.`,
-          targetDate: input.date,
-          status: 'todo',
-          priority: 'high',
-          isMilestone: false,
-          isCriticalPath: true,
-          dependencyIds: [`task-${eventId}-1`],
-        },
-        {
-          id: `task-${eventId}-3`,
-          eventId,
-          phase: 'logistics-coordination',
-          title: 'Finalize Guest RSVP Headcount & Dietary Needs',
-          description: `Lock headcount for ${input.targetGuestCount} attendees with dietary requirements.`,
-          targetDate: input.date,
-          status: 'todo',
-          priority: 'critical',
-          isMilestone: true,
-          isCriticalPath: true,
-          dependencyIds: [`task-${eventId}-2`],
-        },
-        {
-          id: `task-${eventId}-4`,
-          eventId,
-          phase: 'day-of-execution',
-          title: `${input.title} Commencement`,
-          description: 'Commencement of celebration, guest reception, and scheduled programming.',
-          targetDate: input.date,
-          status: 'todo',
-          priority: 'critical',
-          isMilestone: true,
-          isCriticalPath: true,
-          dependencyIds: [`task-${eventId}-3`],
-        },
-      ]
+      // Initial timeline milestones generated dynamically from horizon & event category
+      const initialTasks: TimelineTask[] = generatePreparationTasks(newEvent)
 
       // Initial activity log
       const activity: ActivityLogItem = {
@@ -612,10 +854,19 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     addEvent,
     updateActiveEvent,
     updateTaskStatus,
+    addTimelineTask,
+    updateTimelineTask,
+    deleteTimelineTask,
+    reopenTimelineTask,
+    regenerateTimelineTasks,
     addBudgetItem,
     updateBudgetItem,
     deleteBudgetItem,
     applyCostSavingAlternative,
+    addVendor,
+    updateVendor,
+    deleteVendor,
+    toggleMilestonePaid,
   }
 
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>

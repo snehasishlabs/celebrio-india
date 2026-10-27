@@ -79,17 +79,17 @@ export const StorageService = {
     setRaw(STORAGE_KEYS.ACTIVE_EVENT_ID, id)
   },
 
-  getBudgetItems(eventId: string): BudgetItem[] {
+  getBudgetItems(eventId?: string): BudgetItem[] {
     const raw = getRaw(STORAGE_KEYS.BUDGET_ITEMS)
     if (!raw) {
       this.saveBudgetItems(SAMPLE_BUDGET_ITEMS)
-      return SAMPLE_BUDGET_ITEMS.filter((item) => item.eventId === eventId)
+      return eventId ? SAMPLE_BUDGET_ITEMS.filter((item) => item.eventId === eventId) : SAMPLE_BUDGET_ITEMS
     }
     try {
       const all = JSON.parse(raw) as BudgetItem[]
-      return all.filter((item) => item.eventId === eventId)
+      return eventId ? all.filter((item) => item.eventId === eventId) : all
     } catch {
-      return SAMPLE_BUDGET_ITEMS.filter((item) => item.eventId === eventId)
+      return eventId ? SAMPLE_BUDGET_ITEMS.filter((item) => item.eventId === eventId) : SAMPLE_BUDGET_ITEMS
     }
   },
 
@@ -97,17 +97,23 @@ export const StorageService = {
     setRaw(STORAGE_KEYS.BUDGET_ITEMS, JSON.stringify(items))
   },
 
-  getTasks(eventId: string): TimelineTask[] {
+  saveBudgetItemsForEvent(eventId: string, eventItems: BudgetItem[]): void {
+    const all = this.getBudgetItems()
+    const other = all.filter((item) => item.eventId !== eventId)
+    this.saveBudgetItems([...other, ...eventItems])
+  },
+
+  getTasks(eventId?: string): TimelineTask[] {
     const raw = getRaw(STORAGE_KEYS.TASKS)
     if (!raw) {
       this.saveTasks(SAMPLE_TIMELINE_TASKS)
-      return SAMPLE_TIMELINE_TASKS.filter((task) => task.eventId === eventId)
+      return eventId ? SAMPLE_TIMELINE_TASKS.filter((task) => task.eventId === eventId) : SAMPLE_TIMELINE_TASKS
     }
     try {
       const all = JSON.parse(raw) as TimelineTask[]
-      return all.filter((task) => task.eventId === eventId)
+      return eventId ? all.filter((task) => task.eventId === eventId) : all
     } catch {
-      return SAMPLE_TIMELINE_TASKS.filter((task) => task.eventId === eventId)
+      return eventId ? SAMPLE_TIMELINE_TASKS.filter((task) => task.eventId === eventId) : SAMPLE_TIMELINE_TASKS
     }
   },
 
@@ -115,22 +121,34 @@ export const StorageService = {
     setRaw(STORAGE_KEYS.TASKS, JSON.stringify(tasks))
   },
 
-  getVendors(eventId: string): Vendor[] {
+  saveTasksForEvent(eventId: string, eventTasks: TimelineTask[]): void {
+    const all = this.getTasks()
+    const other = all.filter((task) => task.eventId !== eventId)
+    this.saveTasks([...other, ...eventTasks])
+  },
+
+  getVendors(eventId?: string): Vendor[] {
     const raw = getRaw(STORAGE_KEYS.VENDORS)
     if (!raw) {
       this.saveVendors(SAMPLE_VENDORS)
-      return SAMPLE_VENDORS.filter((v) => v.eventId === eventId)
+      return eventId ? SAMPLE_VENDORS.filter((v) => v.eventId === eventId) : SAMPLE_VENDORS
     }
     try {
       const all = JSON.parse(raw) as Vendor[]
-      return all.filter((v) => v.eventId === eventId)
+      return eventId ? all.filter((v) => v.eventId === eventId) : all
     } catch {
-      return SAMPLE_VENDORS.filter((v) => v.eventId === eventId)
+      return eventId ? SAMPLE_VENDORS.filter((v) => v.eventId === eventId) : SAMPLE_VENDORS
     }
   },
 
   saveVendors(vendors: Vendor[]): void {
     setRaw(STORAGE_KEYS.VENDORS, JSON.stringify(vendors))
+  },
+
+  saveVendorsForEvent(eventId: string, eventVendors: Vendor[]): void {
+    const all = this.getVendors()
+    const other = all.filter((v) => v.eventId !== eventId)
+    this.saveVendors([...other, ...eventVendors])
   },
 
   getActivities(eventId?: string): ActivityLogItem[] {

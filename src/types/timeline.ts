@@ -10,6 +10,14 @@ export type TaskStatus = 'todo' | 'in-progress' | 'completed' | 'delayed' | 'blo
 
 export type TaskPriority = 'low' | 'medium' | 'high' | 'critical';
 
+export type PlanningHorizon =
+  | 'rush-7'
+  | 'sprint-30'
+  | 'standard-90'
+  | 'runway-180'
+  | 'past'
+  | 'undated';
+
 export interface TimelineTask {
   id: string;
   eventId: string;
@@ -17,14 +25,20 @@ export interface TimelineTask {
   title: string;
   description?: string;
   targetDate: string; // YYYY-MM-DD
+  deadline?: string; // Synonym for targetDate
   startTime?: string; // HH:MM
   durationMinutes?: number;
-  assignedTo?: string;
+  assignedTo?: string; // Optional owner
+  owner?: string; // Optional owner synonym
   status: TaskStatus;
   priority: TaskPriority;
   isMilestone: boolean;
   isCriticalPath: boolean;
   dependencyIds: string[];
+  linkedVendorId?: string;
+  linkedBudgetItemId?: string;
+  category?: string;
+  urgency?: 'overdue' | 'due-soon' | 'upcoming' | 'completed';
 }
 
 export interface ScheduleConflict {
