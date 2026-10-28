@@ -4,6 +4,8 @@ import {
   AIConceptGenerationResponse,
   AITradeoffExplanationRequest,
   AITradeoffExplanationResponse,
+  AICopilotTaskAdviceRequest,
+  AICopilotTaskAdviceResponse,
 } from '../src/types/ai'
 import { ThemeConcept, ConceptTier } from '../src/types/concept'
 import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
@@ -457,5 +459,189 @@ Return ONLY a valid JSON object matching this schema:
     }
   } catch {
     return getDeterministicTradeoff()
+  }
+}
+
+/**
+ * Generates culturally attuned, context-aware Copilot task explanations and strategic guidance.
+ */
+export async function explainUrgentTasksWithGemini(
+  request: AICopilotTaskAdviceRequest,
+): Promise<AICopilotTaskAdviceResponse> {
+  const now = new Date().toISOString()
+  const curr = request.currency === 'INR' ? '₹' : (request.currency === 'USD' ? '$' : request.currency)
+
+  const getDeterministicAdvice = (): AICopilotTaskAdviceResponse => {
+    const isBengali =
+      (request.traditions && request.traditions.some((t) => t.toLowerCase().includes('bengali') || t.toLowerCase().includes('biye'))) ||
+      request.eventTitle.toLowerCase().includes('bengali') ||
+      request.city?.toLowerCase() === 'kolkata'
+
+    const analyses = request.urgentTasks.slice(0, 4).map((task) => {
+      const lowerTitle = task.title.toLowerCase()
+      let whyItMatters = `This milestone is on the critical planning path. Delaying past the deadline causes downstream logistical bottlenecks.`
+      let recommendedAction = `Review supplier requirements, verify budget allocation, and finalize the agreement.`
+      let culturalContext = isBengali
+        ? `Ensure ceremony spaces and timing accommodate sacred ritual steps without rushed transitions.`
+        : undefined
+
+      if (lowerTitle.includes('venue') || lowerTitle.includes('contract') || lowerTitle.includes('deposit')) {
+        whyItMatters = `In ${request.city || 'prime metropolitan areas'}, high-demand celebration venues book up rapidly. Delaying contract finalization risks date loss or expensive emergency relocations.`
+        recommendedAction = `Execute the facility agreement and disburse the booking retainer to guarantee physical access and vendor load-in windows.`
+        if (isBengali) {
+          culturalContext = `Confirm sufficient open-air or courtyard space for Gaye Holud rituals and the traditional Saat Paake Ghaura sacred fire mandap.`
+        }
+      } else if (lowerTitle.includes('catering') || lowerTitle.includes('menu') || lowerTitle.includes('beverage')) {
+        whyItMatters = `Catering represents ~30-35% of total spend (${curr}${Math.round(request.totalBudget * 0.32).toLocaleString()} for ${request.targetGuestCount} guests). Locking the proposal early locks in per-plate pricing against ingredient inflation.`
+        recommendedAction = `Review menu courses, verify server staffing ratios, and confirm kitchen preparation facilities.`
+        if (isBengali) {
+          culturalContext = `Confirm authentic menu staples such as Bhetki Paturi/Machher Jhol, Kosha Mangsho, and traditional mishti (Rosogolla, Sandesh) prepared by certified halwais.`
+        }
+      } else if (lowerTitle.includes('photo') || lowerTitle.includes('video') || lowerTitle.includes('media')) {
+        whyItMatters = `Top photographers accept only one premier celebration per date. Unconfirmed dates lead to associate substitutions.`
+        recommendedAction = `Confirm key photographer names, hours of continuous coverage, and guaranteed delivery schedule.`
+        if (isBengali) {
+          culturalContext = `Specify coverage for emotional Shubho Drishti, Saat Paake Ghaura, Sindoor Daan, and Bou Bhaat family traditions.`
+        }
+      } else if (lowerTitle.includes('invitation') || lowerTitle.includes('rsvp')) {
+        whyItMatters = `Reliable RSVP headcount is required to prevent over-ordering catering plates or paying venue capacity penalties.`
+        recommendedAction = `Distribute digital invites with clear dietary and transit instructions, setting RSVP cutoff at 14 days prior.`
+      }
+
+      return {
+        taskId: task.id,
+        taskTitle: task.title,
+        urgencyLevel: (task.priority === 'critical' ? 'critical' : 'high') as 'critical' | 'high' | 'medium',
+        daysUntilDeadline: 7,
+        whyItMatters,
+        recommendedAction,
+        culturalContext,
+      }
+    })
+
+    return {
+      source: 'deterministic-demo',
+      model: 'demo-rule-engine',
+      headline: `Urgent Milestones & Cultural Roadmap for ${request.eventTitle}`,
+      strategicSummary: `With ${request.targetGuestCount} guests in ${request.city || 'your celebration city'} and a budget of ${curr}${request.totalBudget.toLocaleString()} scheduled ${request.eventDate ? 'soon' : 'in 30 days'}, your immediate focus is freezing the anchor contracts (venue & catering) while maintaining strict financial discipline.`,
+      urgentTaskAnalyses: analyses,
+      traditionAdvisories: isBengali
+        ? [
+            'Coordinate Gaye Holud styling with natural daytime lighting for vibrant photography.',
+            'Confirm Borjatri arrival protocol and entrance welcoming refreshments for the groom party.',
+            'Ensure sweet makers (Halwais) have dedicated setup for serving warm artisanal mishti.',
+          ]
+        : [
+            'Align arrival moments with welcoming hospitality to set an inviting tone.',
+            'Coordinate master run-of-show with lead coordinator and vendors.',
+          ],
+      budgetGuidance: `Strictly protect your ${curr}${Math.round(request.totalBudget * 0.08).toLocaleString()} (8%) contingency reserve. Never dip into this safety buffer for decorative upgrades.`,
+      suggestedNextSteps: [
+        `Execute venue contract to secure celebration date.`,
+        `Approve catering menu estimate for ${request.targetGuestCount} attendees.`,
+        `Distribute invitations to establish confirmed guest headcount.`,
+      ],
+      clarifyingQuestion:
+        'Have you finalized your mandap indoor/outdoor preference, or would you like recommendations on weather-buffered heritage venues?',
+      generatedAt: now,
+    }
+  }
+
+  if (!isGeminiConfigured()) {
+    return getDeterministicAdvice()
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+
+    const prompt = `You are Celebrio AI's Copilot, an expert celebration advisor specializing in Indian and regional cultural celebrations.
+A user is planning:
+- Title: "${request.eventTitle}" (${request.category})
+- Destination: ${request.city || 'Metropolitan City'}
+- Guests: ${request.targetGuestCount} attendees
+- Budget: ${curr}${request.totalBudget.toLocaleString()} (${request.currency})
+- Traditions/Ceremonies: ${request.traditions?.join(', ') || 'Traditional celebration'}
+- Date / Timeline Horizon: ${request.eventDate || '30 days sprint'}
+
+URGENT / CRITICAL TASKS:
+${request.urgentTasks.map((t) => `- [${t.priority.toUpperCase()}] ${t.title} (${t.status})`).join('\n')}
+
+USER QUERY:
+${request.query || 'Explain the most urgent tasks and provide cultural, timeline, and budget recommendations.'}
+
+INSTRUCTIONS:
+1. Reference the exact event context (city, guest count, budget, traditions).
+2. Explain *why* each urgent task matters, specific risks of delay, and the concrete recommended action.
+3. Incorporate authentic cultural guidance (e.g. for Bengali weddings: Gaye Holud, Saat Paake Ghaura, Kosha Mangsho/Mishti catering, venue capacity).
+4. Strictly protect the contingency reserve (8%).
+5. Keep advice concise, non-generic, and free of fluff.
+6. Ask at most one necessary clarifying question.
+
+Return ONLY a valid JSON object matching this schema:
+{
+  "headline": string,
+  "strategicSummary": string,
+  "urgentTaskAnalyses": [
+    {
+      "taskId": string,
+      "taskTitle": string,
+      "urgencyLevel": "critical" | "high" | "medium",
+      "daysUntilDeadline": number,
+      "whyItMatters": string,
+      "recommendedAction": string,
+      "culturalContext": string
+    }
+  ],
+  "traditionAdvisories": [string, string],
+  "budgetGuidance": string,
+  "suggestedNextSteps": [string, string, string],
+  "clarifyingQuestion": string
+}`
+
+    const response = await Promise.race([
+      ai.models.generateContent({
+        model: MODEL_NAME,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          temperature: 0.5,
+        },
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('AI_TIMEOUT: Copilot advice timed out')), TIMEOUT_MS),
+      ),
+    ])
+
+    const text = cleanJsonOutput(response.text || '')
+    const parsed = JSON.parse(text)
+
+    return {
+      source: 'gemini-live',
+      model: MODEL_NAME,
+      headline: String(parsed.headline || `Urgent Milestones for ${request.eventTitle}`).slice(0, 150),
+      strategicSummary: String(parsed.strategicSummary || 'Strategic roadmap generated.').slice(0, 350),
+      urgentTaskAnalyses: Array.isArray(parsed.urgentTaskAnalyses)
+        ? parsed.urgentTaskAnalyses.slice(0, 5).map((a: any, idx: number) => ({
+            taskId: String(a.taskId || request.urgentTasks[idx]?.id || `task-${idx}`).slice(0, 64),
+            taskTitle: String(a.taskTitle || request.urgentTasks[idx]?.title || 'Milestone').slice(0, 150),
+            urgencyLevel: ['critical', 'high', 'medium'].includes(a.urgencyLevel) ? a.urgencyLevel : 'high',
+            daysUntilDeadline: Number(a.daysUntilDeadline) || 7,
+            whyItMatters: String(a.whyItMatters || 'Critical path requirement.').slice(0, 250),
+            recommendedAction: String(a.recommendedAction || 'Execute immediately.').slice(0, 200),
+            culturalContext: typeof a.culturalContext === 'string' ? a.culturalContext.slice(0, 200) : undefined,
+          }))
+        : getDeterministicAdvice().urgentTaskAnalyses,
+      traditionAdvisories: Array.isArray(parsed.traditionAdvisories)
+        ? parsed.traditionAdvisories.slice(0, 4).map((t: any) => String(t).slice(0, 150))
+        : getDeterministicAdvice().traditionAdvisories,
+      budgetGuidance: String(parsed.budgetGuidance || getDeterministicAdvice().budgetGuidance).slice(0, 250),
+      suggestedNextSteps: Array.isArray(parsed.suggestedNextSteps)
+        ? parsed.suggestedNextSteps.slice(0, 4).map((s: any) => String(s).slice(0, 150))
+        : getDeterministicAdvice().suggestedNextSteps,
+      clarifyingQuestion: typeof parsed.clarifyingQuestion === 'string' ? parsed.clarifyingQuestion.slice(0, 180) : undefined,
+      generatedAt: now,
+    }
+  } catch {
+    return getDeterministicAdvice()
   }
 }

@@ -4,6 +4,7 @@ import { Header } from './Header'
 import { MobileNav } from './MobileNav'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { CreateEventModal } from '@/features/events/CreateEventModal'
+import { AICopilotModal } from '@/features/copilot/AICopilotModal'
 import { usePlanner } from '@/context/PlannerContext'
 
 export interface ShellProps {
@@ -28,6 +29,9 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
         isOpen={isCreateEventOpen}
         onClose={() => setIsCreateEventOpen(false)}
       />
+
+      {/* AI Copilot Advisor */}
+      <AICopilotModal />
 
       {/* Mobile Drawer */}
       <MobileNav />

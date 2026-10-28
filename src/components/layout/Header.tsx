@@ -1,5 +1,5 @@
 import React from 'react'
-import { Menu, CheckCircle2, RefreshCw, Calendar, Sparkles, Plus } from 'lucide-react'
+import { Menu, CheckCircle2, RefreshCw, Calendar, Sparkles, Plus, Bot } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Button } from '@/components/common/Button'
 import { Badge } from '@/components/common/Badge'
@@ -14,6 +14,7 @@ export const Header: React.FC = () => {
     triggerManualSync,
     setCurrentSection,
     setIsCreateEventOpen,
+    setIsCopilotOpen,
   } = usePlanner()
 
   // Calculate days remaining
@@ -88,6 +89,19 @@ export const Header: React.FC = () => {
             </>
           )}
         </button>
+
+        {/* AI Copilot Button */}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => setIsCopilotOpen(true)}
+          leftIcon={<Bot className="w-3.5 h-3.5 text-forest-700" />}
+          className="border-forest-300 bg-forest-50/70 hover:bg-forest-100 text-forest-900 font-semibold"
+          aria-label="Open Celebrio AI Copilot"
+        >
+          <span className="hidden sm:inline">AI Copilot</span>
+          <span className="sm:hidden">Copilot</span>
+        </Button>
 
         {/* Quick Simulator CTA */}
         <Button

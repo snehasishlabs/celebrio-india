@@ -180,6 +180,54 @@ describe('Server API Request Handler (apiHandler.ts)', () => {
     })
   })
 
+  describe('POST /api/copilot/explain-urgent-tasks', () => {
+    it('returns 200 with Copilot urgent task analyses and cultural advice', async () => {
+      const payload = {
+        eventId: 'ev-bengali-kolkata',
+        eventTitle: "Ananya & Debabrata's Bengali Wedding",
+        category: 'wedding',
+        city: 'Kolkata',
+        eventDate: '2026-11-28',
+        targetGuestCount: 150,
+        totalBudget: 300000,
+        currency: 'INR',
+        traditions: ['bengali-biye'],
+        urgentTasks: [
+          {
+            id: 't-1',
+            title: 'Execute Venue Contract & Transmit Deposit',
+            deadline: '2026-11-04',
+            isCriticalPath: true,
+            priority: 'critical',
+            phase: 'concept-planning',
+            status: 'todo',
+          },
+          {
+            id: 't-2',
+            title: 'Secure Primary Catering & Beverage Proposal',
+            deadline: '2026-11-08',
+            isCriticalPath: true,
+            priority: 'critical',
+            phase: 'vendor-curation',
+            status: 'todo',
+          },
+        ],
+      }
+
+      const req = createMockReq('POST', '/api/copilot/explain-urgent-tasks', payload)
+      const { res, getStatusCode, getJsonBody } = createMockRes()
+
+      const handled = await handleApiRequest(req, res)
+      expect(handled).toBe(true)
+      expect(getStatusCode()).toBe(200)
+
+      const body = getJsonBody()
+      expect(body.headline).toBeDefined()
+      expect(body.urgentTaskAnalyses.length).toBeGreaterThan(0)
+      expect(body.budgetGuidance).toBeDefined()
+    })
+  })
+
   describe('Unmatched routes', () => {
     it('returns 404 for unknown /api/* endpoints', async () => {
       const req = createMockReq('GET', '/api/unknown-endpoint')

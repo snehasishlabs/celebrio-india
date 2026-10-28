@@ -13,6 +13,7 @@ import {
   Trash2,
   AlertCircle,
   Info,
+  Sparkles,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { TimelineTask, TaskPriority, TimelinePhase } from '@/types/timeline'
@@ -40,6 +41,7 @@ export const TimelineView: React.FC = () => {
     addTimelineTask,
     deleteTimelineTask,
     regenerateTimelineTasks,
+    openCopilotWithQuery,
   } = usePlanner()
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'critical' | 'completed'>('all')
@@ -195,6 +197,17 @@ export const TimelineView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => openCopilotWithQuery('Explain the most urgent tasks')}
+            leftIcon={<Sparkles className="w-3.5 h-3.5 text-gold-600" />}
+            className="border-gold-300 bg-gold-50/80 hover:bg-gold-100 text-charcoal-900 font-semibold shadow-2xs"
+          >
+            Ask AI Copilot
+          </Button>
+
           <Button
             type="button"
             variant="secondary"
@@ -361,6 +374,17 @@ export const TimelineView: React.FC = () => {
             Completed ({stats.completed})
           </button>
         </div>
+
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => openCopilotWithQuery('Explain the most urgent tasks')}
+          leftIcon={<Sparkles className="w-3.5 h-3.5 text-gold-600" />}
+          className="text-xs font-semibold border-gold-300 bg-gold-50/70 hover:bg-gold-100 text-charcoal-900"
+        >
+          Ask AI Copilot to Explain Urgent Tasks
+        </Button>
       </div>
 
       {/* 6. Milestone List / Roadmap Cards */}

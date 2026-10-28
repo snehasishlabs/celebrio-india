@@ -1,6 +1,16 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { isGeminiConfigured, generateConceptsWithGemini, explainTradeoffsWithGemini } from './geminiService'
-import { validateConceptRequest, validateTradeoffRequest, RateLimiter } from './validator'
+import {
+  isGeminiConfigured,
+  generateConceptsWithGemini,
+  explainTradeoffsWithGemini,
+  explainUrgentTasksWithGemini,
+} from './geminiService'
+import {
+  validateConceptRequest,
+  validateTradeoffRequest,
+  validateCopilotTaskAdviceRequest,
+  RateLimiter,
+} from './validator'
 
 const MAX_BODY_BYTES = 64 * 1024 // 64 KB maximum request size to avoid DoS
 const rateLimiter = new RateLimiter(30, 60000) // 30 requests per minute
@@ -148,6 +158,38 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
       }
 
       const result = await explainTradeoffsWithGemini(validation.sanitized)
+      sendJson(res, 200, result)
+      return true
+    }
+
+    // 4. AI Copilot: Explain Urgent Tasks & Recommendations
+    if (url === '/api/copilot/explain-urgent-tasks' && method === 'POST') {
+      const rate = rateLimiter.check(clientIp)
+      if (!rate.allowed) {
+        sendJson(
+          res,
+          429,
+          {
+            error: 'Rate limit exceeded.',
+            retryAfterSeconds: rate.retryAfterSeconds,
+          },
+          { 'Retry-After': String(rate.retryAfterSeconds || 60) },
+        )
+        return true
+      }
+
+      const body = await readJsonBody(req)
+      const validation = validateCopilotTaskAdviceRequest(body)
+
+      if (!validation.isValid || !validation.sanitized) {
+        sendJson(res, 400, {
+          error: 'Invalid Copilot request parameters',
+          details: validation.errors,
+        })
+        return true
+      }
+
+      const result = await explainUrgentTasksWithGemini(validation.sanitized)
       sendJson(res, 200, result)
       return true
     }

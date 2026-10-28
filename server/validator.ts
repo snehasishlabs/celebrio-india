@@ -1,4 +1,8 @@
-import { AIConceptGenerationRequest, AITradeoffExplanationRequest } from '../src/types/ai'
+import {
+  AIConceptGenerationRequest,
+  AITradeoffExplanationRequest,
+  AICopilotTaskAdviceRequest,
+} from '../src/types/ai'
 
 const ALLOWED_CATEGORIES = new Set(['wedding', 'birthday', 'anniversary', 'community'])
 
@@ -190,6 +194,93 @@ export function validateTradeoffRequest(body: unknown): ValidationResult<AITrade
       affectedCategories: Array.isArray(data.affectedCategories)
         ? data.affectedCategories.slice(0, 15).map((c) => String(c).slice(0, 40))
         : [],
+    },
+  }
+}
+
+/**
+ * Validates Copilot task advice requests.
+ */
+export function validateCopilotTaskAdviceRequest(body: unknown): ValidationResult<AICopilotTaskAdviceRequest> {
+  const errors: string[] = []
+
+  if (!body || typeof body !== 'object') {
+    return { isValid: false, errors: ['Request body must be a valid JSON object'] }
+  }
+
+  const data = body as Record<string, unknown>
+
+  // eventId
+  const rawEventId = data.eventId
+  if (typeof rawEventId !== 'string' || !rawEventId.trim()) {
+    errors.push('eventId is required and must be a non-empty string')
+  }
+
+  // eventTitle
+  const rawTitle = data.eventTitle || data.title
+  if (typeof rawTitle !== 'string' || !rawTitle.trim()) {
+    errors.push('eventTitle is required')
+  }
+
+  // category
+  const rawCategory = data.category
+  if (typeof rawCategory !== 'string' || !ALLOWED_CATEGORIES.has(rawCategory)) {
+    errors.push("category must be one of: 'wedding', 'birthday', 'anniversary', 'community'")
+  }
+
+  // targetGuestCount
+  const rawGuestCount = data.targetGuestCount
+  if (typeof rawGuestCount !== 'number' || rawGuestCount < 1) {
+    errors.push('targetGuestCount must be a positive integer')
+  }
+
+  // totalBudget
+  const rawBudget = data.totalBudget
+  if (typeof rawBudget !== 'number' || rawBudget < 100) {
+    errors.push('totalBudget must be a finite number of at least 100')
+  }
+
+  if (errors.length > 0) {
+    return { isValid: false, errors }
+  }
+
+  // Urgent tasks sanitization (limit to top 15 tasks)
+  const rawTasks = Array.isArray(data.urgentTasks) ? data.urgentTasks : []
+  const sanitizedTasks = rawTasks.slice(0, 15).map((t: any) => ({
+    id: String(t.id || '').slice(0, 64),
+    title: String(t.title || 'Task').slice(0, 150),
+    deadline: typeof t.deadline === 'string' ? t.deadline.slice(0, 30) : undefined,
+    isCriticalPath: Boolean(t.isCriticalPath),
+    priority: String(t.priority || 'medium').slice(0, 20),
+    phase: String(t.phase || 'concept-planning').slice(0, 40),
+    status: String(t.status || 'todo').slice(0, 20),
+  }))
+
+  const rawTraditions = Array.isArray(data.traditions) ? data.traditions.slice(0, 10).map((t) => String(t).slice(0, 50)) : []
+  const rawBudgetItems = Array.isArray(data.budgetItems)
+    ? data.budgetItems.slice(0, 15).map((b: any) => ({
+        category: String(b.category || 'general').slice(0, 40),
+        allocatedAmount: Number(b.allocatedAmount) || 0,
+        costStatus: String(b.costStatus || 'estimated').slice(0, 20),
+      }))
+    : undefined
+
+  return {
+    isValid: true,
+    errors: [],
+    sanitized: {
+      eventId: String(rawEventId).slice(0, 64),
+      eventTitle: String(rawTitle).slice(0, 120),
+      category: String(rawCategory),
+      city: typeof data.city === 'string' ? data.city.slice(0, 80) : undefined,
+      eventDate: typeof data.eventDate === 'string' ? data.eventDate.slice(0, 30) : undefined,
+      targetGuestCount: Number(rawGuestCount) || 1,
+      totalBudget: Number(rawBudget) || 1000,
+      currency: typeof data.currency === 'string' ? data.currency.slice(0, 5) : 'INR',
+      traditions: rawTraditions,
+      urgentTasks: sanitizedTasks,
+      budgetItems: rawBudgetItems,
+      query: typeof data.query === 'string' ? data.query.slice(0, 300) : undefined,
     },
   }
 }

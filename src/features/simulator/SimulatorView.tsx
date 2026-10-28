@@ -169,7 +169,9 @@ export const SimulatorView: React.FC = () => {
   }
 
   // Preset Scenario Handlers
-  const handleApplyPreset = (preset: 'cut-15' | 'surge-30' | 'compress-date' | 'expand-budget') => {
+  const handleApplyPreset = (
+    preset: 'cut-15' | 'surge-30' | 'compress-date' | 'expand-budget' | 'demo-bengali-180-240',
+  ) => {
     switch (preset) {
       case 'cut-15':
         setTotalBudget(Math.round(activeEvent.totalBudget * 0.85))
@@ -185,6 +187,10 @@ export const SimulatorView: React.FC = () => {
       }
       case 'expand-budget':
         setTotalBudget(Math.round(activeEvent.totalBudget * 1.2))
+        break
+      case 'demo-bengali-180-240':
+        setTotalBudget(240000)
+        setGuestCount(180)
         break
     }
   }
@@ -322,10 +328,24 @@ export const SimulatorView: React.FC = () => {
 
       {/* 4. Interactive Sandbox Controls */}
       <Card variant="default" className="p-5 sm:p-6 space-y-5 border-forest-200">
-        <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-forest-700" />
-          <span>Interactive Constraint Controls</span>
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+            <SlidersHorizontal className="w-4 h-4 text-forest-700" />
+            <span>Interactive Constraint Controls</span>
+          </h3>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => handleApplyPreset('demo-bengali-180-240')}
+              className="text-xs font-semibold border-terracotta-300 bg-terracotta-50/80 hover:bg-terracotta-100 text-terracotta-900 shadow-2xs"
+            >
+              Simulate 180 Guests &amp; {formatCurrency(240000, currency)}
+            </Button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Control 1: Total Budget */}

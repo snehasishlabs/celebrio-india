@@ -92,3 +92,53 @@ export interface AIServerHealthResponse {
   mode: 'live' | 'demo'
   version: string
 }
+
+export interface AICopilotUrgentTaskAnalysis {
+  taskId: string
+  taskTitle: string
+  urgencyLevel: 'critical' | 'high' | 'medium'
+  daysUntilDeadline: number
+  whyItMatters: string
+  recommendedAction: string
+  culturalContext?: string
+}
+
+export interface AICopilotTaskAdviceRequest {
+  eventId: string
+  eventTitle: string
+  category: string
+  city?: string
+  eventDate?: string
+  targetGuestCount: number
+  totalBudget: number
+  currency: string
+  traditions?: string[]
+  urgentTasks: Array<{
+    id: string
+    title: string
+    deadline?: string
+    isCriticalPath: boolean
+    priority: string
+    phase: string
+    status: string
+  }>
+  budgetItems?: Array<{
+    category: string
+    allocatedAmount: number
+    costStatus: string
+  }>
+  query?: string
+}
+
+export interface AICopilotTaskAdviceResponse {
+  source: AIPlanningSource
+  model: string
+  headline: string
+  strategicSummary: string
+  urgentTaskAnalyses: AICopilotUrgentTaskAnalysis[]
+  traditionAdvisories: string[]
+  budgetGuidance: string
+  suggestedNextSteps: string[]
+  clarifyingQuestion?: string
+  generatedAt: string
+}

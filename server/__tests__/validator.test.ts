@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { validateConceptRequest, validateTradeoffRequest, RateLimiter } from '../validator'
+import {
+  validateConceptRequest,
+  validateTradeoffRequest,
+  validateCopilotTaskAdviceRequest,
+  RateLimiter,
+} from '../validator'
 
 describe('Server Request Validation (validator.ts)', () => {
   describe('validateConceptRequest', () => {
@@ -113,6 +118,46 @@ describe('Server Request Validation (validator.ts)', () => {
 
       const missingDeltas = validateTradeoffRequest({ ...validTradeoff, deltas: null })
       expect(missingDeltas.isValid).toBe(false)
+    })
+  })
+
+  describe('validateCopilotTaskAdviceRequest', () => {
+    const validCopilotPayload = {
+      eventId: 'ev-test-1',
+      eventTitle: "Aarav & Diya's Sangeet Night",
+      category: 'wedding',
+      city: 'Jaipur',
+      eventDate: '2026-11-20',
+      targetGuestCount: 200,
+      totalBudget: 800000,
+      currency: 'INR',
+      traditions: ['punjabi-sangeet'],
+      urgentTasks: [
+        {
+          id: 'task-1',
+          title: 'Book Dhol Players & Sound Rigging',
+          deadline: '2026-11-05',
+          isCriticalPath: true,
+          priority: 'critical',
+          phase: 'vendor-curation',
+          status: 'todo',
+        },
+      ],
+    }
+
+    it('validates a compliant copilot advice request successfully', () => {
+      const res = validateCopilotTaskAdviceRequest(validCopilotPayload)
+      expect(res.isValid).toBe(true)
+      expect(res.errors).toHaveLength(0)
+      expect(res.sanitized?.eventTitle).toBe("Aarav & Diya's Sangeet Night")
+      expect(res.sanitized?.currency).toBe('INR')
+      expect(res.sanitized?.urgentTasks).toHaveLength(1)
+    })
+
+    it('rejects requests with missing eventId or invalid category', () => {
+      const res = validateCopilotTaskAdviceRequest({ ...validCopilotPayload, eventId: '', category: 'invalid' })
+      expect(res.isValid).toBe(false)
+      expect(res.errors.length).toBeGreaterThanOrEqual(2)
     })
   })
 

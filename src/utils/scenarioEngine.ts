@@ -44,6 +44,7 @@ export function simulateScenario(
   referenceDate: Date = new Date(),
 ): ScenarioSimulationResult {
   const refMidnight = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate())
+  const currSym = originalEvent.currency === 'INR' ? '₹' : (originalEvent.currency === 'EUR' ? '€' : (originalEvent.currency === 'GBP' ? '£' : '$'))
 
   // 1. Core Parameter Deltas
   const originalBudget = sanitizeAmount(originalEvent.totalBudget)
@@ -111,9 +112,9 @@ export function simulateScenario(
 
     let notes = 'Allocation remains aligned.'
     if (variance > 0) {
-      notes = `Scales +$${variance.toLocaleString()} due to ${proposedGuests} guests headcount.`
+      notes = `Scales +${currSym}${variance.toLocaleString()} due to ${proposedGuests} guests headcount.`
     } else if (variance < 0) {
-      notes = `Reduced by $${Math.abs(variance).toLocaleString()} to fit adjusted target.`
+      notes = `Reduced by ${currSym}${Math.abs(variance).toLocaleString()} to fit adjusted target.`
     }
 
     return {
@@ -284,7 +285,7 @@ export function simulateScenario(
 
   if (proposedSummary.isOverBudget) {
     infeasibilityReasons.push(
-      `Budget Deficit: Proposed allocations exceed spending ceiling by $${Math.abs(
+      `Budget Deficit: Proposed allocations exceed spending ceiling by ${currSym}${Math.abs(
         proposedSummary.remainingBalance,
       ).toLocaleString()}.`,
     )
@@ -344,11 +345,11 @@ export function simulateScenario(
   }
 
   // Generate clear summary
-  let summary = `Scenario changes budget by ${budgetDelta >= 0 ? '+' : ''}$${budgetDelta.toLocaleString()} and guest count by ${guestCountDelta >= 0 ? '+' : ''}${guestCountDelta}.`
+  let summary = `Scenario changes budget by ${budgetDelta >= 0 ? '+' : ''}${currSym}${budgetDelta.toLocaleString()} and guest count by ${guestCountDelta >= 0 ? '+' : ''}${guestCountDelta}.`
   if (proposedSummary.isOverBudget) {
-    summary += ` Warning: results in $${Math.abs(proposedSummary.remainingBalance).toLocaleString()} overspend.`
+    summary += ` Warning: results in ${currSym}${Math.abs(proposedSummary.remainingBalance).toLocaleString()} overspend.`
   } else {
-    summary += ` Plan remains mathematically balanced with $${proposedSummary.remainingBalance.toLocaleString()} remaining headroom.`
+    summary += ` Plan remains mathematically balanced with ${currSym}${proposedSummary.remainingBalance.toLocaleString()} remaining headroom.`
   }
 
   return {

@@ -19,7 +19,7 @@ import { StorageService } from '@/services/storage/storageService'
 import { SAMPLE_ALERTS } from '@/services/storage/sampleData'
 import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
 import { generateCelebrationConcepts, fetchServerHealth } from '@/services/ai/aiPlanningService'
-import { calculateBudgetSummary, sanitizeAmount } from '@/utils/budgetGuardian'
+import { calculateBudgetSummary, sanitizeAmount, formatCurrency } from '@/utils/budgetGuardian'
 import { generatePreparationTasks, addDays } from '@/utils/timelineEngine'
 import {
   syncVendorToBudgetItems,
@@ -89,6 +89,12 @@ interface PlannerContextType {
 
   // Adaptive Scenario Simulator
   applyScenario: (input: ScenarioInput, result: ScenarioSimulationResult) => void
+
+  // AI Copilot
+  isCopilotOpen: boolean
+  setIsCopilotOpen: (open: boolean) => void
+  copilotInitialQuery: string
+  openCopilotWithQuery: (query: string) => void
 }
 
 const PlannerContext = createContext<PlannerContextType | undefined>(undefined)
@@ -119,6 +125,13 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [aiPlanningSource, setAiPlanningSource] = useState<AIPlanningSource>('deterministic-demo')
   const [aiModelName, setAiModelName] = useState<string>('demo-rule-engine')
   const [isGeneratingIdeas, setIsGeneratingIdeas] = useState<boolean>(false)
+  const [isCopilotOpen, setIsCopilotOpen] = useState<boolean>(false)
+  const [copilotInitialQuery, setCopilotInitialQuery] = useState<string>('')
+
+  const openCopilotWithQuery = useCallback((query: string) => {
+    setCopilotInitialQuery(query)
+    setIsCopilotOpen(true)
+  }, [])
 
   // Probe server configuration mode on mount
   useEffect(() => {
@@ -821,13 +834,117 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       // Initial timeline milestones generated dynamically from horizon & event category
       const initialTasks: TimelineTask[] = generatePreparationTasks(newEvent)
 
+      // Initial structured vendor checklists matching event budget allocations
+      const currSym = input.currency === 'INR' ? '₹' : (input.currency === 'USD' ? '$' : input.currency || '₹')
+      const initialVendors: Vendor[] = [
+        {
+          id: `ven-${eventId}-venue`,
+          eventId,
+          name: input.venueName.trim() || 'Heritage Banquet & Mandap Space Candidate',
+          service: 'venue',
+          estimatedCost: Math.round(budget * 0.28),
+          quotedCost: Math.round(budget * 0.28),
+          depositAmount: 0,
+          depositPaid: false,
+          contractStatus: 'researching',
+          comparisonNotes: `Candidate evaluation for ${input.city || 'local'} venue hold. Capacity target: ${input.targetGuestCount} guests.`,
+          questionsToAsk: [
+            'What is the sound and celebration curfew?',
+            'Is open sacred flame (havan/mandap fire) permitted on premises?',
+            'Are outside regional culinary caterers and halwais permitted?',
+          ],
+          contractReminders: 'Premier venue holds typically require 50% deposit upon contract signing.',
+          backupOption: { name: 'Secondary heritage courtyard on standby' },
+          paymentMilestones: [],
+          linkedBudgetItemId: `bgt-${eventId}-venue`,
+        },
+        {
+          id: `ven-${eventId}-catering`,
+          eventId,
+          name: 'Traditional Feast & Sweet Artisans (Halwai)',
+          service: 'catering',
+          estimatedCost: Math.round(budget * 0.32),
+          quotedCost: Math.round(budget * 0.32),
+          depositAmount: 0,
+          depositPaid: false,
+          contractStatus: 'researching',
+          comparisonNotes: `Catering planning for ${input.targetGuestCount} guests (~${currSym}${Math.round((budget * 0.32) / Math.max(1, input.targetGuestCount))}/head).`,
+          questionsToAsk: [
+            'What is the dedicated server-to-guest ratio for live counters?',
+            'Are on-site halwais included for fresh warm dessert service?',
+            'When is the non-negotiable guest count lock date?',
+          ],
+          contractReminders: 'Final headcount lock required 14 days before celebration.',
+          backupOption: { name: 'Alternative catering banquet partner' },
+          paymentMilestones: [],
+          linkedBudgetItemId: `bgt-${eventId}-catering`,
+        },
+        {
+          id: `ven-${eventId}-decor`,
+          eventId,
+          name: 'Mandap, Tattwa & Ambiance Stylist',
+          service: 'florals-decor',
+          estimatedCost: Math.round(budget * 0.14),
+          quotedCost: Math.round(budget * 0.14),
+          depositAmount: 0,
+          depositPaid: false,
+          contractStatus: 'researching',
+          comparisonNotes: 'Architectural floral canopy, stage backdrops, and traditional ceremonial trays.',
+          questionsToAsk: [
+            'Are brass vessels, hurricane lamps, and arches included in rental costs?',
+            'What is the teardown schedule after midnight?',
+          ],
+          contractReminders: 'Wholesale flower orders locked 14 days prior.',
+          paymentMilestones: [],
+          linkedBudgetItemId: `bgt-${eventId}-decor`,
+        },
+        {
+          id: `ven-${eventId}-photo`,
+          eventId,
+          name: 'Cinema & Portrait Documentation Team',
+          service: 'photography-video',
+          estimatedCost: Math.round(budget * 0.09),
+          quotedCost: Math.round(budget * 0.09),
+          depositAmount: 0,
+          depositPaid: false,
+          contractStatus: 'researching',
+          comparisonNotes: 'Full-day coverage across morning rituals and evening reception.',
+          questionsToAsk: [
+            'Will the named lead photographer shoot the main ceremonies?',
+            'What is the turnaround window for teaser photos and master gallery?',
+          ],
+          contractReminders: 'Date reservation retainer is non-refundable upon booking.',
+          paymentMilestones: [],
+          linkedBudgetItemId: `bgt-${eventId}-media`,
+        },
+        {
+          id: `ven-${eventId}-music`,
+          eventId,
+          name: 'Traditional Shehnai & Cultural Ensemble',
+          service: 'live-music-dj',
+          estimatedCost: Math.round(budget * 0.09),
+          quotedCost: Math.round(budget * 0.09),
+          depositAmount: 0,
+          depositPaid: false,
+          contractStatus: 'researching',
+          comparisonNotes: 'Morning auspicious acoustic shehnai and evening celebration sound.',
+          questionsToAsk: [
+            'What are electrical circuit and microphone requirements?',
+            'Is master of ceremonies (MC) coordination included?',
+          ],
+          contractReminders: 'Artist booking requires 50% retainer.',
+          paymentMilestones: [],
+          linkedBudgetItemId: `bgt-${eventId}-entertainment`,
+        },
+      ]
+
       // Initial activity log
       const activity: ActivityLogItem = {
         id: `act-${Date.now()}`,
         eventId,
         type: 'event-created',
         title: 'Celebration Plan Initialized',
-        description: `Created "${input.title}" with $${budget.toLocaleString()} budget and ${input.targetGuestCount} guests.`,
+        description: `Created "${input.title}" with ${currSym}${budget.toLocaleString()} budget and ${input.targetGuestCount} guests.`,
         timestamp: 'Just now',
       }
 
@@ -847,6 +964,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const allTasks = [...StorageService.getTasks(''), ...initialTasks]
       StorageService.saveTasks(allTasks)
       setTimelineTasks(initialTasks)
+
+      const allVendors = [...StorageService.getVendors(''), ...initialVendors]
+      StorageService.saveVendors(allVendors)
+      setVendors(initialVendors)
 
       StorageService.addActivity(activity)
       setActivities(StorageService.getActivities())
@@ -997,7 +1118,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         eventId: activeEvent.id,
         type: 'sync-recalculated',
         title: 'Adaptive Scenario Applied',
-        description: `Applied what-if scenario: Budget adjusted to $${safeBudget.toLocaleString()}, guests to ${safeGuests}, date to ${safeDate}. ${result.userConfirmedDecisionsPreserved} confirmed decisions preserved.`,
+        description: `Applied what-if scenario: Budget adjusted to ${formatCurrency(safeBudget, activeEvent.currency)}, guests to ${safeGuests}, date to ${safeDate}. ${result.userConfirmedDecisionsPreserved} confirmed decisions preserved.`,
         timestamp: 'Just now',
       }
       StorageService.addActivity(activity)
@@ -1071,6 +1192,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     deleteVendor,
     toggleMilestonePaid,
     applyScenario,
+    isCopilotOpen,
+    setIsCopilotOpen,
+    copilotInitialQuery,
+    openCopilotWithQuery,
   }
 
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>
