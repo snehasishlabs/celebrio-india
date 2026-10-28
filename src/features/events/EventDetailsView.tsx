@@ -27,6 +27,7 @@ import { GuestExperienceView } from '@/features/events/GuestExperienceView'
 import { ContingencyPlanView } from '@/features/events/ContingencyPlanView'
 import { calculateDaysRemaining } from '@/utils/timelineEngine'
 import { formatCurrency } from '@/utils/budgetGuardian'
+import { LotusMotif } from '@/components/common/IndianMotifs'
 
 const TABS: { id: EventDetailTab; label: string; icon: typeof Calendar }[] = [
   { id: 'overview', label: 'Overview', icon: Calendar },
@@ -414,6 +415,63 @@ export const EventDetailsView: React.FC = () => {
                 </Button>
               </div>
             </Card>
+
+            {/* Cultural Heritage & Ceremonies Card */}
+            {activeEvent.culturalPreferences && (
+              <Card variant="default" className="lg:col-span-3 p-6 space-y-4 border-forest-200">
+                <div className="flex items-center justify-between pb-3 border-b border-ivory-300">
+                  <div className="flex items-center gap-2">
+                    <LotusMotif size={20} className="text-gold-500" />
+                    <h3 className="font-serif font-bold text-base text-charcoal-900">
+                      Cultural Heritage &amp; Ceremony Schedule
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-forest-100 text-forest-800">
+                    {activeEvent.culturalPreferences.traditionId || 'Cultural Tradition'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                  <div className="p-3 rounded-xl bg-ivory-100/80 border border-ivory-200">
+                    <span className="text-charcoal-500 block text-[11px] mb-0.5">Preferred Language:</span>
+                    <strong className="text-charcoal-900">{activeEvent.culturalPreferences.preferredLanguage || 'English'}</strong>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-ivory-100/80 border border-ivory-200">
+                    <span className="text-charcoal-500 block text-[11px] mb-0.5">Auspicious Timing:</span>
+                    <strong className="text-charcoal-900">{activeEvent.culturalPreferences.auspiciousTimingPreference || 'Flexible'}</strong>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-ivory-100/80 border border-ivory-200">
+                    <span className="text-charcoal-500 block text-[11px] mb-0.5">Feast Tradition:</span>
+                    <strong className="text-charcoal-900">{activeEvent.culturalPreferences.foodTradition || 'Regional Feast'}</strong>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-ivory-100/80 border border-ivory-200">
+                    <span className="text-charcoal-500 block text-[11px] mb-0.5">Music &amp; Ambiance:</span>
+                    <strong className="text-charcoal-900">{activeEvent.culturalPreferences.musicAndVibe || 'Traditional & Contemporary'}</strong>
+                  </div>
+                </div>
+
+                {activeEvent.culturalPreferences.selectedCeremonies && activeEvent.culturalPreferences.selectedCeremonies.length > 0 && (
+                  <div className="pt-2">
+                    <span className="text-xs font-semibold text-charcoal-700 block mb-2">
+                      Ceremonies Scheduled ({activeEvent.culturalPreferences.selectedCeremonies.length}):
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {activeEvent.culturalPreferences.selectedCeremonies.map((c, i) => (
+                        <span
+                          key={i}
+                          className="text-xs font-medium px-2.5 py-1 rounded-xl bg-ivory-200 text-charcoal-800 border border-ivory-300"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
           </div>
         </div>
       )}

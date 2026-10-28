@@ -205,9 +205,14 @@ describe('Bengali Wedding in Kolkata Demonstration Scenario (11 Steps)', () => {
     // STEP 9: Review clear recommendations for resolving the budget constraint
     // =========================================================================
     expect(screen.getByText(/Recommended Strategic Trade-Offs/i)).toBeInTheDocument()
-    expect(screen.getByText(/Family-Style Service Transition/i)).toBeInTheDocument()
     expect(
-      screen.getByText(/Architectural Foliage & Candlelight Styling/i),
+      screen.getByText(/(?:Live Buffet Service|Family-Style Service Transition)/i)
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/(?:Indigenous Botanical|Architectural Foliage & Candlelight Styling)/i)
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Cultural Continuity & Ritual Protection/i)
     ).toBeInTheDocument()
 
     // =========================================================================

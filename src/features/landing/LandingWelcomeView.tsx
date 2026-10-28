@@ -11,6 +11,8 @@ import {
 import { usePlanner } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
 import { Button } from '@/components/common/Button'
+import { INDIAN_EVENT_TEMPLATES } from '@/constants/indianEventTemplates'
+import { LotusMotif, JaaliDivider } from '@/components/common/IndianMotifs'
 
 interface TraditionCardProps {
   title: string
@@ -111,6 +113,9 @@ export const LandingWelcomeView: React.FC = () => {
       {/* 1. Hero Showcase Section */}
       <div className="relative rounded-3xl p-6 sm:p-10 lg:p-14 bg-gradient-to-br from-ivory-50 via-ivory-100 to-ivory-200/80 border border-ivory-300 shadow-card overflow-hidden">
         {/* Subtle decorative architectural motif background */}
+        <div className="absolute -top-10 -right-10 text-forest-900/5 pointer-events-none" aria-hidden="true">
+          <LotusMotif className="w-80 h-80" />
+        </div>
         <div
           className="absolute inset-0 opacity-[0.035] pointer-events-none bg-repeat"
           style={{
@@ -238,6 +243,8 @@ export const LandingWelcomeView: React.FC = () => {
         </div>
       </div>
 
+      <JaaliDivider />
+
       {/* 3. Regional Celebration Styles Showcase */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-ivory-300 pb-3">
@@ -255,71 +262,19 @@ export const LandingWelcomeView: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <TraditionCard
-            title="Bengali Biye &amp; Gaye Holud"
-            region="Eastern India"
-            description="Intimate yet ceremonial, celebrating timeless artistry with red and ivory silks, brass pradips, and literary romance."
-            rituals={['Gaye Holud', 'Saat Paake Bandha', 'Shubho Drishti', 'Bou Bhat Feast', 'Dhak Rhythms']}
-            colorTheme="Alpona White, Sindoor Red, Tuberose Cream"
-            palette={['#FAF6F0', '#B4573B', '#C5A059', '#1B4332']}
-            recommendedCategory="wedding"
-            onSelect={handleStartPlanning}
-          />
-
-          <TraditionCard
-            title="Punjabi Sangeet &amp; Anand Karaj"
-            region="North India"
-            description="Exuberant, high-energy celebrations steeped in hospitality, live folk music, royal Awadhi banquets, and marigold canopies."
-            rituals={['Mehendi Night', 'High-Energy Sangeet', 'Anand Karaj', 'Royal Dastarkhwan', 'Pagri Station']}
-            colorTheme="Marigold Amber, Rani Pink, Antique Brass"
-            palette={['#D5B463', '#96442B', '#1B4332', '#FAF6F0']}
-            recommendedCategory="wedding"
-            onSelect={handleStartPlanning}
-          />
-
-          <TraditionCard
-            title="South Indian Muhurtham"
-            region="Peninsular India"
-            description="Sacred morning rituals scented with fresh mallipoo (jasmine), auspicious kuthuvilakku lamps, and authentic elai saapadu."
-            rituals={['Vratham', 'Kasi Yatra', 'Kanyadanam & Mangalya', 'Elai Saapadu (Banana Leaf)', 'Nadaswaram']}
-            colorTheme="Jasmine White, Kanjeevaram Gold, Deep Forest"
-            palette={['#FAF6F0', '#C5A059', '#1B4332', '#2E6E52']}
-            recommendedCategory="wedding"
-            onSelect={handleStartPlanning}
-          />
-
-          <TraditionCard
-            title="Gujarati Lagan &amp; Garba Night"
-            region="Western India"
-            description="Vibrant colors, mirror-work textiles, synchronized Dandiya rhythms, and legendary Farsan and sweets banquets."
-            rituals={['Mandvo & Mameru', 'Dandiya Raas', 'Hasta Melap', 'Live Farsan Bazaar', 'Saubhagyavati Blessings']}
-            colorTheme="Terracotta Coral, Mirror Gold, Saffron Olive"
-            palette={['#C86D51', '#E3CC8D', '#21543E', '#F5EFE6']}
-            recommendedCategory="wedding"
-            onSelect={handleStartPlanning}
-          />
-
-          <TraditionCard
-            title="Durga Puja &amp; Community Gala"
-            region="Pan-India Festive"
-            description="Grand architectural pandals, dhunuchi dance competitions, community bhog feasts, and evening cultural concerts."
-            rituals={['Pandal Architecture', 'Dhunuchi Aarti', 'Community Bhog', 'Bijoya Dashami', 'Sandhi Puja']}
-            colorTheme="Kash Phool White, Terracotta Earthenware, Brass Gold"
-            palette={['#FDFBF7', '#C86D51', '#C5A059', '#143326']}
-            recommendedCategory="community"
-            onSelect={handleStartPlanning}
-          />
-
-          <TraditionCard
-            title="Contemporary Indo-Western Gala"
-            region="Cosmopolitan India"
-            description="Chic rooftop lounges, live acoustic fusion bands, botanical glasshouse decor, and progressive Indian tapas menus."
-            rituals={['Cocktail Revelry', 'Acoustic Fusion Band', 'Progressive Tasting Menu', 'Craft Mocktail Lounge']}
-            colorTheme="Forest Velvet, Warm Ivory, Brushed Champagne"
-            palette={['#0E241B', '#FDFBF7', '#D5B463', '#B4573B']}
-            recommendedCategory="birthday"
-            onSelect={handleStartPlanning}
-          />
+          {INDIAN_EVENT_TEMPLATES.map((tmpl) => (
+            <TraditionCard
+              key={tmpl.id}
+              title={tmpl.name}
+              region={tmpl.region}
+              description={tmpl.description}
+              rituals={tmpl.culturalPreferences.selectedCeremonies ? tmpl.culturalPreferences.selectedCeremonies.slice(0, 5) : []}
+              colorTheme={tmpl.colorTheme}
+              palette={tmpl.colorPalette.map((p) => p.hex)}
+              recommendedCategory={tmpl.category as any}
+              onSelect={handleStartPlanning}
+            />
+          ))}
         </div>
       </div>
 

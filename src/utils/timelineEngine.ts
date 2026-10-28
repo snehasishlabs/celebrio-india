@@ -643,6 +643,64 @@ export function generatePreparationTasks(
     })
   }
 
+  // Cultural Tradition specific milestone enrichments
+  const traditionKey = (
+    event.culturalPreferences?.traditionId ||
+    event.themePreference ||
+    event.title ||
+    ''
+  ).toLowerCase()
+
+  if (traditionKey.includes('bengali') || traditionKey.includes('biye')) {
+    templates.splice(Math.max(1, templates.length - 2), 0, {
+      offsetDays: -4,
+      title: 'Assemble Gaye Holud Tattwa Trays, Pidi & Shola Topor',
+      description: 'Prepare decorated brass trays, bridal Mukut, groom Topor, fresh turmeric, and celebratory sweets.',
+      phase: 'rehearsal-prep',
+      priority: 'high',
+      isMilestone: true,
+      isCriticalPath: true,
+      assignedTo: 'Family Elders & Coordinator',
+      category: 'stationery',
+    })
+  } else if (traditionKey.includes('punjabi') || traditionKey.includes('sangeet')) {
+    templates.splice(Math.max(1, templates.length - 2), 0, {
+      offsetDays: -4,
+      title: 'Rehearse Sangeet Choreography & Coordinate Dhol Troupe Cues',
+      description: 'Run through family dance performances, audio mashups, and late-night Jaggo route.',
+      phase: 'rehearsal-prep',
+      priority: 'high',
+      isMilestone: true,
+      isCriticalPath: false,
+      assignedTo: 'Sangeet Choreographer',
+      category: 'entertainment',
+    })
+  } else if (traditionKey.includes('south-indian') || traditionKey.includes('muhurtham')) {
+    templates.splice(Math.max(1, templates.length - 2), 0, {
+      offsetDays: -3,
+      title: 'Procure Fresh Madurai Malli (Jasmine) & Banana Leaf Supplies',
+      description: 'Lock dawn floral deliveries, Kuthuvilakku lamp oil, and whole fresh plantain leaves for Elai Saapadu.',
+      phase: 'rehearsal-prep',
+      priority: 'critical',
+      isMilestone: true,
+      isCriticalPath: true,
+      assignedTo: 'Florist & Catering Lead',
+      category: 'decor',
+    })
+  } else if (traditionKey.includes('durga-puja') || traditionKey.includes('sharodotsav')) {
+    templates.splice(Math.max(1, templates.length - 2), 0, {
+      offsetDays: -5,
+      title: 'Inspect Eco-Friendly Clay Pratima & Pandal Fire Clearance',
+      description: 'Final walkthrough with structural engineers and idol sculptor for Kumartuli transfer.',
+      phase: 'logistics-coordination',
+      priority: 'critical',
+      isMilestone: true,
+      isCriticalPath: true,
+      assignedTo: 'Puja Committee',
+      category: 'decor',
+    })
+  }
+
   // Build tasks with computed deadlines
   const hasValidDate = !!parseSafeDate(eventDate)
 

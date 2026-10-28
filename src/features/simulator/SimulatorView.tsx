@@ -30,6 +30,7 @@ import { AITradeoffExplanationResponse } from '@/types/ai'
 import { explainScenarioTradeoffs } from '@/services/ai/aiPlanningService'
 import { formatCurrency } from '@/utils/budgetGuardian'
 import { simulateScenario } from '@/utils/scenarioEngine'
+import { LotusMotif } from '@/components/common/IndianMotifs'
 
 export const SimulatorView: React.FC = () => {
   const {
@@ -269,6 +270,20 @@ export const SimulatorView: React.FC = () => {
             capacity limits. We never fabricate vendor availability without direct confirmation.
           </div>
         </div>
+
+        {activeEvent.culturalPreferences?.selectedCeremonies && activeEvent.culturalPreferences.selectedCeremonies.length > 0 && (
+          <div className="col-span-full p-3.5 rounded-xl bg-ivory-100/90 border border-ivory-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-charcoal-800">
+            <div className="flex items-center gap-2">
+              <LotusMotif size={18} className="text-gold-600" />
+              <span>
+                <strong>Cultural Continuity Protected:</strong> All {activeEvent.culturalPreferences.selectedCeremonies.length} selected ceremonies ({activeEvent.culturalPreferences.selectedCeremonies.slice(0, 3).join(', ')}{activeEvent.culturalPreferences.selectedCeremonies.length > 3 ? '...' : ''}) remain anchored in your celebration schedule.
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-forest-100 text-forest-800 border border-forest-200 self-start sm:self-auto">
+              {activeEvent.culturalPreferences.traditionId || 'Cultural Tradition'}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 3. Quick Scenario Presets */}

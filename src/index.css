@@ -41,4 +41,27 @@
     backdrop-filter: blur(12px);
     border: 1px solid rgba(235, 227, 215, 0.9);
   }
+
+  /* Subtle, restrained Indian architectural & textile patterns */
+  .pattern-jaali {
+    background-image: radial-gradient(rgba(27, 67, 50, 0.04) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+
+  .pattern-jaali-gold {
+    background-image: radial-gradient(rgba(197, 160, 89, 0.08) 1.2px, transparent 1.2px);
+    background-size: 20px 20px;
+  }
+
+  .border-gold-accent {
+    border-top: 2px solid #C5A059;
+  }
+
+  .border-terracotta-accent {
+    border-top: 2px solid #C86D51;
+  }
+
+  .border-forest-accent {
+    border-top: 2px solid #1B4332;
+  }
 }

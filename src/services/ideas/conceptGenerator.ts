@@ -16,6 +16,168 @@ export function generateThemeConcepts(event: CelebrationEvent): ThemeConcept[] {
     ? `Accessibility accommodations including ${event.accessibilityRequirements.slice(0, 2).join(' & ')}`
     : 'Comfort seating and barrier-free circulation'
 
+  // Culturally Aware Indian Celebration Branches
+  const traditionKey = (
+    event.culturalPreferences?.traditionId ||
+    event.themePreference ||
+    event.title ||
+    ''
+  ).toLowerCase()
+
+  if (traditionKey.includes('bengali') || traditionKey.includes('biye')) {
+    return [
+      {
+        id: `concept-${event.id}-budget`,
+        eventId: event.id,
+        tier: 'budget-conscious',
+        title: 'Shantiniketan Terracotta & Alpona',
+        tagline: 'Artisanal simplicity, fragrant Rajnigandha, and intimate family feast',
+        description: `An authentic Bengali celebration featuring handcrafted Alpona floor art, earthen pradips, and a classic Bou Bhaat banquet preserving ~18% emergency buffer${themeHint}.`,
+        colorPalette: [
+          { name: 'Alpona White', hex: '#FAF6F0' },
+          { name: 'Terracotta Red', hex: '#B4573B' },
+          { name: 'Antique Gold', hex: '#C5A059' },
+          { name: 'Forest Green', hex: '#1B4332' },
+        ],
+        decor: {
+          focalPoint: 'Freehand rice-flour Alpona entrance threshold with brass pradips',
+          lighting: 'Warm amber hurricanes and fairy-lit courtyard trees',
+          tableSettings: 'Terracotta earthenware water carafes, brass thalis, and banana-leaf runners',
+          botanicals: 'Fresh Rajnigandha (tuberose) garlands and marigold cascades',
+        },
+        foodAndBeverage: {
+          serviceStyle: 'Traditional sit-down banquet with warm table replenishment',
+          highlights: ['Bhetki Machher Paturi in banana leaf', 'Kosha Mangsho with fluffy Luchi', 'Artisan Nolen Gur Sandesh & Mishti Doi'],
+          signatureDrink: 'Aam Pora Shorbot & Gondhoraj Lime Cooler',
+        },
+        entertainment: {
+          mainAct: 'Acoustic Rabindra Sangeet, Shehnai, and classical conch blowing',
+          interactiveElements: ['Live Alpona drawing artist', 'Polaroid Gaye Holud memory board'],
+        },
+        guestExperience: {
+          arrivalMoment: 'Traditional Chandan tilak, rosewater spritz, and fresh batasa sweets greeting',
+          takeawayFavor: 'Mini terracotta clay pots filled with fresh Mishti Doi and dry sweets',
+          comfortFeatures: ['Shaded courtyard seating for senior family members', accessibilityHighlights],
+        },
+        costEstimation: {
+          estimatedTotal: Math.round(budget * 0.82),
+          varianceFromBudget: -Math.round(budget * 0.18),
+          percentOfBudget: 82,
+          disclaimer: PRICE_DISCLAIMER,
+        },
+        tradeoffs: {
+          advantages: [
+            `Preserves ${currSymbol}${Math.round(budget * 0.18).toLocaleString()} as an untouched emergency safety buffer`,
+            'Deeply authentic Bengali aesthetic honoring heritage without extravagant waste',
+            'Supports local clay and handloom artisans directly',
+          ],
+          compromises: [
+            'Traditional seasonal fish selections rather than high-rate imported varieties',
+            'Courtyard banquet style instead of multi-tiered Western staging',
+          ],
+        },
+      },
+      {
+        id: `concept-${event.id}-creative`,
+        eventId: event.id,
+        tier: 'creative-distinctive',
+        title: 'Rajbari Heritage Courtyard Gala',
+        tagline: 'Historic aristocracy, conch shell crescendos, and cinematic storytelling',
+        description: `A grand heritage celebration in an open Kolkata rajbari courtyard with traditional Shola pith mandap art, live Shehnai, and master-crafted banquet${themeHint}.`,
+        colorPalette: [
+          { name: 'Crimson Silk', hex: '#96442B' },
+          { name: 'Burnished Gold', hex: '#D5B463' },
+          { name: 'Ivory Cream', hex: '#FDFBF7' },
+          { name: 'Deep Emerald', hex: '#1B4332' },
+        ],
+        decor: {
+          focalPoint: 'Architectural Shola pith floral mandap illuminated with vintage chandeliers',
+          lighting: 'Warm architectural uplighting on heritage colonnades and floating brass pradips',
+          tableSettings: 'Polished brass charger plates, embroidered Baluchari table runners, and calligraphed menus',
+          botanicals: 'Tuberose strings, white lotus ponds, and hanging red hibiscus garlands',
+        },
+        foodAndBeverage: {
+          serviceStyle: 'Synchronized royal banquet with live artisan cooking counters',
+          highlights: ['Golda Chingri Malai Curry', 'Kolkata Mutton Dum Biryani with aloo', 'Chhanar Dalna & Basanti Pulao'],
+          signatureDrink: 'Kolkata Spiced Masala Chai & Saffron Gondhoraj Fizz',
+        },
+        entertainment: {
+          mainAct: 'Classical Shehnai Ustad paired with traditional Dhak drum troupe',
+          interactiveElements: ['Live Kumartuli craft artisan demonstration', 'Heritage portrait photo lounge with vintage camera'],
+        },
+        guestExperience: {
+          arrivalMoment: 'Grand Borjatri welcome with conch blasts and fresh flower showers',
+          takeawayFavor: 'Hand-woven Shantiniketan leather coin purse with dry fruits and artisan Sandesh',
+          comfortFeatures: ['Dedicated elder rest lounge with velvet diwans', accessibilityHighlights],
+        },
+        costEstimation: {
+          estimatedTotal: Math.round(budget * 0.98),
+          varianceFromBudget: -Math.round(budget * 0.02),
+          percentOfBudget: 98,
+          disclaimer: PRICE_DISCLAIMER,
+        },
+        tradeoffs: {
+          advantages: [
+            'Breathtaking photogenic aesthetic that captures the soul of historic Kolkata',
+            'Exceptional balance of ceremonial reverence and royal celebratory joy',
+          ],
+          compromises: [
+            'Requires advance heritage venue booking and special outdoor sound permits',
+          ],
+        },
+      },
+      {
+        id: `concept-${event.id}-premium`,
+        eventId: event.id,
+        tier: 'premium',
+        title: 'Gilded Zamindar Palace & Shola Splendor',
+        tagline: 'Uncompromising royal luxury, white-glove feast, and classical orchestra',
+        description: `The pinnacle of Bengali matrimonial grandeur: custom architectural Shola chandeliers, 8-course royal feast with Golda Chingri, and heirloom brass decor${themeHint}.`,
+        colorPalette: [
+          { name: 'Royal Sindoor', hex: '#7A3824' },
+          { name: 'Kolkata Gold', hex: '#C5A059' },
+          { name: 'Tuberose Pearl', hex: '#FAF6F0' },
+          { name: 'Midnight Forest', hex: '#0E241B' },
+        ],
+        decor: {
+          focalPoint: 'Towering Shola and 10,000-bloom Rajnigandha cathedral mandap with gold leaf pillars',
+          lighting: 'Custom Belgian crystal chandeliers suspended above mandap with theatrical mood fades',
+          tableSettings: 'Gold-rimmed ivory porcelain, bespoke Kanjeevaram-edged napkins, and engraved silverware',
+          botanicals: 'Imported royal white orchids, fragrant Rajnigandha walls, and 500 white lotuses',
+        },
+        foodAndBeverage: {
+          serviceStyle: 'White-glove 8-course synchronized service with individual course explanations',
+          highlights: ['Jumbo Prawn Malaikari', 'Smoked Bhetki with Kashundi emulsion', 'Nolen Gur Soufflé & 5 artisan Sandesh varieties'],
+          signatureDrink: 'Vintage Saffron Champagne & Royal Cardamom Nectar',
+        },
+        entertainment: {
+          mainAct: 'Renowned classical music vidwans accompanied by full ensemble and Dhak symphony',
+          interactiveElements: ['Bespoke live watercolor wedding portrait artist', 'Custom perfumery blending bar with organic attars'],
+        },
+        guestExperience: {
+          arrivalMoment: 'Private carriage arrival, royal conch fanfare, and silver goblet welcome drink',
+          takeawayFavor: 'Handcrafted silver coin and luxury silk brocade keepsake box with gourmet confections',
+          comfortFeatures: ['Full concierge assistance and air-conditioned VIP family suites', accessibilityHighlights],
+        },
+        costEstimation: {
+          estimatedTotal: budget,
+          varianceFromBudget: 0,
+          percentOfBudget: 100,
+          disclaimer: PRICE_DISCLAIMER,
+        },
+        tradeoffs: {
+          advantages: [
+            'An iconic, once-in-a-lifetime landmark celebration that sets an unforgettable standard',
+            'Unmatched culinary and artistic distinction honoring centuries of Bengali heritage',
+          ],
+          compromises: [
+            'Consumes full budget cap; mandates strict guest-count discipline',
+          ],
+        },
+      },
+    ]
+  }
+
   // Category specific customizations
   switch (category) {
     case 'wedding':

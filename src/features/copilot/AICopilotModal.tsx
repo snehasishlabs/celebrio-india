@@ -79,9 +79,11 @@ export const AICopilotModal: React.FC = () => {
           targetGuestCount: activeEvent.targetGuestCount,
           totalBudget: activeEvent.totalBudget,
           currency: activeEvent.currency,
-          traditions: activeEvent.preferences?.specialNotes
-            ? [activeEvent.preferences.specialNotes]
-            : [activeEvent.themePreference || 'traditional celebration'],
+          traditions: activeEvent.culturalPreferences?.selectedCeremonies && activeEvent.culturalPreferences.selectedCeremonies.length > 0
+            ? activeEvent.culturalPreferences.selectedCeremonies
+            : (activeEvent.preferences?.specialNotes
+              ? [activeEvent.preferences.specialNotes]
+              : [activeEvent.themePreference || 'traditional celebration']),
           urgentTasks: urgentTasksList.map((t) => ({
             id: t.id,
             title: t.title,

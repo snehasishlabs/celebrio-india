@@ -733,7 +733,9 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
           indoorOutdoor: input.indoorOutdoor,
           dressCode: input.dressCode?.trim(),
           specialNotes: input.specialNotes?.trim(),
+          culturalPreferences: input.culturalPreferences,
         },
+        culturalPreferences: input.culturalPreferences,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }

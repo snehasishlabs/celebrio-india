@@ -12,11 +12,26 @@ export type EventStatus = 'draft' | 'planning' | 'confirmed' | 'completed' | 'ar
 
 export type SyncState = 'in-sync' | 'drift-detected' | 'syncing' | 'action-required';
 
+export interface CulturalPreferences {
+  traditionId?: string;
+  regionOrState?: string;
+  preferredLanguage?: string;
+  ceremonyScheduleType?: 'single-day' | 'multi-day-2' | 'multi-day-3' | 'multi-day-4' | 'custom';
+  selectedCeremonies?: string[];
+  auspiciousTimingPreference?: string;
+  foodTradition?: string;
+  musicAndVibe?: string;
+  decorStyle?: string;
+  isReligiousOrCultural?: boolean;
+  guestHospitalityNotes?: string;
+}
+
 export interface EventPreferences {
   indoorOutdoor: 'indoor' | 'outdoor' | 'hybrid';
   dressCode?: string;
   musicVibe?: string;
   specialNotes?: string;
+  culturalPreferences?: CulturalPreferences;
 }
 
 export interface CelebrationEvent {
@@ -47,6 +62,7 @@ export interface CelebrationEvent {
   accessibilityRequirements: string[];
   accessibilityNotes?: string;
   preferences: EventPreferences;
+  culturalPreferences?: CulturalPreferences;
   createdAt: string;
   updatedAt: string;
 }
@@ -85,4 +101,5 @@ export interface NewCelebrationInput {
   indoorOutdoor: 'indoor' | 'outdoor' | 'hybrid';
   dressCode?: string;
   specialNotes?: string;
+  culturalPreferences?: CulturalPreferences;
 }

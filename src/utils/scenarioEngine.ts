@@ -234,26 +234,51 @@ export function simulateScenario(
 
   if (proposedSummary.isOverBudget) {
     const deficit = Math.abs(proposedSummary.remainingBalance)
+    const isIndian = currSym === '₹' || !!originalEvent.culturalPreferences
 
     tradeoffs.push({
       id: 'to-catering-service',
-      title: 'Family-Style Service Transition',
+      title: isIndian
+        ? 'Live Buffet Service with Signature Regional Specialties'
+        : 'Family-Style Service Transition',
       category: 'Catering',
-      description: 'Switch from synchronized plated dinner to artisanal shared platters.',
+      description: isIndian
+        ? 'Switch from formal multi-course table service to an elegant live buffet while strictly preserving authentic regional anchor dishes and fresh dessert counters.'
+        : 'Switch from synchronized plated dinner to artisanal shared platters.',
       savingsOrCost: Math.min(deficit, Math.round(proposedBudget * 0.05)),
       impactType: 'savings',
-      compromiseSummary: 'Reduces staffing labor costs by 12% while maintaining gourmet food tier.',
+      compromiseSummary: isIndian
+        ? 'Reduces server staffing overhead while ensuring guests enjoy continuous warm culinary replenishment.'
+        : 'Reduces staffing labor costs by 12% while maintaining gourmet food tier.',
     })
 
     tradeoffs.push({
       id: 'to-foliage-styling',
-      title: 'Architectural Foliage & Candlelight Styling',
+      title: isIndian
+        ? 'Indigenous Botanical & Brass Diya Ambiance'
+        : 'Architectural Foliage & Candlelight Styling',
       category: 'Décor & Floral',
-      description: 'Replace fragile imported blooms with olive branches, eucalyptus garland, and brass hurricanes.',
+      description: isIndian
+        ? 'Replace fragile imported cut flowers with local fragrant Rajnigandha (tuberose), marigold canopies, mango-leaf torans, and floating brass pradips.'
+        : 'Replace fragile imported blooms with olive branches, eucalyptus garland, and brass hurricanes.',
       savingsOrCost: Math.min(deficit, Math.round(proposedBudget * 0.04)),
       impactType: 'savings',
-      compromiseSummary: 'Creates rich twilight ambiance without high wholesale cut-flower premiums.',
+      compromiseSummary: isIndian
+        ? 'Creates deeply authentic celebratory warmth with 20% lower wholesale botanical spend.'
+        : 'Creates rich twilight ambiance without high wholesale cut-flower premiums.',
     })
+
+    if (isIndian) {
+      tradeoffs.push({
+        id: 'to-cultural-continuity',
+        title: 'Cultural Continuity & Ritual Protection',
+        category: 'Traditions',
+        description: 'All culturally selected ceremonies and family rituals remain fully preserved and protected in the timeline.',
+        savingsOrCost: 0,
+        impactType: 'neutral',
+        compromiseSummary: 'Budget reductions are absorbed entirely by logistics and styling without sacrificing sacred or celebratory ceremonies.',
+      })
+    }
   }
 
   if (daysDelta < -14) {

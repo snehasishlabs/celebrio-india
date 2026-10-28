@@ -14,11 +14,18 @@ import {
   Utensils,
   Accessibility,
   CheckCircle2,
+  Calendar,
+  Clock,
+  Globe,
+  Plus,
+  Shield,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
-import { EventCategory, NewCelebrationInput } from '@/types/event'
+import { EventCategory, NewCelebrationInput, CulturalPreferences } from '@/types/event'
 import { Button } from '@/components/common/Button'
 import { addDays, formatDateIso } from '@/utils/timelineEngine'
+import { INDIAN_EVENT_TEMPLATES } from '@/constants/indianEventTemplates'
+import { LotusMotif, DiyaLampMotif } from '@/components/common/IndianMotifs'
 
 interface CreateEventModalProps {
   isOpen: boolean
@@ -33,23 +40,101 @@ const CATEGORY_OPTIONS: { id: EventCategory; label: string; icon: typeof Heart; 
 ]
 
 const REGIONAL_TRADITIONS = [
-  { id: 'pan-indian', label: 'Pan-Indian Classic', desc: 'Harmonious blend of contemporary & traditional rituals' },
-  { id: 'bengali', label: 'Bengali (Biye & Gaye Holud)', desc: 'Alpona, Rajnigandha florals, Bou Bhat feast & Dhak' },
-  { id: 'punjabi', label: 'Punjabi (Sangeet & Anand Karaj)', desc: 'High-energy dhol, Phulkari marigold mandap & Awadhi feast' },
-  { id: 'south-indian', label: 'South Indian (Muhurtham)', desc: 'Jasmine garlands, Kuthuvilakku lamps & Elai Saapadu' },
-  { id: 'gujarati', label: 'Gujarati (Garba & Lagan)', desc: 'Mirror-work canopies, Dandiya night & live Farsan banquet' },
-  { id: 'contemporary', label: 'Contemporary / Fusion', desc: 'Indo-Western rooftop lounge, acoustic fusion & tapas' },
+  { id: 'bengali', label: 'Bengali (Biye & Gaye Holud)', desc: 'Alpona, Rajnigandha florals, Bou Bhat feast & Dhak', templateId: 'bengali-wedding' },
+  { id: 'punjabi', label: 'Punjabi (Sangeet & Anand Karaj)', desc: 'High-energy dhol, Phulkari marigold mandap & Awadhi feast', templateId: 'punjabi-wedding' },
+  { id: 'south-indian', label: 'South Indian (Muhurtham)', desc: 'Jasmine garlands, Kuthuvilakku lamps & Elai Saapadu', templateId: 'south-indian-wedding' },
+  { id: 'maharashtrian', label: 'Maharashtrian (Lagnasohala)', desc: 'Paithani silks, Mundavalya pearls, Mangalashtak & Puran Poli', templateId: 'maharashtrian-wedding' },
+  { id: 'gujarati', label: 'Gujarati (Garba & Lagan)', desc: 'Mirror-work canopies, Dandiya night & live Farsan banquet', templateId: 'gujarati-wedding' },
+  { id: 'durga-puja', label: 'Durga Puja (Sharodotsav)', desc: 'Architectural pandal, Dhunuchi dance, Maha Bhog & Bisorjon', templateId: 'durga-puja' },
+  { id: 'diwali', label: 'Diwali (Festival of Lights)', desc: 'Handcrafted diyas, floating Urlis, Lakshmi Puja & mithai hampers', templateId: 'diwali-gala' },
+  { id: 'eid', label: 'Eid Gathering (Eid Milan)', desc: 'Dum Biryani, fragrant attar, Sheer Khurma & Eidi blessing', templateId: 'eid-gathering' },
+  { id: 'onam', label: 'Onam (Thiruvonam & Sadya)', desc: 'Athapookalam floral carpet, 26-dish Onasadya & Chenda Melam', templateId: 'onam-celebration' },
+  { id: 'griha-pravesh', label: 'Housewarming (Griha Pravesh)', desc: 'Vastu puja, sacred milk boiling (Doodh Ubalna) & feast', templateId: 'griha-pravesh' },
+  { id: 'contemporary', label: 'Contemporary / Fusion', desc: 'Indo-Western rooftop lounge, acoustic fusion & tapas', templateId: 'contemporary-fusion' },
+  { id: 'pan-indian', label: 'Pan-Indian Classic', desc: 'Harmonious blend of contemporary & traditional rituals', templateId: 'contemporary-fusion' },
 ]
 
-const CEREMONY_OPTIONS = [
-  'Haldi / Gaye Holud',
-  'Mehendi & Henna Lounge',
-  'Sangeet & Musical Night',
-  'Pheras / Muhurtham Ceremony',
-  'Grand Reception Banquet',
-  'Cocktail & Afterparty',
-  'Pandal Aarti & Bhog',
-]
+const DEFAULT_CEREMONIES_BY_TRADITION: Record<string, string[]> = {
+  bengali: [
+    'Aiburobhat (Bachelor Feast)',
+    'Gaye Holud (Turmeric Ceremony)',
+    'Saat Paake Ghaura & Subho Drishti',
+    'Sindoor Daan',
+    'Bou Bhaat (Reception Feast)',
+  ],
+  punjabi: [
+    'Mehndi & Chooda Ceremony',
+    'High-Energy Sangeet & Jaggo Night',
+    'Baraat Procession & Milni',
+    'Anand Karaj / Vedic Phere',
+    'Grand Reception Banquet',
+  ],
+  'south-indian': [
+    'Vratham & Sumangali Prarthanai',
+    'Nichayathartham (Engagement Blessing)',
+    'Oonjal (Swing Ritual) & Nadaswaram',
+    'Kanyadanam & Mangalya Dharanam',
+    'Kalyana Elai Saapadu Feast',
+  ],
+  maharashtrian: [
+    'Sakharpuda & Kelvan',
+    'Halad Chadavane',
+    'Antarpat & Mangalashtak Recitation',
+    'Kanyadaan & Saptapadi',
+    'Traditional Pangat Feast (Puran Poli)',
+  ],
+  gujarati: [
+    'Mandva Mahurat & Mameru',
+    'Garba & Dandiya Raas Night',
+    'Ponkhana & Jaan Welcome',
+    'Hasta Melap & Mangal Pheras',
+    'Live Farsan Banquet',
+  ],
+  'durga-puja': [
+    'Maha Sasthi (Bodhon)',
+    'Maha Saptami (Kola Bou Snan)',
+    'Maha Ashtami & Sandhi Puja (108 Lotuses)',
+    'Maha Nabami (Dhunuchi Naach)',
+    'Bijoya Dashami (Sindoor Khela & Bisorjon)',
+  ],
+  diwali: [
+    'Chandan Tilak & Rosewater Welcome',
+    'Traditional Rangoli & 108 Diya Lighting',
+    'Lakshmi-Ganesh Puja & Aarti',
+    'Gourmet Festive Feast & Mithai Lounge',
+  ],
+  eid: [
+    'Eid Welcoming with Ittar & Rose Water',
+    'Eidi Blessing Distribution',
+    'Royal Dastarkhwan Dum Biryani Feast',
+    'Evening Mehfil-e-Ghazal',
+  ],
+  onam: [
+    'Dawn Athapookalam Floral Assembly',
+    'Chenda Melam Percussion Welcome',
+    'Thiruvathirakali Dance',
+    'The 26-Dish Grand Onasadya Feast',
+  ],
+  'griha-pravesh': [
+    'Auspicious Entry (Shubh Muhurat)',
+    'Vastu Shanti Puja & Navagraha Havan',
+    'Doodh Ubalna (Milk Boiling Blessing)',
+    'Threshold Toran Blessing & Family Bhojan',
+  ],
+  contemporary: [
+    'Welcome Cocktails & Grazing Tables',
+    'Personalized Vow Exchange & Rings',
+    'Sunset Champagne Toast',
+    'Progressive Tasting Banquet',
+    'Live Indie-Fusion Band & Afterparty',
+  ],
+  'pan-indian': [
+    'Haldi / Gaye Holud',
+    'Sangeet & Musical Night',
+    'Pheras / Muhurtham Ceremony',
+    'Grand Reception Banquet',
+  ],
+}
 
 const PRIORITY_OPTIONS = [
   'Culinary Excellence & Live Counters',
@@ -104,6 +189,30 @@ const INDIAN_CITIES = [
   'Lucknow',
 ]
 
+const INDIAN_LANGUAGES = [
+  'English',
+  'Bengali',
+  'Hindi',
+  'Punjabi',
+  'Tamil',
+  'Telugu',
+  'Marathi',
+  'Gujarati',
+  'Malayalam',
+  'Urdu',
+  'Kannada',
+  'Odia',
+  'Assamese',
+]
+
+const AUSPICIOUS_TIMINGS = [
+  { id: 'brahma-muhurta', label: 'Brahma Muhurta (Dawn 4:30 AM – 7:00 AM)', desc: 'Traditional South Indian & Vedic dawn rituals' },
+  { id: 'godhuli-lagna', label: 'Godhuli Lagna (Twilight Sunset)', desc: 'Traditional Bengali & North Indian sunset ceremonies' },
+  { id: 'pradosh-kaal', label: 'Pradosh Kaal (Evening Twilight)', desc: 'Auspicious evening Lakshmi Puja & festivals' },
+  { id: 'mid-morning', label: 'Mid-Morning Shubh Muhurat (9:30 AM – 12:00 PM)', desc: 'Lagnasohala, Anand Karaj & Griha Pravesh' },
+  { id: 'flexible-secular', label: 'Flexible / Secular Schedule', desc: 'No astrological timing restrictions' },
+]
+
 const WIZARD_STEPS = [
   { step: 1, label: 'Celebration Type' },
   { step: 2, label: 'Location & Dates' },
@@ -132,7 +241,17 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
   const [indoorOutdoor, setIndoorOutdoor] = useState<'indoor' | 'outdoor' | 'hybrid'>('hybrid')
   const [dressCode, setDressCode] = useState('Traditional Festive / Indo-Western')
   const [specialNotes, setSpecialNotes] = useState('')
+
+  // Cultural Preferences State
   const [selectedTradition, setSelectedTradition] = useState('pan-indian')
+  const [isSecularOnly, setIsSecularOnly] = useState(false)
+  const [preferredLanguage, setPreferredLanguage] = useState('English')
+  const [ceremonyScheduleType, setCeremonyScheduleType] = useState<'single-day' | 'multi-day-2' | 'multi-day-3' | 'multi-day-4' | 'custom'>('multi-day-3')
+  const [auspiciousTiming, setAuspiciousTiming] = useState('Godhuli Lagna (Twilight Sunset)')
+  const [foodTradition, setFoodTradition] = useState('Pan-Indian Culinary Feast')
+  const [decorStyle, setDecorStyle] = useState('Royal Marigold & Antique Brass')
+  const [musicVibe, setMusicVibe] = useState('Live Shehnai, Dhol & Acoustic Sangeet')
+  const [customCeremonyInput, setCustomCeremonyInput] = useState('')
   const [selectedCeremonies, setSelectedCeremonies] = useState<string[]>([
     'Haldi / Gaye Holud',
     'Sangeet & Musical Night',
@@ -174,6 +293,65 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
   }, [isOpen, onClose])
 
   if (!isOpen) return null
+
+  const handleSelectTradition = (tradId: string) => {
+    setSelectedTradition(tradId)
+    setIsSecularOnly(tradId === 'contemporary')
+
+    // Look up template defaults if available
+    const matchedTemplate = INDIAN_EVENT_TEMPLATES.find((t) => t.id === tradId || t.id.startsWith(tradId))
+    if (matchedTemplate) {
+      if (matchedTemplate.culturalPreferences.selectedCeremonies) {
+        setSelectedCeremonies(matchedTemplate.culturalPreferences.selectedCeremonies)
+      }
+      if (matchedTemplate.culturalPreferences.foodTradition) {
+        setFoodTradition(matchedTemplate.culturalPreferences.foodTradition)
+      }
+      if (matchedTemplate.culturalPreferences.decorStyle) {
+        setDecorStyle(matchedTemplate.culturalPreferences.decorStyle)
+      }
+      if (matchedTemplate.culturalPreferences.musicAndVibe) {
+        setMusicVibe(matchedTemplate.culturalPreferences.musicAndVibe)
+      }
+      if (matchedTemplate.culturalPreferences.preferredLanguage) {
+        setPreferredLanguage(matchedTemplate.culturalPreferences.preferredLanguage)
+      }
+      if (matchedTemplate.culturalPreferences.auspiciousTimingPreference) {
+        setAuspiciousTiming(matchedTemplate.culturalPreferences.auspiciousTimingPreference)
+      }
+      if (matchedTemplate.culturalPreferences.ceremonyScheduleType) {
+        setCeremonyScheduleType(matchedTemplate.culturalPreferences.ceremonyScheduleType)
+      }
+      if (!themePreference) {
+        setThemePreference(matchedTemplate.decorThemes[0] || `${matchedTemplate.name} Styling`)
+      }
+    } else if (DEFAULT_CEREMONIES_BY_TRADITION[tradId]) {
+      setSelectedCeremonies(DEFAULT_CEREMONIES_BY_TRADITION[tradId])
+    }
+  }
+
+  const handleAddCustomCeremony = () => {
+    if (!customCeremonyInput.trim()) return
+    if (!selectedCeremonies.includes(customCeremonyInput.trim())) {
+      setSelectedCeremonies([...selectedCeremonies, customCeremonyInput.trim()])
+    }
+    setCustomCeremonyInput('')
+  }
+
+  const handleSkipCulturalQuestions = () => {
+    setIsSecularOnly(true)
+    setSelectedTradition('contemporary')
+    setSelectedCeremonies([
+      'Welcome Gathering & Cocktail Hour',
+      'Personal Vow Exchange & Ring Ceremony',
+      'Celebratory Banquet & Toasts',
+      'Evening Dance & Celebration',
+    ])
+    setFoodTradition('Contemporary Indo-Global Fusion')
+    setMusicVibe('Acoustic Indie & Global Lounge')
+    setDecorStyle('Botanical Minimalist & Fairy Lights')
+    setAuspiciousTiming('Flexible / Secular Schedule')
+  }
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -259,6 +437,20 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
 
     setIsSubmitting(true)
 
+    const culturalPrefs: CulturalPreferences = {
+      traditionId: selectedTradition,
+      regionOrState: city.trim(),
+      preferredLanguage,
+      ceremonyScheduleType,
+      selectedCeremonies,
+      auspiciousTimingPreference: auspiciousTiming,
+      foodTradition,
+      musicAndVibe: musicVibe,
+      decorStyle,
+      isReligiousOrCultural: !isSecularOnly,
+      guestHospitalityNotes: specialNotes || undefined,
+    }
+
     const inputData: NewCelebrationInput = {
       title: title.trim(),
       category,
@@ -276,7 +468,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
       accessibilityNotes: accessibilityNotes.trim() || undefined,
       indoorOutdoor,
       dressCode,
-      specialNotes: `Tradition: ${selectedTradition}. Ceremonies: ${selectedCeremonies.join(', ')}. ${specialNotes}`.trim(),
+      specialNotes: `Tradition: ${selectedTradition}. Language: ${preferredLanguage}. Timing: ${auspiciousTiming}. Ceremonies: ${selectedCeremonies.join(', ')}. ${specialNotes}`.trim(),
+      culturalPreferences: culturalPrefs,
     }
 
     try {
@@ -297,12 +490,18 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
       aria-labelledby="wizard-title"
       className="fixed inset-0 z-50 bg-charcoal-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in"
     >
-      <div className="w-full max-w-2xl bg-ivory-50 rounded-2xl shadow-2xl border border-ivory-300 max-h-[92vh] flex flex-col overflow-hidden">
+      <div className="w-full max-w-2xl bg-ivory-50 rounded-2xl shadow-modal border border-ivory-300 max-h-[92vh] flex flex-col overflow-hidden relative">
+        {/* Subtle decorative Jaali background watermark */}
+        <div
+          className="absolute inset-0 opacity-[0.025] pointer-events-none pattern-jaali"
+          aria-hidden="true"
+        />
+
         {/* Wizard Header */}
-        <div className="p-5 border-b border-ivory-300 bg-gradient-to-r from-ivory-100 to-ivory-50 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-ivory-300 bg-gradient-to-r from-ivory-100 to-ivory-50 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-forest-900 text-gold-300 flex items-center justify-center shadow-subtle">
-              <Flower2 className="w-5 h-5 text-gold-400" />
+              <LotusMotif size={20} className="text-gold-400" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -330,7 +529,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Progress Bar & Step Navigation Pills */}
-        <div className="px-5 py-2.5 bg-ivory-100/70 border-b border-ivory-200">
+        <div className="px-5 py-2.5 bg-ivory-100/70 border-b border-ivory-200 relative z-10">
           <div className="w-full bg-ivory-300 h-1.5 rounded-full overflow-hidden">
             <div
               className="bg-forest-700 h-full transition-all duration-300 rounded-full"
@@ -359,7 +558,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 relative z-10">
           {/* STEP 1: Celebration Category */}
           <div className={currentStep === 1 ? 'space-y-4 animate-in fade-in duration-150' : 'hidden'}>
             <div>
@@ -367,7 +566,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                 Select Celebration Type
               </h3>
               <p className="text-xs text-charcoal-600 mt-0.5">
-                Choose the archetype that best matches your upcoming event.
+                Choose the archetype that best matches your upcoming celebration.
               </p>
             </div>
 
@@ -406,11 +605,20 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
               })}
             </div>
 
-            <div className="p-3 rounded-xl bg-ivory-100/80 border border-ivory-200 text-xs text-charcoal-600 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-gold-600 shrink-0" />
-              <span>
-                Celebrio adapts default budget categories and timelines according to the celebration type you select.
-              </span>
+            <div className="p-3.5 rounded-xl bg-ivory-100/90 border border-ivory-300 text-xs text-charcoal-700 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-gold-600 shrink-0" />
+                <span>
+                  Celebrio adapts budgets, milestones, and supplier checklists dynamically.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSkipCulturalQuestions}
+                className="text-[11px] font-semibold text-terracotta-700 hover:underline shrink-0"
+              >
+                Plan Secular / Contemporary &rarr;
+              </button>
             </div>
           </div>
 
@@ -469,7 +677,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                   )}
 
                   <div className="flex flex-wrap gap-1 mt-1.5">
-                    {INDIAN_CITIES.slice(0, 5).map((c) => (
+                    {INDIAN_CITIES.slice(0, 6).map((c) => (
                       <button
                         key={c}
                         type="button"
@@ -516,67 +724,179 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
             </div>
           </div>
 
-          {/* STEP 3: Regional Traditions & Rituals */}
+          {/* STEP 3: Regional Traditions & Cultural Preferences */}
           <div className={currentStep === 3 ? 'space-y-4 animate-in fade-in duration-150' : 'hidden'}>
-            <div>
-              <h3 className="font-serif font-bold text-base text-charcoal-900">
-                Regional Tradition &amp; Key Ceremonies
-              </h3>
-              <p className="text-xs text-charcoal-600 mt-0.5">
-                Select your cultural heritage to tailor decor aesthetics and vendor checklists.
-              </p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-serif font-bold text-base text-charcoal-900 flex items-center gap-2">
+                  <Flower2 className="w-4 h-4 text-forest-700" />
+                  Cultural Traditions &amp; Ceremonies
+                </h3>
+                <p className="text-xs text-charcoal-600 mt-0.5">
+                  Tailor regional rituals, preferred language, and ceremony schedules.
+                </p>
+              </div>
+
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleSkipCulturalQuestions}
+                className="text-[11px] py-1 shrink-0"
+              >
+                Skip / Secular Mode
+              </Button>
             </div>
 
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-charcoal-700 block">
-                Cultural Heritage &amp; Archetype:
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {REGIONAL_TRADITIONS.map((trad) => (
-                  <button
-                    key={trad.id}
-                    type="button"
-                    onClick={() => setSelectedTradition(trad.id)}
-                    className={`p-3 rounded-xl border text-left transition-all ${
-                      selectedTradition === trad.id
-                        ? 'border-forest-700 bg-forest-50/80 ring-1 ring-forest-700'
-                        : 'border-ivory-300 bg-white hover:bg-ivory-50'
-                    }`}
-                  >
-                    <div className="text-xs font-bold text-charcoal-900">
-                      {trad.label}
-                    </div>
-                    <div className="text-[10.5px] text-charcoal-500 mt-0.5">
-                      {trad.desc}
-                    </div>
-                  </button>
-                ))}
+            {/* Cultural Disclaimer Banner */}
+            <div className="p-3 rounded-xl bg-forest-50/80 border border-forest-200/80 text-[11px] text-forest-900 flex items-start gap-2 leading-relaxed">
+              <Shield className="w-4 h-4 text-forest-700 shrink-0 mt-0.5" />
+              <div>
+                <strong>Culturally Intelligent &amp; Adaptable:</strong> Cultural suggestions are flexible starting points based on your preferences—never universal or assumed. Feel free to modify, uncheck, or add any ritual to match your family customs.
               </div>
             </div>
 
-            <div className="space-y-2 pt-2 border-t border-ivory-200">
+            {/* Cultural Archetype Selector */}
+            <div className="space-y-2">
               <span className="text-xs font-semibold text-charcoal-700 block">
-                Featured Ceremonies &amp; Multi-Day Events:
+                Regional Heritage or Celebration Archetype:
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {CEREMONY_OPTIONS.map((ceremony) => {
-                  const isChecked = selectedCeremonies.includes(ceremony)
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-56 overflow-y-auto pr-1">
+                {REGIONAL_TRADITIONS.map((trad) => {
+                  const isSelected = selectedTradition === trad.id
                   return (
                     <button
-                      key={ceremony}
+                      key={trad.id}
                       type="button"
-                      onClick={() => toggleItem(selectedCeremonies, ceremony, setSelectedCeremonies)}
-                      className={`px-3 py-2 rounded-xl text-xs font-medium text-left border flex items-center justify-between ${
-                        isChecked
-                          ? 'bg-forest-100 text-forest-900 border-forest-300'
-                          : 'bg-white text-charcoal-700 border-ivory-300 hover:bg-ivory-50'
+                      onClick={() => handleSelectTradition(trad.id)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        isSelected
+                          ? 'border-forest-700 bg-forest-50/80 ring-1 ring-forest-700 shadow-2xs'
+                          : 'border-ivory-300 bg-white hover:bg-ivory-50'
                       }`}
                     >
-                      <span>{ceremony}</span>
-                      {isChecked && <Check className="w-3.5 h-3.5 text-forest-700 shrink-0" />}
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-bold text-charcoal-900">
+                          {trad.label}
+                        </div>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-forest-700" />}
+                      </div>
+                      <div className="text-[10.5px] text-charcoal-500 mt-0.5 leading-snug">
+                        {trad.desc}
+                      </div>
                     </button>
                   )
                 })}
+              </div>
+            </div>
+
+            {/* Language & Muhurat Timing Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-ivory-200">
+              <div>
+                <label htmlFor="wizard-language" className="block text-xs font-semibold text-charcoal-700 mb-1 flex items-center gap-1.5">
+                  <Globe className="w-3.5 h-3.5 text-forest-700" />
+                  Preferred Language
+                </label>
+                <select
+                  id="wizard-language"
+                  value={preferredLanguage}
+                  onChange={(e) => setPreferredLanguage(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+                >
+                  {INDIAN_LANGUAGES.map((lang) => (
+                    <option key={lang} value={lang}>{lang}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="wizard-schedule-type" className="block text-xs font-semibold text-charcoal-700 mb-1 flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-forest-700" />
+                  Ceremony Schedule
+                </label>
+                <select
+                  id="wizard-schedule-type"
+                  value={ceremonyScheduleType}
+                  onChange={(e) => setCeremonyScheduleType(e.target.value as any)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+                >
+                  <option value="single-day">Single Day (Intensive / Reception)</option>
+                  <option value="multi-day-2">2 Days (Pre-ceremony + Main Day)</option>
+                  <option value="multi-day-3">3 Days (Traditional Multi-Function)</option>
+                  <option value="multi-day-4">4+ Days (Grand Ceremonial Sprint)</option>
+                  <option value="custom">Custom Schedule</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Auspicious Timing Preference */}
+            <div>
+              <label htmlFor="wizard-timing" className="block text-xs font-semibold text-charcoal-700 mb-1 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-forest-700" />
+                Auspicious Timing / Shubh Muhurat Preference
+              </label>
+              <select
+                id="wizard-timing"
+                value={auspiciousTiming}
+                onChange={(e) => setAuspiciousTiming(e.target.value)}
+                className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+              >
+                {AUSPICIOUS_TIMINGS.map((tm) => (
+                  <option key={tm.id} value={tm.label}>{tm.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Interactive Ceremony Checklist */}
+            <div className="space-y-2 pt-2 border-t border-ivory-200">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-charcoal-700 block">
+                  Select Ceremonies &amp; Functions ({selectedCeremonies.length} selected):
+                </span>
+                <span className="text-[10px] text-charcoal-500">
+                  Click to include or remove
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                {selectedCeremonies.map((ceremony) => (
+                  <button
+                    key={ceremony}
+                    type="button"
+                    onClick={() => toggleItem(selectedCeremonies, ceremony, setSelectedCeremonies)}
+                    className="px-3 py-2 rounded-xl text-xs font-medium text-left border flex items-center justify-between bg-forest-100 text-forest-900 border-forest-300 hover:bg-forest-200/70 transition-colors"
+                  >
+                    <span className="truncate mr-2">{ceremony}</span>
+                    <Check className="w-3.5 h-3.5 text-forest-700 shrink-0" />
+                  </button>
+                ))}
+              </div>
+
+              {/* Add Custom Family Ritual */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  value={customCeremonyInput}
+                  onChange={(e) => setCustomCeremonyInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAddCustomCeremony()
+                    }
+                  }}
+                  placeholder="Add a family-specific ritual (e.g. Sangeet Antakshari, Pidi Dance)"
+                  className="flex-1 px-3 py-1.5 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-1 focus:ring-forest-700"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleAddCustomCeremony}
+                  leftIcon={<Plus className="w-3.5 h-3.5" />}
+                  className="text-xs py-1.5"
+                >
+                  Add
+                </Button>
               </div>
             </div>
           </div>
@@ -723,7 +1043,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                     ? Math.round(Number(budget) / Number(guestCount)).toLocaleString()
                     : 0}
                 </strong>{' '}
-                per attendee (encompassing royal catering, mandap, entertainment &amp; hospitality).
+                per attendee (encompassing royal catering, mandap florals, entertainment &amp; hospitality).
               </p>
             </div>
           </div>
@@ -739,9 +1059,24 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
               </p>
             </div>
 
+            {/* Food Tradition Selector */}
+            <div>
+              <label htmlFor="wizard-food-tradition" className="block text-xs font-semibold text-charcoal-700 mb-1 flex items-center gap-1.5">
+                <Utensils className="w-3.5 h-3.5 text-forest-700" />
+                Culinary Style &amp; Feast Tradition
+              </label>
+              <input
+                id="wizard-food-tradition"
+                type="text"
+                value={foodTradition}
+                onChange={(e) => setFoodTradition(e.target.value)}
+                placeholder="e.g. Traditional Bengali Feast with Sandesh, South Indian Banana Leaf Sadya"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
+              />
+            </div>
+
             <div className="space-y-2">
               <span className="text-xs font-semibold text-charcoal-700 flex items-center gap-1.5">
-                <Utensils className="w-3.5 h-3.5 text-forest-700" />
                 Dietary Accommodations:
               </span>
               <div className="flex flex-wrap gap-2">
@@ -800,7 +1135,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                 rows={2}
                 value={dietaryNotes}
                 onChange={(e) => setDietaryNotes(e.target.value)}
-                placeholder="e.g. Separate Jain chaat counter, nut-free dessert station."
+                placeholder="e.g. Separate Jain chaat counter, nut-free dessert station, live filter coffee stall."
                 className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
               />
             </div>
@@ -814,7 +1149,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                 rows={2}
                 value={accessibilityNotes}
                 onChange={(e) => setAccessibilityNotes(e.target.value)}
-                placeholder="e.g. Golf cart needed from parking to lawn; 25 guests require Jain food."
+                placeholder="e.g. Golf cart needed from parking to lawn; wheelchair ramp to mandap stage."
                 className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
               />
             </div>
@@ -931,7 +1266,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
             {/* Summary Review Card */}
             <div className="p-4 rounded-xl bg-ivory-100/90 border border-ivory-300 space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-ivory-300">
-                <span className="font-serif font-bold text-sm text-charcoal-900">
+                <span className="font-serif font-bold text-sm text-charcoal-900 flex items-center gap-1.5">
+                  <DiyaLampMotif size={16} className="text-gold-600" />
                   Celebration Review
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-forest-100 text-forest-800">
@@ -949,8 +1285,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                   <strong>{city || 'Location TBD'}</strong>
                 </div>
                 <div>
-                  <span className="text-charcoal-500 block text-[10px]">Date:</span>
-                  <strong>{date}</strong>
+                  <span className="text-charcoal-500 block text-[10px]">Date &amp; Schedule:</span>
+                  <strong>{date} ({ceremonyScheduleType})</strong>
                 </div>
                 <div>
                   <span className="text-charcoal-500 block text-[10px]">Budget &amp; Guests:</span>
@@ -963,9 +1299,13 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
               <div className="pt-2 border-t border-ivory-200 text-[11px] text-charcoal-600 flex flex-wrap gap-2">
                 <span>Tradition: <strong>{selectedTradition}</strong></span>
                 <span>•</span>
-                <span>Dietary: <strong>{selectedDietary.length} options</strong></span>
+                <span>Language: <strong>{preferredLanguage}</strong></span>
                 <span>•</span>
-                <span>Accessibility: <strong>{selectedAccessibility.length} provisions</strong></span>
+                <span>Timing: <strong>{auspiciousTiming}</strong></span>
+                <span>•</span>
+                <span>Ceremonies: <strong>{selectedCeremonies.length}</strong></span>
+                <span>•</span>
+                <span>Dietary: <strong>{selectedDietary.length}</strong></span>
               </div>
             </div>
           </div>
