@@ -90,23 +90,28 @@ export function sanitizeAmount(val: unknown, allowNegative = false): number {
 
 /**
  * Formats currency values deterministically without mixing currencies.
+ * Supports Indian numbering format (Lakhs / Crores) when currency is INR.
  */
 export function formatCurrency(
   amount: unknown,
-  currency = 'USD',
+  currency = 'INR',
   showCents = false,
 ): string {
   const safeNum = sanitizeAmount(amount, true)
+  const isINR = !currency || currency.toUpperCase() === 'INR'
+  const locale = isINR ? 'en-IN' : 'en-US'
+  const targetCurrency = isINR ? 'INR' : currency
 
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: currency || 'USD',
+      currency: targetCurrency,
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     }).format(safeNum)
   } catch {
     const symbolMap: Record<string, string> = {
+      INR: '₹',
       USD: '$',
       EUR: '€',
       GBP: '£',
@@ -115,13 +120,39 @@ export function formatCurrency(
       JPY: '¥',
       CHF: 'CHF ',
     }
-    const symbol = symbolMap[currency] || '$'
-    const formattedNum = safeNum.toLocaleString('en-US', {
+    const symbol = symbolMap[targetCurrency] || (isINR ? '₹' : '$')
+    const formattedNum = safeNum.toLocaleString(locale, {
       minimumFractionDigits: showCents ? 2 : 0,
       maximumFractionDigits: showCents ? 2 : 0,
     })
     return `${symbol}${formattedNum}`
   }
+}
+
+/**
+ * Concise Indian metric representation (e.g. ₹45 Lakhs or ₹1.50 Cr)
+ */
+export function formatIndianLakhsCrores(amount: unknown, currency = 'INR'): string {
+  const safeNum = sanitizeAmount(amount, true)
+  const isINR = !currency || currency.toUpperCase() === 'INR'
+
+  if (!isINR) {
+    return formatCurrency(safeNum, currency)
+  }
+
+  const abs = Math.abs(safeNum)
+  const sign = safeNum < 0 ? '-' : ''
+
+  if (abs >= 10000000) {
+    const cr = (abs / 10000000).toFixed(2).replace(/\.00$/, '')
+    return `${sign}₹${cr} Cr`
+  }
+  if (abs >= 100000) {
+    const lk = (abs / 100000).toFixed(2).replace(/\.00$/, '')
+    return `${sign}₹${lk} Lakhs`
+  }
+
+  return formatCurrency(safeNum, 'INR')
 }
 
 /**

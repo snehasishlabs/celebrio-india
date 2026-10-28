@@ -7,8 +7,6 @@ import {
   CheckCircle2,
   Calendar,
   Users,
-  DollarSign,
-  ShieldAlert,
   RotateCcw,
   Sparkles,
   Info,
@@ -19,6 +17,8 @@ import {
   Music,
   Lightbulb,
   ShieldCheck,
+  ShieldAlert,
+  Coins,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
@@ -163,7 +163,7 @@ export const SimulatorView: React.FC = () => {
     applyScenario(scenarioInput, simulationResult)
     setIsConfirmApplyOpen(false)
     setAppliedNotice(
-      `Scenario applied successfully! Plan synchronized: Budget $${totalBudget.toLocaleString()}, ${guestCount} guests, Date: ${eventDate}.`,
+      `Scenario applied successfully! Plan synchronized: Budget ${formatCurrency(totalBudget, currency)}, ${guestCount} guests, Date: ${eventDate}.`,
     )
     setTimeout(() => setAppliedNotice(null), 4000)
   }
@@ -277,7 +277,7 @@ export const SimulatorView: React.FC = () => {
             <TrendingDown className="w-3.5 h-3.5 text-terracotta-600" />
           </div>
           <div className="font-serif font-bold text-sm text-charcoal-900">-15% Budget Cut</div>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">Test expenditure compression</p>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">Streamline non-essential vendor fees</p>
         </button>
 
         <button
@@ -290,7 +290,7 @@ export const SimulatorView: React.FC = () => {
             <TrendingUp className="w-3.5 h-3.5 text-forest-600" />
           </div>
           <div className="font-serif font-bold text-sm text-charcoal-900">+30 Guest Surge</div>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">High RSVP acceptance test</p>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">Extended family &amp; RSVPs surge</p>
         </button>
 
         <button
@@ -303,7 +303,7 @@ export const SimulatorView: React.FC = () => {
             <AlertTriangle className="w-3.5 h-3.5 text-gold-600" />
           </div>
           <div className="font-serif font-bold text-sm text-charcoal-900">-3 Weeks Earlier</div>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">Test accelerated deadlines</p>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">Auspicious mahurat date shift</p>
         </button>
 
         <button
@@ -313,10 +313,10 @@ export const SimulatorView: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-bold uppercase text-forest-700">Investment</span>
-            <DollarSign className="w-3.5 h-3.5 text-forest-600" />
+            <Coins className="w-3.5 h-3.5 text-forest-600" />
           </div>
           <div className="font-serif font-bold text-sm text-charcoal-900">+20% Luxury Tier</div>
-          <p className="text-[11px] text-charcoal-500 mt-0.5">Expand decor and music hours</p>
+          <p className="text-[11px] text-charcoal-500 mt-0.5">Royal mandap &amp; live sangeet upgrade</p>
         </button>
       </div>
 

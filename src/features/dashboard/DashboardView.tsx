@@ -19,6 +19,7 @@ import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 import { EmptyState } from '@/components/common/EmptyState'
 import { calculateDaysRemaining } from '@/utils/timelineEngine'
+import { formatCurrency } from '@/utils/budgetGuardian'
 
 export const DashboardView: React.FC = () => {
   const {
@@ -95,7 +96,7 @@ export const DashboardView: React.FC = () => {
             </Badge>
           </div>
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-charcoal-900 tracking-tight">
-            Welcome to Celebrio AI
+            Welcome to Celebrio AI — India
           </h2>
           <p className="text-xs sm:text-sm text-charcoal-600 mt-1 max-w-2xl">
             Currently orchestrating{' '}
@@ -105,7 +106,7 @@ export const DashboardView: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
           <Button
             variant="terracotta"
             size="sm"
@@ -121,6 +122,36 @@ export const DashboardView: React.FC = () => {
             leftIcon={<Plus className="w-4 h-4" />}
           >
             Create Event
+          </Button>
+        </div>
+      </div>
+
+      {/* Regional Celebration Traditions Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-forest-900 to-forest-800 text-ivory-50 border border-forest-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-subtle">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-gold-400 text-forest-950">
+              Indian Event-Tech
+            </span>
+            <span className="text-xs text-gold-300 font-medium">
+              Every Tradition. Every Budget. Every Celebration.
+            </span>
+          </div>
+          <h3 className="font-serif font-bold text-base text-ivory-50">
+            Tailored for Indian Weddings, Festivities &amp; Multi-Day Milestones
+          </h3>
+          <p className="text-xs text-ivory-200/80 max-w-xl">
+            Explore authentic traditions for Bengali Biye, Punjabi Sangeet, South Indian Muhurtham, and Gujarati Garba with deterministic ₹ INR budget protection.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setCurrentSection('landing')}
+            className="border-ivory-300 text-ivory-100 hover:text-white hover:bg-forest-800 whitespace-nowrap"
+          >
+            Explore Traditions
           </Button>
         </div>
       </div>
@@ -174,7 +205,7 @@ export const DashboardView: React.FC = () => {
                 <div className="flex items-center justify-between text-xs text-charcoal-500">
                   <span>{ev.date}</span>
                   <span className="font-medium text-charcoal-800">
-                    ${ev.totalBudget.toLocaleString()}
+                    {formatCurrency(ev.totalBudget, ev.currency)}
                   </span>
                 </div>
               </div>
@@ -205,11 +236,11 @@ export const DashboardView: React.FC = () => {
               </div>
             </div>
             <div className="font-serif text-2xl font-bold text-charcoal-900 mb-1">
-              ${totalAllocated.toLocaleString()}
+              {formatCurrency(totalAllocated, activeEvent.currency)}
             </div>
             <div className="flex items-center justify-between text-xs text-charcoal-500 mb-2">
               <span>{allocationPercent}% of total cap</span>
-              <span className="text-forest-700 font-semibold">${totalPaid.toLocaleString()} paid</span>
+              <span className="text-forest-700 font-semibold">{formatCurrency(totalPaid, activeEvent.currency)} paid</span>
             </div>
             <div className="w-full h-1.5 bg-ivory-200 rounded-full overflow-hidden">
               <div
@@ -244,12 +275,12 @@ export const DashboardView: React.FC = () => {
                 remainingBudget < 0 ? 'text-terracotta-600' : 'text-forest-800'
               }`}
             >
-              ${Math.max(0, remainingBudget).toLocaleString()}
+              {formatCurrency(Math.max(0, remainingBudget), activeEvent.currency)}
             </div>
             <div className="flex items-center justify-between text-xs text-charcoal-500 mb-2">
               <span>Buffer Protected</span>
               <span className="text-gold-700 font-semibold">
-                ${contingencyFund.toLocaleString()} reserve
+                {formatCurrency(contingencyFund, activeEvent.currency)} reserve
               </span>
             </div>
             <div className="w-full h-1.5 bg-ivory-200 rounded-full overflow-hidden">

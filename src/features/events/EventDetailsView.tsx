@@ -26,6 +26,7 @@ import { VendorsView } from '@/features/vendors/VendorsView'
 import { GuestExperienceView } from '@/features/events/GuestExperienceView'
 import { ContingencyPlanView } from '@/features/events/ContingencyPlanView'
 import { calculateDaysRemaining } from '@/utils/timelineEngine'
+import { formatCurrency } from '@/utils/budgetGuardian'
 
 const TABS: { id: EventDetailTab; label: string; icon: typeof Calendar }[] = [
   { id: 'overview', label: 'Overview', icon: Calendar },
@@ -230,12 +231,12 @@ export const EventDetailsView: React.FC = () => {
                 Total Budget
               </span>
               <div className="font-serif text-2xl font-bold text-charcoal-900">
-                ${totalBudget.toLocaleString()}
+                {formatCurrency(totalBudget, activeEvent.currency)}
               </div>
               <div className="flex justify-between text-xs text-charcoal-500 mt-2">
-                <span>Allocated: ${allocated.toLocaleString()}</span>
+                <span>Allocated: {formatCurrency(allocated, activeEvent.currency)}</span>
                 <span className="text-forest-700 font-semibold">
-                  ${Math.max(0, remaining).toLocaleString()} free
+                  {formatCurrency(Math.max(0, remaining), activeEvent.currency)} free
                 </span>
               </div>
             </Card>
@@ -262,7 +263,7 @@ export const EventDetailsView: React.FC = () => {
                 {signedVendors} / {vendors.length}
               </div>
               <p className="text-xs text-charcoal-500 mt-2">
-                ${paid.toLocaleString()} in deposits secured
+                {formatCurrency(paid, activeEvent.currency)} in deposits secured
               </p>
             </Card>
 

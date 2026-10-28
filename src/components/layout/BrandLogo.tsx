@@ -45,12 +45,12 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({ collapsed = false, classNa
             <span className="font-serif text-lg font-bold tracking-tight text-forest-900">
               Celebrio
             </span>
-            <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-terracotta-100 text-terracotta-700 border border-terracotta-200">
-              AI
+            <span className="text-[10px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-terracotta-100 text-terracotta-800 border border-terracotta-200">
+              India
             </span>
           </div>
-          <span className="text-[11px] text-charcoal-500 font-medium tracking-tight mt-0.5">
-            Adaptive Event Planner
+          <span className="text-[10px] text-charcoal-500 font-medium tracking-tight mt-0.5 truncate">
+            Every Tradition. Every Budget.
           </span>
         </div>
       )}

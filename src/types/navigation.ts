@@ -1,4 +1,5 @@
 export type NavSection =
+  | 'landing'
   | 'dashboard'
   | 'events'
   | 'budget'

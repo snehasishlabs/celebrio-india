@@ -78,8 +78,8 @@ export default {
         }
       },
       fontFamily: {
-        serif: ['"Playfair Display"', 'Georgia', 'serif'],
-        sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['"Playfair Display"', '"Noto Serif Devanagari"', '"Noto Serif Bengali"', 'Georgia', 'serif'],
+        sans: ['"Plus Jakarta Sans"', '"Noto Sans Devanagari"', '"Noto Sans Bengali"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
       boxShadow: {
         'subtle': '0 1px 2px 0 rgba(21, 23, 21, 0.04)',

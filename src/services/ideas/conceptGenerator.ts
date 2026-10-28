@@ -7,6 +7,7 @@ const PRICE_DISCLAIMER =
 export function generateThemeConcepts(event: CelebrationEvent): ThemeConcept[] {
   const budget = event.totalBudget
   const category = event.category
+  const currSymbol = event.currency === 'INR' ? '₹' : (event.currency === 'EUR' ? '€' : (event.currency === 'GBP' ? '£' : '$'))
   const themeHint = event.themePreference ? ` inspired by "${event.themePreference}"` : ''
   const dietaryHighlights = event.dietaryRequirements.length > 0
     ? `Dedicated menus tailored for ${event.dietaryRequirements.slice(0, 3).join(', ')}`
@@ -60,7 +61,7 @@ export function generateThemeConcepts(event: CelebrationEvent): ThemeConcept[] {
           },
           tradeoffs: {
             advantages: [
-              `Preserves ~$${Math.round(budget * 0.18).toLocaleString()} as an untouched emergency buffer`,
+              `Preserves ~${currSymbol}${Math.round(budget * 0.18).toLocaleString()} as an untouched emergency buffer`,
               'Cozy, authentic ambiance with minimal rigid production stress',
               'Fast load-in and simplified setup logistics',
             ],

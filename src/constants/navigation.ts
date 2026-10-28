@@ -1,4 +1,5 @@
 import {
+  Sparkles,
   LayoutDashboard,
   CalendarDays,
   Coins,
@@ -18,6 +19,13 @@ export interface NavItemDef {
 }
 
 export const NAVIGATION_ITEMS: NavItemDef[] = [
+  {
+    id: 'landing',
+    label: 'Explore Traditions',
+    description: 'Indian celebration guide & styles',
+    icon: Sparkles,
+    badge: 'India',
+  },
   {
     id: 'dashboard',
     label: 'Dashboard',

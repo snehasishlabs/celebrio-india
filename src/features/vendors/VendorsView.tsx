@@ -8,7 +8,7 @@ import {
   Trash2,
   CheckCircle2,
   Circle,
-  DollarSign,
+  Coins,
   ShieldAlert,
   Info,
   Scale,
@@ -379,7 +379,7 @@ export const VendorsView: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {filteredVendors.length === 0 ? (
               <Card variant="default" className="col-span-full p-8 text-center text-charcoal-600">
-                <DollarSign className="w-8 h-8 text-charcoal-400 mx-auto mb-2" />
+                <Coins className="w-8 h-8 text-charcoal-400 mx-auto mb-2" />
                 <p className="font-semibold text-sm">No suppliers logged in this category.</p>
                 <p className="text-xs text-charcoal-500 mt-1">
                   Click &quot;Add Supplier&quot; to log a contractor quote or candidate worksheet.

@@ -1,6 +1,7 @@
 import React from 'react'
 import { PlannerProvider, usePlanner } from '@/context/PlannerContext'
 import { Shell } from '@/components/layout/Shell'
+import { LandingWelcomeView } from '@/features/landing/LandingWelcomeView'
 import { DashboardView } from '@/features/dashboard/DashboardView'
 import { EventsView } from '@/features/events/EventsView'
 import { BudgetView } from '@/features/budget/BudgetView'
@@ -13,6 +14,8 @@ const MainContent: React.FC = () => {
   const { currentSection } = usePlanner()
 
   switch (currentSection) {
+    case 'landing':
+      return <LandingWelcomeView />
     case 'dashboard':
       return <DashboardView />
     case 'events':
