@@ -483,3 +483,92 @@ export function generateCostSavingAlternatives(
 
   return alternatives.slice(0, 4)
 }
+
+/**
+ * Identifies essential celebration categories that have not yet been allocated.
+ */
+export function detectMissingExpenseCategories(
+  items: BudgetItem[],
+  eventCategory: string = 'wedding',
+): {
+  missingCategories: { id: BudgetCategory; name: string; suggestedPercent: number; rationale: string }[]
+} {
+  const allocatedCategories = new Set(items.map((i) => normalizeCategory(i.category)))
+  const missing: { id: BudgetCategory; name: string; suggestedPercent: number; rationale: string }[] = []
+
+  const essentialWedding: { id: BudgetCategory; name: string; suggestedPercent: number; rationale: string }[] = [
+    { id: 'venue', name: 'Venue & Facilities', suggestedPercent: 28, rationale: 'Core physical staging, dining hall, and load-in permits.' },
+    { id: 'catering', name: 'Catering & Beverages', suggestedPercent: 32, rationale: 'Grand celebratory banquet, welcoming drinks, and sweets.' },
+    { id: 'decor', name: 'Décor & Florals', suggestedPercent: 12, rationale: 'Mandap canopy, ceremonial lighting, and auspicious botanicals.' },
+    { id: 'photography', name: 'Photography & Media', suggestedPercent: 8, rationale: 'Cinematic recording of rituals and family portraits.' },
+    { id: 'contingency', name: 'Contingency Reserve', suggestedPercent: 8, rationale: 'Ring-fenced liquidity for unforeseen supplier overtime or guest surge.' },
+  ]
+
+  const checkList = eventCategory === 'wedding' ? essentialWedding : essentialWedding.filter((c) => c.id !== 'contingency')
+
+  checkList.forEach((c) => {
+    if (!allocatedCategories.has(c.id)) {
+      missing.push(c)
+    }
+  })
+
+  return { missingCategories: missing }
+}
+
+/**
+ * Evaluates variance between initial estimates and formal vendor quotations.
+ * Highlights supplier cost drift deterministically.
+ */
+export function compareEstimatedVsQuoted(items: BudgetItem[]): {
+  estimatedTotal: number
+  quotedTotal: number
+  confirmedTotal: number
+  quotedVariance: number
+  driftPercentage: number
+  hasHighDrift: boolean
+  driftingItems: { itemId: string; name: string; estimated: number; quoted: number; variance: number }[]
+} {
+  let estimatedTotal = 0
+  let quotedTotal = 0
+  let confirmedTotal = 0
+  const driftingItems: { itemId: string; name: string; estimated: number; quoted: number; variance: number }[] = []
+
+  items.forEach((item) => {
+    const allocated = sanitizeAmount(item.allocatedAmount)
+    const status = item.costStatus || 'estimated'
+
+    if (status === 'estimated') {
+      estimatedTotal += allocated
+    } else if (status === 'quoted') {
+      const quoted = sanitizeAmount(item.quotedAmount || item.actualAmount || allocated)
+      quotedTotal += quoted
+      // If actual/quoted amount exceeds allocated estimate by > 10%
+      if (quoted > allocated && allocated > 0) {
+        const diff = quoted - allocated
+        driftingItems.push({
+          itemId: item.id,
+          name: item.name,
+          estimated: allocated,
+          quoted,
+          variance: diff,
+        })
+      }
+    } else if (status === 'confirmed') {
+      confirmedTotal += allocated
+    }
+  })
+
+  const quotedVariance = Math.round((quotedTotal - estimatedTotal) * 100) / 100
+  const driftPercentage = estimatedTotal > 0 ? Math.round((quotedVariance / estimatedTotal) * 100) : 0
+  const hasHighDrift = driftPercentage > 15
+
+  return {
+    estimatedTotal: Math.round(estimatedTotal * 100) / 100,
+    quotedTotal: Math.round(quotedTotal * 100) / 100,
+    confirmedTotal: Math.round(confirmedTotal * 100) / 100,
+    quotedVariance,
+    driftPercentage,
+    hasHighDrift,
+    driftingItems,
+  }
+}

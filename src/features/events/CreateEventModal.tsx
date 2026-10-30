@@ -543,13 +543,12 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                 key={s.step}
                 type="button"
                 onClick={() => setCurrentStep(s.step)}
-                className={`text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors whitespace-nowrap ${
-                  currentStep === s.step
-                    ? 'bg-forest-900 text-gold-300 shadow-2xs'
-                    : currentStep > s.step
+                className={`text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors whitespace-nowrap ${currentStep === s.step
+                  ? 'bg-forest-900 text-gold-300 shadow-2xs'
+                  : currentStep > s.step
                     ? 'text-forest-800 hover:bg-ivory-200'
                     : 'text-charcoal-400 hover:text-charcoal-600'
-                }`}
+                  }`}
               >
                 {s.step}. {s.label}
               </button>
@@ -579,16 +578,14 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                     key={cat.id}
                     type="button"
                     onClick={() => setCategory(cat.id)}
-                    className={`p-4 rounded-xl border text-left transition-all duration-150 flex items-start gap-3.5 ${
-                      isSelected
-                        ? 'border-forest-700 bg-forest-50/80 ring-2 ring-forest-700/20 shadow-subtle'
-                        : 'border-ivory-300 hover:border-ivory-400 bg-white hover:bg-ivory-50/50'
-                    }`}
+                    className={`p-4 rounded-xl border text-left transition-all duration-150 flex items-start gap-3.5 ${isSelected
+                      ? 'border-forest-700 bg-forest-50/80 ring-2 ring-forest-700/20 shadow-subtle'
+                      : 'border-ivory-300 hover:border-ivory-400 bg-white hover:bg-ivory-50/50'
+                      }`}
                   >
                     <div
-                      className={`p-2.5 rounded-lg shrink-0 ${
-                        isSelected ? 'bg-forest-900 text-gold-300' : 'bg-ivory-100 text-charcoal-600'
-                      }`}
+                      className={`p-2.5 rounded-lg shrink-0 ${isSelected ? 'bg-forest-900 text-gold-300' : 'bg-ivory-100 text-charcoal-600'
+                        }`}
                     >
                       <Icon className="w-5 h-5" />
                     </div>
@@ -769,11 +766,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                       key={trad.id}
                       type="button"
                       onClick={() => handleSelectTradition(trad.id)}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        isSelected
-                          ? 'border-forest-700 bg-forest-50/80 ring-1 ring-forest-700 shadow-2xs'
-                          : 'border-ivory-300 bg-white hover:bg-ivory-50'
-                      }`}
+                      className={`p-3 rounded-xl border text-left transition-all ${isSelected
+                        ? 'border-forest-700 bg-forest-50/80 ring-1 ring-forest-700 shadow-2xs'
+                        : 'border-ivory-300 bg-white hover:bg-ivory-50'
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="text-xs font-bold text-charcoal-900">
@@ -1087,11 +1083,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                       key={item}
                       type="button"
                       onClick={() => toggleItem(selectedDietary, item, setSelectedDietary)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                        isSelected
-                          ? 'bg-forest-900 text-gold-300 border-forest-700'
-                          : 'bg-white text-charcoal-700 border-ivory-300 hover:bg-ivory-50'
-                      }`}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${isSelected
+                        ? 'bg-forest-900 text-gold-300 border-forest-700'
+                        : 'bg-white text-charcoal-700 border-ivory-300 hover:bg-ivory-50'
+                        }`}
                     >
                       {item}
                     </button>
@@ -1113,11 +1108,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                       key={item}
                       type="button"
                       onClick={() => toggleItem(selectedAccessibility, item, setSelectedAccessibility)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                        isSelected
-                          ? 'bg-forest-900 text-gold-300 border-forest-700'
-                          : 'bg-white text-charcoal-700 border-ivory-300 hover:bg-ivory-50'
-                      }`}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${isSelected
+                        ? 'bg-forest-900 text-gold-300 border-forest-700'
+                        : 'bg-white text-charcoal-700 border-ivory-300 hover:bg-ivory-50'
+                        }`}
                     >
                       {item}
                     </button>
@@ -1204,11 +1198,10 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                       key={p}
                       type="button"
                       onClick={() => toggleItem(selectedPriorities, p, setSelectedPriorities)}
-                      className={`text-[11px] px-2.5 py-1 rounded-xl border transition-colors ${
-                        isChecked
-                          ? 'bg-forest-900 text-gold-300 border-forest-700'
-                          : 'bg-white text-charcoal-700 border-ivory-300 hover:bg-ivory-50'
-                      }`}
+                      className={`text-[11px] px-2.5 py-1 rounded-xl border transition-colors ${isChecked
+                        ? 'bg-forest-900 text-gold-300 border-forest-700'
+                        : 'bg-white text-charcoal-700 border-ivory-300 hover:bg-ivory-50'
+                        }`}
                     >
                       {p}
                     </button>

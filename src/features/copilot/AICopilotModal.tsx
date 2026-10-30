@@ -9,22 +9,27 @@ import {
   HelpCircle,
   Calendar,
   Flower2,
+  CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { AICopilotTaskAdviceResponse } from '@/types/ai'
+import { AICopilotTaskAdviceResponse, AIActionProposal } from '@/types/ai'
 import { explainUrgentTasks } from '@/services/ai/aiPlanningService'
 import { formatCurrency } from '@/utils/budgetGuardian'
 import { isTaskOverdue, isTaskDueSoon, calculateDaysRemaining } from '@/utils/timelineEngine'
 
 const QUICK_PROMPTS = [
-  'Explain the most urgent tasks',
-  'How do we manage our budget constraint & contingency?',
-  'Bengali tradition checklist & ceremony coordination',
-  'What should we prioritize before sending invitations?',
+  'Plan a Bengali wedding for 150 guests in Kolkata',
+  'Suggest a traditional yet affordable decoration theme',
+  'Reduce my budget by ₹40,000 without removing important functions',
+  'What are my most urgent pending tasks?',
+  'Suggest vegetarian catering options',
+  'What happens if 30 additional guests attend?',
+  'Reorganise my schedule if the venue changes',
 ]
 
 export const AICopilotModal: React.FC = () => {
@@ -36,12 +41,27 @@ export const AICopilotModal: React.FC = () => {
     setIsCopilotOpen,
     copilotInitialQuery,
     setCurrentSection,
+    applyAIProposal,
   } = usePlanner()
 
   const [query, setQuery] = useState(() => copilotInitialQuery || 'Explain the most urgent tasks')
   const [advice, setAdvice] = useState<AICopilotTaskAdviceResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorNotice, setErrorNotice] = useState<string | null>(null)
+  const [actionNotice, setActionNotice] = useState<{
+    status: 'success' | 'error'
+    message: string
+  } | null>(null)
+  const [dismissedActionId, setDismissedActionId] = useState<string | null>(null)
+
+  const handleExecuteAction = (prop: AIActionProposal) => {
+    const res = applyAIProposal(prop)
+    if (res.success) {
+      setActionNotice({ status: 'success', message: res.message })
+    } else {
+      setActionNotice({ status: 'error', message: res.message })
+    }
+  }
 
   // Keyboard Escape listener
   useEffect(() => {
@@ -276,6 +296,79 @@ export const AICopilotModal: React.FC = () => {
                   {advice.strategicSummary}
                 </p>
               </Card>
+
+              {/* Structured AI Action Proposal Card (Requires Explicit User Confirmation) */}
+              {advice.proposedAction && advice.proposedAction.id !== dismissedActionId && (
+                <Card
+                  variant="default"
+                  className="p-5 border-2 border-forest-600 bg-gradient-to-br from-forest-50 via-ivory-50 to-gold-50/40 rounded-2xl space-y-3 shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1 rounded-md bg-forest-900 text-gold-300">
+                          <ShieldCheck className="w-4 h-4" />
+                        </span>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-forest-900">
+                          Structured Action Proposal • Requires User Confirmation
+                        </span>
+                      </div>
+                      <h4 className="font-serif font-bold text-base text-charcoal-900">
+                        {advice.proposedAction.title}
+                      </h4>
+                    </div>
+                    <Badge variant="forest" size="sm">
+                      {advice.proposedAction.actionType.replace('_', ' ')}
+                    </Badge>
+                  </div>
+
+                  <p className="text-xs text-charcoal-700 leading-relaxed font-sans">
+                    {advice.proposedAction.explanation}
+                  </p>
+
+                  <div className="p-3 rounded-xl bg-white border border-forest-200/80 text-xs space-y-1">
+                    <span className="font-bold text-forest-950 block">Calculated Impact:</span>
+                    <p className="text-charcoal-800">{advice.proposedAction.impactSummary}</p>
+                  </div>
+
+                  {actionNotice ? (
+                    <div
+                      className={`p-3 rounded-xl text-xs flex items-center gap-2 ${
+                        actionNotice.status === 'success'
+                          ? 'bg-emerald-50 text-emerald-900 border border-emerald-300'
+                          : 'bg-red-50 text-red-900 border border-red-300'
+                      }`}
+                    >
+                      {actionNotice.status === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                      )}
+                      <span>{actionNotice.message}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 pt-1">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleExecuteAction(advice.proposedAction!)}
+                        leftIcon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                      >
+                        Review &amp; Confirm Action
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDismissedActionId(advice.proposedAction!.id)}
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              )}
 
               {/* Urgent Task Analyses */}
               <div className="space-y-3">

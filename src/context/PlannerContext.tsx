@@ -21,6 +21,9 @@ import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
 import { generateCelebrationConcepts, fetchServerHealth } from '@/services/ai/aiPlanningService'
 import { calculateBudgetSummary, sanitizeAmount, formatCurrency } from '@/utils/budgetGuardian'
 import { generatePreparationTasks, addDays } from '@/utils/timelineEngine'
+import { generateEventRecommendations } from '@/utils/recommendationEngine'
+import { validateAIAction } from '@/utils/aiActionValidator'
+import { AIActionProposal, AIRecommendation } from '@/types/ai'
 import {
   syncVendorToBudgetItems,
   generateDefaultPaymentMilestones,
@@ -90,7 +93,9 @@ interface PlannerContextType {
   // Adaptive Scenario Simulator
   applyScenario: (input: ScenarioInput, result: ScenarioSimulationResult) => void
 
-  // AI Copilot
+  // AI Copilot & Recommendation Engine
+  recommendations: AIRecommendation[]
+  applyAIProposal: (proposal: AIActionProposal) => { success: boolean; message: string }
   isCopilotOpen: boolean
   setIsCopilotOpen: (open: boolean) => void
   copilotInitialQuery: string
@@ -117,7 +122,22 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return StorageService.getVendors(id)
   })
   const [activities, setActivities] = useState<ActivityLogItem[]>(() => StorageService.getActivities())
-  const [alerts, setAlerts] = useState<PlanSyncAlert[]>(SAMPLE_ALERTS)
+  const [alertsOverride, setAlertsOverride] = useState<PlanSyncAlert[] | null>(null)
+
+  // Dynamically compute intelligent recommendations and plan sync alerts
+  const { recommendations, alerts: dynamicAlerts } = useMemo(() => {
+    const currentActiveEvent = events.find((e) => e.id === activeEventId) || null
+    if (!currentActiveEvent) {
+      return { recommendations: [], alerts: SAMPLE_ALERTS }
+    }
+    const res = generateEventRecommendations(currentActiveEvent, budgetItems, timelineTasks, vendors)
+    return {
+      recommendations: res.recommendations,
+      alerts: res.alerts.length > 0 ? res.alerts : SAMPLE_ALERTS,
+    }
+  }, [events, activeEventId, budgetItems, timelineTasks, vendors])
+
+  const alerts = alertsOverride || dynamicAlerts
   const [isMobileNavOpen, setIsMobileNavOpen] = useState<boolean>(false)
   const [isCreateEventOpen, setIsCreateEventOpen] = useState<boolean>(false)
   const [isSyncing, setIsSyncing] = useState<boolean>(false)
@@ -1129,6 +1149,147 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [activeEvent, budgetItems, timelineTasks, vendors, events],
   )
 
+  const applyAIProposal = useCallback(
+    (proposal: AIActionProposal): { success: boolean; message: string } => {
+      const validation = validateAIAction(proposal, activeEvent)
+      if (!validation.isValid) {
+        return {
+          success: false,
+          message: `Action proposal validation failed: ${validation.errors.join('; ')}`,
+        }
+      }
+
+      const p = proposal.payload || {}
+      const now = new Date().toISOString()
+
+      switch (proposal.actionType) {
+        case 'CREATE_EVENT': {
+          const created = addEvent({
+            title: p.title || 'New Celebration',
+            category: p.category || 'wedding',
+            date: p.date || addDays(now, 60),
+            venueName: p.venueName || 'Heritage Venue',
+            city: p.city || 'Kolkata',
+            totalBudget: Number(p.totalBudget) || 300000,
+            currency: p.currency || 'INR',
+            targetGuestCount: Number(p.targetGuestCount) || 150,
+            themePreference: p.traditionId ? String(p.traditionId).replace('-', ' ') : 'Traditional celebration',
+            priorities: ['Catering & Feast', 'Sacred Ceremonies', 'Guest Hospitality'],
+            dietaryRequirements: ['Vegetarian Options'],
+            accessibilityRequirements: [],
+            indoorOutdoor: 'hybrid',
+          })
+          setActiveEventIdState(created.id)
+          break
+        }
+
+        case 'UPDATE_BUDGET': {
+          if (!activeEvent) return { success: false, message: 'No active celebration selected.' }
+          const newBudget = sanitizeAmount(p.totalBudget ?? p.newBudget)
+          if (newBudget > 0) {
+            updateActiveEvent({ totalBudget: newBudget })
+
+            // Ensure contingency reserve exists and is updated to 8%
+            const targetContingency = Math.round(newBudget * 0.08)
+            const existingContingency = budgetItems.find((b) => b.isContingency || b.category === 'contingency')
+
+            if (existingContingency) {
+              updateBudgetItem(existingContingency.id, {
+                allocatedAmount: targetContingency,
+                actualAmount: targetContingency,
+              })
+            } else {
+              addBudgetItem({
+                category: 'contingency',
+                name: 'Contingency Reserve (8%)',
+                allocatedAmount: targetContingency,
+                actualAmount: targetContingency,
+                estimatedAmount: targetContingency,
+                quotedAmount: targetContingency,
+                confirmedAmount: targetContingency,
+                paidAmount: 0,
+                costStatus: 'confirmed',
+                paymentStatus: 'planned',
+                isContingency: true,
+              })
+            }
+          }
+          break
+        }
+
+        case 'UPDATE_GUEST_COUNT': {
+          if (!activeEvent) return { success: false, message: 'No active celebration selected.' }
+          const newGuests = Number(p.newGuestCount ?? p.targetGuestCount ?? p.guestCount)
+          if (newGuests > 0) {
+            updateActiveEvent({ targetGuestCount: newGuests })
+          }
+          break
+        }
+
+        case 'ADD_TASK': {
+          if (!activeEvent) return { success: false, message: 'No active celebration selected.' }
+          addTimelineTask({
+            title: p.title || 'New Milestone',
+            description: p.description || proposal.explanation,
+            targetDate: p.targetDate || p.deadline || activeEvent.date,
+            deadline: p.targetDate || p.deadline || activeEvent.date,
+            status: 'todo',
+            priority: p.priority || 'high',
+            phase: p.phase || 'logistics-coordination',
+            isMilestone: p.isMilestone ?? true,
+            isCriticalPath: p.isCriticalPath ?? true,
+            dependencyIds: p.dependencyIds || [],
+            category: p.category || 'general',
+          })
+          break
+        }
+
+        case 'UPDATE_TIMELINE': {
+          if (!activeEvent) return { success: false, message: 'No active celebration selected.' }
+          if (p.eventDate) {
+            updateActiveEvent({ date: p.eventDate })
+          }
+          break
+        }
+
+        case 'CREATE_WHAT_IF_SCENARIO': {
+          setCurrentSection('simulator')
+          break
+        }
+
+        default:
+          return { success: false, message: `Unsupported action type: ${proposal.actionType}` }
+      }
+
+      // Record immutable audit activity log
+      const auditLog: ActivityLogItem = {
+        id: `act-ai-${Date.now()}`,
+        eventId: activeEvent?.id || 'global',
+        type: 'ai-action-applied',
+        title: `AI Action Executed: ${proposal.title}`,
+        description: `${proposal.impactSummary} (Approved by user)`,
+        timestamp: 'Just now',
+      }
+      StorageService.addActivity(auditLog)
+      setActivities(StorageService.getActivities())
+
+      return {
+        success: true,
+        message: `Successfully executed: ${proposal.title}`,
+      }
+    },
+    [
+      activeEvent,
+      addEvent,
+      updateActiveEvent,
+      budgetItems,
+      updateBudgetItem,
+      addBudgetItem,
+      addTimelineTask,
+      setCurrentSection,
+    ],
+  )
+
   const triggerManualSync = useCallback(() => {
     setIsSyncing(true)
     setTimeout(() => {
@@ -1146,7 +1307,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTimelineTasks(StorageService.getTasks(defId))
     setVendors(StorageService.getVendors(defId))
     setActivities(StorageService.getActivities())
-    setAlerts(SAMPLE_ALERTS)
+    setAlertsOverride(SAMPLE_ALERTS)
   }, [])
 
   const value: PlannerContextType = {
@@ -1194,6 +1355,8 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     deleteVendor,
     toggleMilestonePaid,
     applyScenario,
+    recommendations,
+    applyAIProposal,
     isCopilotOpen,
     setIsCopilotOpen,
     copilotInitialQuery,

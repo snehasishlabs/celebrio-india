@@ -701,6 +701,44 @@ export function generatePreparationTasks(
     })
   }
 
+  // Multi-Day Ceremony Run of Show integration
+  const selectedCers = event.culturalPreferences?.selectedCeremonies || []
+  if (selectedCers.length > 0) {
+    const isMultiDay =
+      event.culturalPreferences?.ceremonyScheduleType === 'multi-day-2' ||
+      event.culturalPreferences?.ceremonyScheduleType === 'multi-day-3' ||
+      event.culturalPreferences?.ceremonyScheduleType === 'multi-day-4'
+
+    selectedCers.slice(0, 4).forEach((ceremonyName) => {
+      // Determine day offset: e.g. -2 for Sangeet/Mehendi, -1 for Haldi, 0 for Wedding/Pheras, +1 for Reception
+      let offset = 0
+      const lower = ceremonyName.toLowerCase()
+      if (lower.includes('mehendi') || lower.includes('sangeet') || lower.includes('roka') || lower.includes('tilak')) {
+        offset = isMultiDay ? -2 : 0
+      } else if (lower.includes('haldi') || lower.includes('holud') || lower.includes('vratham')) {
+        offset = isMultiDay ? -1 : 0
+      } else if (lower.includes('reception') || lower.includes('bou bhaat') || lower.includes('bhojan')) {
+        offset = isMultiDay ? 1 : 0
+      }
+
+      // Add to templates if not already present
+      const alreadyHas = templates.some((t) => t.title.toLowerCase().includes(ceremonyName.toLowerCase()))
+      if (!alreadyHas) {
+        templates.push({
+          offsetDays: offset,
+          title: `Ceremony Run of Show: ${ceremonyName}`,
+          description: `Master execution, guest movement, and vendor coordination for ${ceremonyName}.`,
+          phase: 'day-of-execution',
+          priority: 'critical',
+          isMilestone: true,
+          isCriticalPath: true,
+          assignedTo: 'Lead Coordinator & Family',
+          category: 'venue',
+        })
+      }
+    })
+  }
+
   // Build tasks with computed deadlines
   const hasValidDate = !!parseSafeDate(eventDate)
 
@@ -733,13 +771,28 @@ export function generatePreparationTasks(
 }
 
 /**
- * Detects scheduling anomalies, dependency order violations, and critical path compression.
+ * Helper to parse "HH:MM" into minutes from midnight (0 - 1439).
+ */
+function parseTimeToMinutes(timeStr?: string): number | null {
+  if (!timeStr || typeof timeStr !== 'string') return null
+  const parts = timeStr.trim().split(':')
+  if (parts.length < 2) return null
+  const h = parseInt(parts[0], 10)
+  const m = parseInt(parts[1], 10)
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return null
+  return h * 60 + m
+}
+
+/**
+ * Detects scheduling anomalies, dependency order violations, critical path compression,
+ * and overlapping venue/ceremony time slots.
  */
 export function detectScheduleConflicts(tasks: TimelineTask[]): ScheduleConflict[] {
   const conflicts: ScheduleConflict[] = []
   const taskMap = new Map<string, TimelineTask>()
   tasks.forEach((t) => taskMap.set(t.id, t))
 
+  // 1. Dependency violations & critical path compression
   tasks.forEach((task) => {
     const taskDate = parseSafeDate(task.targetDate || task.deadline)
     if (!taskDate) return
@@ -775,7 +828,128 @@ export function detectScheduleConflicts(tasks: TimelineTask[]): ScheduleConflict
     }
   })
 
+  // 2. Same-day time slot overlap conflict detection
+  const tasksByDate = new Map<string, TimelineTask[]>()
+  tasks.forEach((t) => {
+    const dateStr = t.targetDate || t.deadline
+    if (dateStr && t.startTime && t.durationMinutes && t.durationMinutes > 0) {
+      const arr = tasksByDate.get(dateStr) || []
+      arr.push(t)
+      tasksByDate.set(dateStr, arr)
+    }
+  })
+
+  tasksByDate.forEach((dayTasks, dateStr) => {
+    for (let i = 0; i < dayTasks.length; i++) {
+      for (let j = i + 1; j < dayTasks.length; j++) {
+        const t1 = dayTasks[i]
+        const t2 = dayTasks[j]
+
+        const start1 = parseTimeToMinutes(t1.startTime)
+        const start2 = parseTimeToMinutes(t2.startTime)
+
+        if (start1 !== null && start2 !== null && t1.durationMinutes && t2.durationMinutes) {
+          const end1 = start1 + t1.durationMinutes
+          const end2 = start2 + t2.durationMinutes
+
+          // Check if intervals [start1, end1) and [start2, end2) overlap
+          if (start1 < end2 && start2 < end1) {
+            conflicts.push({
+              taskId: t2.id,
+              conflictType: 'overlap',
+              severity: 'critical',
+              description: `Time conflict on ${dateStr}: "${t2.title}" (${t2.startTime}) overlaps with "${t1.title}" (${t1.startTime} - ${Math.floor(end1 / 60)}:${String(end1 % 60).padStart(2, '0')}) without required setup/transit buffer.`,
+              suggestedResolution: `Adjust start time for "${t2.title}" or allow at least 45 minutes between ceremonies for guest movement and venue turnover.`,
+            })
+          }
+        }
+      }
+    }
+  })
+
   return conflicts
+}
+
+/**
+ * Proposes an updated schedule when the celebration date shifts.
+ * Identifies affected tasks, recalculates target deadlines, and strictly preserves
+ * user decisions and completed statuses.
+ */
+export function recalculateScheduleForDateShift(
+  tasks: TimelineTask[],
+  oldEventDate: string,
+  newEventDate: string,
+  referenceDate: Date = new Date(),
+): {
+  updatedTasks: TimelineTask[]
+  affectedTasksCount: number
+  newlyOverdueCount: number
+} {
+  const oldDate = parseSafeDate(oldEventDate)
+  const newDate = parseSafeDate(newEventDate)
+
+  if (!oldDate || !newDate) {
+    return {
+      updatedTasks: [...tasks],
+      affectedTasksCount: 0,
+      newlyOverdueCount: 0,
+    }
+  }
+
+  const daysDelta = Math.round((newDate.getTime() - oldDate.getTime()) / (1000 * 60 * 60 * 24))
+  if (daysDelta === 0) {
+    return {
+      updatedTasks: [...tasks],
+      affectedTasksCount: 0,
+      newlyOverdueCount: 0,
+    }
+  }
+
+  let affectedTasksCount = 0
+  let newlyOverdueCount = 0
+
+  const updatedTasks = tasks.map((task) => {
+    // PRESERVE USER INTENT: Completed tasks never have status reset
+    if (task.status === 'completed') {
+      return { ...task }
+    }
+
+    const taskDate = parseSafeDate(task.targetDate || task.deadline)
+    if (!taskDate) {
+      return { ...task }
+    }
+
+    const shifted = new Date(taskDate.getTime() + daysDelta * 86400000)
+    const shiftedStr = formatDateIso(shifted)
+
+    affectedTasksCount++
+
+    const isNowOverdue = isTaskOverdue(
+      {
+        ...task,
+        targetDate: shiftedStr,
+        deadline: shiftedStr,
+      },
+      referenceDate,
+    )
+
+    if (isNowOverdue && !isTaskOverdue(task, referenceDate)) {
+      newlyOverdueCount++
+    }
+
+    return {
+      ...task,
+      targetDate: shiftedStr,
+      deadline: shiftedStr,
+      priority: isNowOverdue && task.priority !== 'critical' ? ('critical' as const) : task.priority,
+    }
+  })
+
+  return {
+    updatedTasks,
+    affectedTasksCount,
+    newlyOverdueCount,
+  }
 }
 
 /**

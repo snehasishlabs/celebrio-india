@@ -130,6 +130,41 @@ export interface AICopilotTaskAdviceRequest {
   query?: string
 }
 
+export type AIActionType =
+  | 'CREATE_EVENT'
+  | 'UPDATE_BUDGET'
+  | 'ADD_TASK'
+  | 'UPDATE_TIMELINE'
+  | 'ADD_VENDOR'
+  | 'UPDATE_GUEST_COUNT'
+  | 'CREATE_WHAT_IF_SCENARIO'
+
+export interface AIActionProposal {
+  id: string
+  actionType: AIActionType
+  title: string
+  explanation: string
+  impactSummary: string
+  requiresConfirmation: boolean
+  payload: Record<string, any>
+  validationStatus: 'valid' | 'invalid'
+  validationErrors?: string[]
+}
+
+export interface AIRecommendation {
+  id: string
+  severity: 'info' | 'warning' | 'critical'
+  title: string
+  source: 'budget' | 'timeline' | 'vendor' | 'guest-list' | 'cultural'
+  issue: string
+  whyItMatters: string
+  potentialImpact: string
+  suggestedAction: string
+  actionType?: AIActionType
+  actionPayload?: Record<string, any>
+  createdAt: string
+}
+
 export interface AICopilotTaskAdviceResponse {
   source: AIPlanningSource
   model: string
@@ -140,5 +175,6 @@ export interface AICopilotTaskAdviceResponse {
   budgetGuidance: string
   suggestedNextSteps: string[]
   clarifyingQuestion?: string
+  proposedAction?: AIActionProposal
   generatedAt: string
 }

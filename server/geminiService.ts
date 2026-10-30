@@ -469,16 +469,323 @@ export async function explainUrgentTasksWithGemini(
   request: AICopilotTaskAdviceRequest,
 ): Promise<AICopilotTaskAdviceResponse> {
   const now = new Date().toISOString()
-  const curr = request.currency === 'INR' ? '₹' : (request.currency === 'USD' ? '$' : request.currency)
+  const curr = request.currency === 'INR' ? '₹' : (request.currency === 'USD' ? '$' : (request.currency || '₹'))
 
   const getDeterministicAdvice = (): AICopilotTaskAdviceResponse => {
+    const queryLower = (request.query || '').toLowerCase()
+    const totalBudget = Number(request.totalBudget) || 300000
+    const targetGuestCount = Math.max(1, Number(request.targetGuestCount) || 150)
+    const eventTitle = request.eventTitle || 'Celebration'
+    const urgentTasks = Array.isArray(request.urgentTasks) ? request.urgentTasks : []
     const isBengali =
-      (request.traditions && request.traditions.some((t) => t.toLowerCase().includes('bengali') || t.toLowerCase().includes('biye'))) ||
-      request.eventTitle.toLowerCase().includes('bengali') ||
-      request.city?.toLowerCase() === 'kolkata'
+      (request.eventTitle || '').toLowerCase().includes('bengali') ||
+      (request.traditions || []).some((t) => (t || '').toLowerCase().includes('bengali')) ||
+      (request.city || '').toLowerCase().includes('kolkata') ||
+      queryLower.includes('bengali')
 
-    const analyses = request.urgentTasks.slice(0, 4).map((task) => {
-      const lowerTitle = task.title.toLowerCase()
+    // 1. Natural Language Scenario: "Plan a Bengali wedding for 150 guests in Kolkata"
+    if (queryLower.includes('plan a bengali wedding') || (queryLower.includes('bengali') && queryLower.includes('150'))) {
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: `Curated Bengali Wedding Blueprint (${request.city || 'Kolkata'} • ${targetGuestCount} Guests)`,
+        strategicSummary: `Structured celebration framework for ${targetGuestCount} guests with a budget of ${curr}${totalBudget.toLocaleString()} in ${request.city || 'Kolkata'}. Includes Gaye Holud, Saat Paake Ghaura, and Bou Bhaat banquets while ring-fencing a guaranteed 8% (${curr}${Math.round(totalBudget * 0.08).toLocaleString()}) contingency buffer.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-venue-lock',
+            taskTitle: 'Execute Heritage Banquet Contract & Load-In Window',
+            urgencyLevel: 'critical',
+            daysUntilDeadline: 7,
+            whyItMatters: 'Heritage venues in Kolkata book out quickly for Shubh Muhurat dates. Locking the contract guarantees physical access and vendor staging.',
+            recommendedAction: 'Execute agreement and deposit booking token.',
+            culturalContext: 'Confirm open-air courtyard space for daytime Gaye Holud and sacred fire mandap.',
+          },
+          {
+            taskId: 'task-catering-lock',
+            taskTitle: 'Approve Bengali Royal Culinary Menu & Fish Tasting',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 14,
+            whyItMatters: 'Catering represents ~32% of total budget. Locking early guarantees per-plate cost against market fish and sweet price fluctuations.',
+            recommendedAction: 'Finalize Bhetki Paturi, Chingri Malai Curry, Kosha Mangsho, and Nolen Gurer Sandesh.',
+            culturalContext: 'Ensure traditional mishti karigars have dedicated kitchen space for serving warm rasgullas.',
+          },
+        ],
+        traditionAdvisories: [
+          'Assemble Gaye Holud Tattwa gift trays with decorated brass plates, Topor, and fresh turmeric.',
+          'Schedule Borjatri welcome drinks and conch shell (Shankha) team at main entryway.',
+          'Coordinate evening Godhuli Lagna twilight window for sacred Saat Paake Ghaura and Shubho Drishti.',
+        ],
+        budgetGuidance: `Maintain a strict ${curr}${Math.round(totalBudget * 0.08).toLocaleString()} contingency reserve. Recommended allocation: 32% Catering, 28% Venue, 14% Decor, 8% Photography, 8% Contingency.`,
+        suggestedNextSteps: [
+          'Review and approve the proposed Bengali wedding structure.',
+          'Execute venue agreement to secure celebration date.',
+          'Distribute digital invitations to establish confirmed guest count.',
+        ],
+        clarifyingQuestion: 'Would you prefer synchronized traditional table service or an elegant live buffet with chef counters?',
+        proposedAction: {
+          id: 'action-create-bengali-event',
+          actionType: 'CREATE_EVENT',
+          title: `Create Bengali Wedding: ${eventTitle}`,
+          explanation: `Initialize Bengali Wedding plan with ${targetGuestCount} guests and ${curr}${totalBudget.toLocaleString()} budget in ${request.city || 'Kolkata'}.`,
+          impactSummary: `Configures 3-day run of show, itemized budget in INR, and ring-fences ${curr}${Math.round(totalBudget * 0.08).toLocaleString()} contingency reserve.`,
+          requiresConfirmation: true,
+          validationStatus: 'valid',
+          payload: {
+            title: eventTitle,
+            category: 'wedding',
+            city: request.city || 'Kolkata',
+            totalBudget: totalBudget,
+            targetGuestCount: targetGuestCount,
+            currency: request.currency || 'INR',
+            traditionId: 'bengali-wedding',
+          },
+        },
+        generatedAt: now,
+      }
+    }
+
+    // 2. Natural Language Scenario: "Suggest a traditional yet affordable decoration theme"
+    if (queryLower.includes('decoration') || queryLower.includes('decor') || queryLower.includes('theme')) {
+      const decorSavings = Math.round(totalBudget * 0.04)
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: 'Indigenous Botanical & Brass Diya Ambiance',
+        strategicSummary:
+          'Replace fragile imported blooms with local fragrant Rajnigandha (tuberose), marigold canopies, mango-leaf torans, and floating brass pradips. Delivers breathtaking celebratory warmth while reducing wholesale botanical spend by 20%.',
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-decor-botanical',
+            taskTitle: 'Contract Local Botanical Decor Guild for Fresh Rajnigandha',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 14,
+            whyItMatters: 'Direct farm sourcing from local flower markets guarantees fresh morning fragrance without distributor markup.',
+            recommendedAction: 'Specify marigold curtains, brass urlis, and earthen diyas for twilight ceremonies.',
+            culturalContext: 'Sacred mango-leaf torans at entryways symbolize auspicious blessings and protection.',
+          },
+        ],
+        traditionAdvisories: [
+          'Use natural morning sunlight for Gaye Holud to enhance vibrant yellow floral staging.',
+          'Position floating brass urlis with fresh marigold petals at the venue entrance.',
+        ],
+        budgetGuidance: `Estimated decor spend reduced to ~10-12% of total budget, saving ${curr}${decorSavings.toLocaleString()} that can be diverted to hospitality or contingency.`,
+        suggestedNextSteps: [
+          'Approve indigenous botanical moodboard.',
+          'Confirm brass urli and lamp rental inventory with decorator.',
+        ],
+        clarifyingQuestion: 'Do you prefer traditional marigold-and-brass styling or minimalist terracotta with fairy lights?',
+        proposedAction: {
+          id: 'action-update-decor-budget',
+          actionType: 'UPDATE_BUDGET',
+          title: 'Apply Indigenous Botanical Decor Savings',
+          explanation: 'Rebalance budget allocations with indigenous floral decor and brass diyas.',
+          impactSummary: `Saves approximately ${curr}${decorSavings.toLocaleString()} in floral procurement costs while protecting contingency.`,
+          requiresConfirmation: true,
+          validationStatus: 'valid',
+          payload: {
+            category: 'decor',
+            savingsEstimate: decorSavings,
+          },
+        },
+        generatedAt: now,
+      }
+    }
+
+    // 3. Natural Language Scenario: "Reduce my budget by ₹40,000 without removing important functions"
+    if (queryLower.includes('reduce') || queryLower.includes('40,000') || queryLower.includes('cut budget') || queryLower.includes('lower budget')) {
+      const reductionAmount = 40000
+      const newProposedBudget = Math.max(100000, totalBudget - reductionAmount)
+      const newContingency = Math.round(newProposedBudget * 0.08)
+
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: `Strategic ${curr}${reductionAmount.toLocaleString()} Budget Optimization`,
+        strategicSummary: `Celebrio has recalculated your plan to absorb the ${curr}${reductionAmount.toLocaleString()} reduction entirely through service style and wholesale floral adjustments. All culturally selected rituals remain 100% protected, and your 8% contingency (${curr}${newContingency.toLocaleString()}) remains ring-fenced.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-tradeoff-catering',
+            taskTitle: 'Transition to Curated Live Buffet with Regional Specialties',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 10,
+            whyItMatters: 'Switching from formal synchronized seated dinner to a live buffet reduces staffing overhead by 12% while ensuring guests receive continuous hot food.',
+            recommendedAction: 'Approve live buffet floorplan with anchor signature dishes.',
+            culturalContext: 'Preserves essential traditional items (e.g. Bhetki Paturi, Kosha Mangsho, warm sweets) without compromise.',
+          },
+          {
+            taskId: 'task-tradeoff-decor',
+            taskTitle: 'Adopt Indigenous Botanical & Candlelight Staging',
+            urgencyLevel: 'medium',
+            daysUntilDeadline: 18,
+            whyItMatters: 'Replacing imported blooms with seasonal marigolds and tuberose saves 20% on decor line items.',
+            recommendedAction: 'Lock brass diya and marigold specification with florist.',
+          },
+        ],
+        traditionAdvisories: [
+          'All sacred rituals (Saat Paake Ghaura, Sindoor Daan, Bou Bhaat) remain fully scheduled and protected.',
+          'Focus guest experience spend on warm food replenishment and heartfelt hospitality.',
+        ],
+        budgetGuidance: `Total Budget adjusted from ${curr}${totalBudget.toLocaleString()} to ${curr}${newProposedBudget.toLocaleString()}. Contingency reserve recalculated to ${curr}${newContingency.toLocaleString()} (8%).`,
+        suggestedNextSteps: [
+          'Review the proposed budget adjustment below.',
+          'Click "Confirm & Apply" to update your active celebration budget.',
+          'Notify catering and decor vendors of revised service formats.',
+        ],
+        clarifyingQuestion: 'Would you like to preview this comparison in the What-If Simulator before applying?',
+        proposedAction: {
+          id: 'action-reduce-budget',
+          actionType: 'UPDATE_BUDGET',
+          title: `Apply ${curr}${reductionAmount.toLocaleString()} Budget Reduction`,
+          explanation: `Adjust celebration budget from ${curr}${totalBudget.toLocaleString()} to ${curr}${newProposedBudget.toLocaleString()} while protecting all ceremonies.`,
+          impactSummary: `Reduces total cap to ${curr}${newProposedBudget.toLocaleString()}; ring-fences ${curr}${newContingency.toLocaleString()} contingency reserve.`,
+          requiresConfirmation: true,
+          validationStatus: 'valid',
+          payload: {
+            totalBudget: newProposedBudget,
+            contingencyAmount: newContingency,
+            reductionAmount,
+          },
+        },
+        generatedAt: now,
+      }
+    }
+
+    // 4. Natural Language Scenario: "Suggest vegetarian catering options"
+    if (queryLower.includes('vegetarian') || queryLower.includes('pure veg') || queryLower.includes('sattvik') || queryLower.includes('catering options')) {
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: `Curated Vegetarian & Sattvik Feast (${request.city || 'Regional Heritage'})`,
+        strategicSummary: `A gourmet vegetarian menu honoring authentic regional culinary heritage without religious restrictions. Formulated to provide rich protein balance and traditional celebration favorites for ${targetGuestCount} guests.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-veg-menu-tasting',
+            taskTitle: 'Schedule Pure-Vegetarian Tasting & Halwai Review',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 14,
+            whyItMatters: 'High-end vegetarian catering requires balance between live hot snacks and traditional slow-cooked gravies.',
+            recommendedAction: 'Confirm separate kitchen preparation area for pure-veg and Jain guests.',
+            culturalContext: 'Ensure traditional sweets (Rosogolla, Sandesh, or Malpua) are crafted with pure desi cow ghee and fresh chhena.',
+          },
+        ],
+        traditionAdvisories: [
+          'Appetizers: Crispy Hing Radhaballabhi, Moong Dal Kachori, and Paneer Malai Tikka.',
+          'Mains: Dhokar Dalna (steamed lentil cakes), Chanar Kofta in rich cashew gravy, Basanti Pulao, and Echorer Kalia (raw jackfruit).',
+          'Desserts: Warm Nolen Gurer Sandesh, Baked Rosogolla handis, and Kesar Pista Kulfi.',
+        ],
+        budgetGuidance: `Vegetarian culinary menus typically offer 10-15% cost savings compared to specialty seafood/mutton menus, allowing more generous dessert stations.`,
+        suggestedNextSteps: [
+          'Share vegetarian menu options with your catering team.',
+          'Verify count of Jain (no onion/garlic) attendees on guest list.',
+        ],
+        clarifyingQuestion: 'Would you like a separate Jain specialty station for elders and fasting guests?',
+        generatedAt: now,
+      }
+    }
+
+    // 5. Natural Language Scenario: "What happens if 30 additional guests attend?"
+    if (queryLower.includes('additional guests') || queryLower.includes('30 additional') || queryLower.includes('more guests')) {
+      const addedGuests = 30
+      const newGuests = targetGuestCount + addedGuests
+      const estPerPlate = Math.round((totalBudget * 0.32) / targetGuestCount)
+      const cateringDelta = estPerPlate * addedGuests
+
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: `Ripple-Effect Analysis: +${addedGuests} Guests (${newGuests} Total)`,
+        strategicSummary: `Adding ${addedGuests} attendees expands your catering commitment by approximately ${curr}${cateringDelta.toLocaleString()} (at ~${curr}${estPerPlate}/plate). Venue seating and transit flow require re-verification.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-venue-capacity-audit',
+            taskTitle: 'Verify Venue Capacity for 180 Attendees',
+            urgencyLevel: 'critical',
+            daysUntilDeadline: 5,
+            whyItMatters: 'Exceeding physical hall capacity compresses circulation space around the mandap and dining counters.',
+            recommendedAction: 'Check facility fire clearance and request 4 additional round tables.',
+          },
+        ],
+        traditionAdvisories: [
+          'Ensure sufficient welcome drink replenishment so arriving guest groups never wait.',
+          'Stagger dining windows between family elders and younger guests.',
+        ],
+        budgetGuidance: `Catering scales by +${curr}${cateringDelta.toLocaleString()}. We recommend absorbing this by streamlining dessert courses or applying live buffet service.`,
+        suggestedNextSteps: [
+          'Open the What-If Simulator to preview side-by-side financial deltas.',
+          'Confirm venue chair and linen inventory for 180 seats.',
+        ],
+        clarifyingQuestion: 'Should we launch the What-If Simulator with 180 guests to preview all category ripples?',
+        proposedAction: {
+          id: 'action-simulate-guest-surge',
+          actionType: 'CREATE_WHAT_IF_SCENARIO',
+          title: `Simulate ${newGuests} Guests Scenario`,
+          explanation: `Simulate guest headcount increase from ${targetGuestCount} to ${newGuests}.`,
+          impactSummary: `Calculates catering scaling (+${curr}${cateringDelta.toLocaleString()}) and checks venue feasibility.`,
+          requiresConfirmation: true,
+          validationStatus: 'valid',
+          payload: {
+            guestCount: newGuests,
+            totalBudget: totalBudget,
+          },
+        },
+        generatedAt: now,
+      }
+    }
+
+    // 6. Natural Language Scenario: "Reorganise my schedule if the venue changes"
+    if (queryLower.includes('venue change') || queryLower.includes('reorganise my schedule') || queryLower.includes('reorganize')) {
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: 'Venue Relocation & Schedule Reorganization Roadmap',
+        strategicSummary: `When changing venues, timeline milestones must adjust to accommodate new vendor load-in regulations, noise curfews, and distance from guest hotels.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-venue-loadin-audit',
+            taskTitle: 'Obtain New Venue Access & Load-In Schedule',
+            urgencyLevel: 'critical',
+            daysUntilDeadline: 3,
+            whyItMatters: 'Different properties enforce strict morning entry times and electrical generator guidelines.',
+            recommendedAction: 'Request facility vendor guidelines document from venue manager.',
+          },
+          {
+            taskId: 'task-vendor-address-dispatch',
+            taskTitle: 'Dispatch Updated GPS Coordinates & Access Instructions to All Vendors',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 5,
+            whyItMatters: 'Prevents supplier transit delays on celebration morning.',
+            recommendedAction: 'Send automated venue update email with parking gate instructions.',
+          },
+        ],
+        traditionAdvisories: [
+          'Re-verify sacred fire (Havan) ventilation at the new venue before finalizing mandap placement.',
+          'Confirm groom Baarat arrival staging route and parking availability.',
+        ],
+        budgetGuidance: 'Review potential cancellation fees or transfer of security deposit to avoid double booking spend.',
+        suggestedNextSteps: [
+          'Update venue name and address in celebration settings.',
+          'Audit decorator setup buffer at new location.',
+        ],
+        clarifyingQuestion: 'Does the new venue have outdoor lawn space for ceremonies or is it an indoor banquet hall?',
+        proposedAction: {
+          id: 'action-reorganize-timeline',
+          actionType: 'UPDATE_TIMELINE',
+          title: 'Reschedule Setup & Load-In Milestones',
+          explanation: 'Re-align preparation milestones with new venue load-in requirements.',
+          impactSummary: 'Advances decorator and technical AV load-in windows by 2 hours.',
+          requiresConfirmation: true,
+          validationStatus: 'valid',
+          payload: {
+            venueTurnaroundHours: 6,
+          },
+        },
+        generatedAt: now,
+      }
+    }
+
+    // Default: Urgent Tasks & General Cultural Guidance
+    const analyses = urgentTasks.slice(0, 4).map((task) => {
+      const lowerTitle = (task.title || '').toLowerCase()
       let whyItMatters = `This milestone is on the critical planning path. Delaying past the deadline causes downstream logistical bottlenecks.`
       let recommendedAction = `Review supplier requirements, verify budget allocation, and finalize the agreement.`
       let culturalContext = isBengali
@@ -492,7 +799,7 @@ export async function explainUrgentTasksWithGemini(
           culturalContext = `Confirm sufficient open-air or courtyard space for Gaye Holud rituals and the traditional Saat Paake Ghaura sacred fire mandap.`
         }
       } else if (lowerTitle.includes('catering') || lowerTitle.includes('menu') || lowerTitle.includes('beverage')) {
-        whyItMatters = `Catering represents ~30-35% of total spend (${curr}${Math.round(request.totalBudget * 0.32).toLocaleString()} for ${request.targetGuestCount} guests). Locking the proposal early locks in per-plate pricing against ingredient inflation.`
+        whyItMatters = `Catering represents ~30-35% of total spend (${curr}${Math.round(totalBudget * 0.32).toLocaleString()} for ${targetGuestCount} guests). Locking the proposal early locks in per-plate pricing against ingredient inflation.`
         recommendedAction = `Review menu courses, verify server staffing ratios, and confirm kitchen preparation facilities.`
         if (isBengali) {
           culturalContext = `Confirm authentic menu staples such as Bhetki Paturi/Machher Jhol, Kosha Mangsho, and traditional mishti (Rosogolla, Sandesh) prepared by certified halwais.`
@@ -522,8 +829,8 @@ export async function explainUrgentTasksWithGemini(
     return {
       source: 'deterministic-demo',
       model: 'demo-rule-engine',
-      headline: `Urgent Milestones & Cultural Roadmap for ${request.eventTitle}`,
-      strategicSummary: `With ${request.targetGuestCount} guests in ${request.city || 'your celebration city'} and a budget of ${curr}${request.totalBudget.toLocaleString()} scheduled ${request.eventDate ? 'soon' : 'in 30 days'}, your immediate focus is freezing the anchor contracts (venue & catering) while maintaining strict financial discipline.`,
+      headline: `Urgent Milestones & Cultural Roadmap for ${eventTitle}`,
+      strategicSummary: `With ${targetGuestCount} guests in ${request.city || 'your celebration city'} and a budget of ${curr}${totalBudget.toLocaleString()} scheduled ${request.eventDate ? 'soon' : 'in 30 days'}, your immediate focus is freezing the anchor contracts (venue & catering) while maintaining strict financial discipline.`,
       urgentTaskAnalyses: analyses,
       traditionAdvisories: isBengali
         ? [
@@ -535,10 +842,10 @@ export async function explainUrgentTasksWithGemini(
             'Align arrival moments with welcoming hospitality to set an inviting tone.',
             'Coordinate master run-of-show with lead coordinator and vendors.',
           ],
-      budgetGuidance: `Strictly protect your ${curr}${Math.round(request.totalBudget * 0.08).toLocaleString()} (8%) contingency reserve. Never dip into this safety buffer for decorative upgrades.`,
+      budgetGuidance: `Strictly protect your ${curr}${Math.round(totalBudget * 0.08).toLocaleString()} (8%) contingency reserve. Never dip into this safety buffer for decorative upgrades.`,
       suggestedNextSteps: [
         `Execute venue contract to secure celebration date.`,
-        `Approve catering menu estimate for ${request.targetGuestCount} attendees.`,
+        `Approve catering menu estimate for ${targetGuestCount} attendees.`,
         `Distribute invitations to establish confirmed guest headcount.`,
       ],
       clarifyingQuestion:
@@ -576,6 +883,7 @@ INSTRUCTIONS:
 4. Strictly protect the contingency reserve (8%).
 5. Keep advice concise, non-generic, and free of fluff.
 6. Ask at most one necessary clarifying question.
+7. If the user query requests an actionable change (e.g. plan event, reduce budget, update guests, add task, simulate what-if, reschedule timeline), include a "proposedAction" object. Otherwise omit it.
 
 Return ONLY a valid JSON object matching this schema:
 {
@@ -595,7 +903,14 @@ Return ONLY a valid JSON object matching this schema:
   "traditionAdvisories": [string, string],
   "budgetGuidance": string,
   "suggestedNextSteps": [string, string, string],
-  "clarifyingQuestion": string
+  "clarifyingQuestion": string,
+  "proposedAction": {
+    "actionType": "CREATE_EVENT" | "UPDATE_BUDGET" | "ADD_TASK" | "UPDATE_TIMELINE" | "ADD_VENDOR" | "UPDATE_GUEST_COUNT" | "CREATE_WHAT_IF_SCENARIO",
+    "title": string,
+    "explanation": string,
+    "impactSummary": string,
+    "payload": object
+  }
 }`
 
     const response = await Promise.race([
@@ -614,6 +929,21 @@ Return ONLY a valid JSON object matching this schema:
 
     const text = cleanJsonOutput(response.text || '')
     const parsed = JSON.parse(text)
+
+    let structuredAction: any = undefined
+    if (parsed.proposedAction && typeof parsed.proposedAction === 'object') {
+      const pa = parsed.proposedAction
+      structuredAction = {
+        id: `action-${Date.now()}`,
+        actionType: pa.actionType || 'UPDATE_BUDGET',
+        title: String(pa.title || 'Proposed Planning Action').slice(0, 120),
+        explanation: String(pa.explanation || 'AI proposed action based on your request.').slice(0, 300),
+        impactSummary: String(pa.impactSummary || 'Updates celebration parameters.').slice(0, 200),
+        requiresConfirmation: true,
+        validationStatus: 'valid',
+        payload: pa.payload || {},
+      }
+    }
 
     return {
       source: 'gemini-live',
@@ -639,6 +969,7 @@ Return ONLY a valid JSON object matching this schema:
         ? parsed.suggestedNextSteps.slice(0, 4).map((s: any) => String(s).slice(0, 150))
         : getDeterministicAdvice().suggestedNextSteps,
       clarifyingQuestion: typeof parsed.clarifyingQuestion === 'string' ? parsed.clarifyingQuestion.slice(0, 180) : undefined,
+      proposedAction: structuredAction || getDeterministicAdvice().proposedAction,
       generatedAt: now,
     }
   } catch {

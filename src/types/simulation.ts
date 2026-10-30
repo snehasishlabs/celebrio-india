@@ -45,6 +45,11 @@ export interface ScenarioInput {
   eventDate: string;
   themePreference?: string;
   venueType: 'indoor' | 'outdoor' | 'hybrid';
+  venueCapacity?: number;
+  numberOfFunctions?: number;
+  eventDurationDays?: number;
+  cateringServiceType?: 'buffet' | 'plated' | 'family-style';
+  decorationStyle?: string;
   categoryAdjustments?: Record<string, number>; // categoryId -> adjusted allocation amount
   dietaryRequirements?: string[];
   accessibilityRequirements?: string[];
@@ -137,6 +142,7 @@ export interface ScenarioSimulationResult {
   affectedVendors: AffectedVendorImpact[];
   tradeoffs: ScenarioTradeoff[];
   hasCriticalWarnings: boolean;
+  venueCapacityWarning?: string;
   infeasibilityReasons: string[];
   userConfirmedDecisionsPreserved: number; // Count of confirmed items protected
   summary: string;

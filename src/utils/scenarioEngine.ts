@@ -308,6 +308,13 @@ export function simulateScenario(
   // 6. Infeasibility & Critical Warnings
   const infeasibilityReasons: string[] = []
 
+  let venueCapacityWarning: string | undefined = undefined
+  if (scenarioInput.venueCapacity && scenarioInput.venueCapacity > 0 && proposedGuests > scenarioInput.venueCapacity) {
+    const overCapacity = proposedGuests - scenarioInput.venueCapacity
+    venueCapacityWarning = `Venue Capacity Exceeded: Proposed ${proposedGuests} guests exceeds certified facility limit (${scenarioInput.venueCapacity}) by ${overCapacity} attendees. Requires hall expansion or guest rotation.`
+    infeasibilityReasons.push(venueCapacityWarning)
+  }
+
   if (proposedSummary.isOverBudget) {
     infeasibilityReasons.push(
       `Budget Deficit: Proposed allocations exceed spending ceiling by ${currSym}${Math.abs(
@@ -384,6 +391,7 @@ export function simulateScenario(
     affectedVendors,
     tradeoffs,
     hasCriticalWarnings: infeasibilityReasons.length > 0,
+    venueCapacityWarning,
     infeasibilityReasons,
     userConfirmedDecisionsPreserved,
     summary,

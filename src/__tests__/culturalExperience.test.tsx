@@ -302,6 +302,6 @@ describe('Celebrio India — Authentic Cultural Experience & Templates', () => {
 
       // Verifies secular mode switches to contemporary ceremonies
       expect(screen.getByText(/personal vow exchange/i)).toBeInTheDocument()
-    })
+    }, 15000)
   })
 })

@@ -77,7 +77,8 @@ export interface ActivityLogItem {
     | 'vendor-contracted'
     | 'concept-selected'
     | 'guest-updated'
-    | 'sync-recalculated';
+    | 'sync-recalculated'
+    | 'ai-action-applied';
   title: string;
   description: string;
   timestamp: string;
