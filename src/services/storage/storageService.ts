@@ -3,12 +3,14 @@ import { BudgetItem } from '@/types/budget'
 import { TimelineTask } from '@/types/timeline'
 import { Vendor } from '@/types/vendor'
 import { ThemeConcept } from '@/types/concept'
+import { Guest } from '@/types/guest'
 import {
   SAMPLE_EVENT,
   SAMPLE_ACTIVITIES,
   SAMPLE_BUDGET_ITEMS,
   SAMPLE_TIMELINE_TASKS,
   SAMPLE_VENDORS,
+  SAMPLE_GUESTS,
 } from './sampleData'
 import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
 
@@ -18,6 +20,7 @@ const STORAGE_KEYS = {
   BUDGET_ITEMS: 'celebrio_budget_items_v2',
   TASKS: 'celebrio_tasks_v2',
   VENDORS: 'celebrio_vendors_v2',
+  GUESTS: 'celebrio_guests_v2',
   ACTIVITIES: 'celebrio_activities_v2',
   CONCEPTS_PREFIX: 'celebrio_concepts_v2_',
 } as const
@@ -81,6 +84,9 @@ export const StorageService = {
 
     const vendors = this.getVendors().filter((v) => v.eventId !== eventId)
     this.saveVendors(vendors)
+
+    const guests = this.getGuests().filter((g) => g.eventId !== eventId)
+    this.saveGuests(guests)
 
     // Remove concepts key
     const conceptKey = `${STORAGE_KEYS.CONCEPTS_PREFIX}${eventId}`
@@ -184,6 +190,30 @@ export const StorageService = {
     this.saveVendors([...other, ...eventVendors])
   },
 
+  getGuests(eventId?: string): Guest[] {
+    const raw = getRaw(STORAGE_KEYS.GUESTS)
+    if (!raw) {
+      this.saveGuests(SAMPLE_GUESTS)
+      return eventId ? SAMPLE_GUESTS.filter((g) => g.eventId === eventId) : SAMPLE_GUESTS
+    }
+    try {
+      const all = JSON.parse(raw) as Guest[]
+      return eventId ? all.filter((g) => g.eventId === eventId) : all
+    } catch {
+      return eventId ? SAMPLE_GUESTS.filter((g) => g.eventId === eventId) : SAMPLE_GUESTS
+    }
+  },
+
+  saveGuests(guests: Guest[]): void {
+    setRaw(STORAGE_KEYS.GUESTS, JSON.stringify(guests))
+  },
+
+  saveGuestsForEvent(eventId: string, eventGuests: Guest[]): void {
+    const all = this.getGuests()
+    const other = all.filter((g) => g.eventId !== eventId)
+    this.saveGuests([...other, ...eventGuests])
+  },
+
   getActivities(eventId?: string): ActivityLogItem[] {
     const raw = getRaw(STORAGE_KEYS.ACTIVITIES)
     if (!raw) {
@@ -239,6 +269,7 @@ export const StorageService = {
     this.saveBudgetItems(SAMPLE_BUDGET_ITEMS)
     this.saveTasks(SAMPLE_TIMELINE_TASKS)
     this.saveVendors(SAMPLE_VENDORS)
+    this.saveGuests(SAMPLE_GUESTS)
     this.saveActivities(SAMPLE_ACTIVITIES)
     this.saveConcepts(SAMPLE_EVENT.id, generateThemeConcepts(SAMPLE_EVENT))
   },

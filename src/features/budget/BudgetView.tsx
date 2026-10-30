@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Plus,
   ShieldCheck,
@@ -63,11 +63,26 @@ export const BudgetView: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isModalOpen])
 
-  if (!activeEvent) return null
+  const eventBudget = activeEvent?.totalBudget ?? 0
+  const currency = activeEvent?.currency || 'USD'
 
-  const currency = activeEvent.currency || 'USD'
-  const summary = calculateBudgetSummary(activeEvent.totalBudget, budgetItems)
-  const alternatives = generateCostSavingAlternatives(activeEvent.totalBudget, budgetItems)
+  const summary = useMemo(
+    () => calculateBudgetSummary(eventBudget, budgetItems),
+    [eventBudget, budgetItems],
+  )
+  const alternatives = useMemo(
+    () => generateCostSavingAlternatives(eventBudget, budgetItems),
+    [eventBudget, budgetItems],
+  )
+
+  const filteredItems = useMemo(() => {
+    return budgetItems.filter((item) => {
+      if (statusFilter === 'all') return true
+      return (item.costStatus || 'estimated') === statusFilter
+    })
+  }, [budgetItems, statusFilter])
+
+  if (!activeEvent) return null
 
   const openAddModal = () => {
     setEditingItemId(null)
@@ -170,11 +185,6 @@ export const BudgetView: React.FC = () => {
       applyCostSavingAlternative(alt.itemId, alt.suggestedAmount, alt.title)
     }
   }
-
-  const filteredItems = budgetItems.filter((item) => {
-    if (statusFilter === 'all') return true
-    return (item.costStatus || 'estimated') === statusFilter
-  })
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-200">

@@ -8,6 +8,7 @@ import {
   AICopilotTaskAdviceResponse,
 } from '../src/types/ai'
 import { ThemeConcept, ConceptTier } from '../src/types/concept'
+import { CelebrationEvent, EventCategory } from '../src/types/event'
 import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
 
 const MODEL_NAME = 'gemini-2.5-flash'
@@ -84,24 +85,34 @@ export async function generateConceptsWithGemini(
   // 1. Check if Gemini API key is configured
   if (!isGeminiConfigured()) {
     // Generate deterministic concepts
-    const mockEvent = {
+    const mockEvent: CelebrationEvent = {
       id: request.eventId,
       title: request.title,
-      category: request.category,
+      category: (request.category as EventCategory) || 'wedding',
       date: '2026-10-31',
-      city: request.city || 'Metropolitan Area',
+      location: {
+        venueName: 'Heritage Venue TBD',
+        city: request.city || 'Metropolitan Area',
+        isIndoor: true,
+      },
       targetGuestCount: request.targetGuestCount,
+      confirmedGuestCount: 0,
       totalBudget: request.totalBudget,
       currency: request.currency,
+      status: 'planning',
+      syncState: 'in-sync',
       themePreference: request.themePreference || '',
       priorities: request.priorities || [],
       dietaryRequirements: request.dietaryRequirements || [],
       accessibilityRequirements: request.accessibilityRequirements || [],
+      preferences: {
+        indoorOutdoor: 'indoor',
+      },
       createdAt: now,
       updatedAt: now,
     }
 
-    const deterministicConcepts = generateThemeConcepts(mockEvent as any)
+    const deterministicConcepts = generateThemeConcepts(mockEvent)
     const validatedConcepts = enforceDeterministicBudgetCalculations(
       deterministicConcepts,
       request.totalBudget,
@@ -302,29 +313,39 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
       generatedAt: now,
       disclaimer: BASE_PRICE_DISCLAIMER,
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Log sanitized error without leaking API keys, private data, or headers
-    const errorMessage = error?.message || 'Unknown error'
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     // Fall back to deterministic engine gracefully
-    const mockEvent = {
+    const mockEvent: CelebrationEvent = {
       id: request.eventId,
       title: request.title,
-      category: request.category,
+      category: (request.category as EventCategory) || 'wedding',
       date: '2026-10-31',
-      city: request.city || 'Metropolitan Area',
+      location: {
+        venueName: 'Heritage Venue TBD',
+        city: request.city || 'Metropolitan Area',
+        isIndoor: true,
+      },
       targetGuestCount: request.targetGuestCount,
+      confirmedGuestCount: 0,
       totalBudget: request.totalBudget,
       currency: request.currency,
+      status: 'planning',
+      syncState: 'in-sync',
       themePreference: request.themePreference || '',
       priorities: request.priorities || [],
       dietaryRequirements: request.dietaryRequirements || [],
       accessibilityRequirements: request.accessibilityRequirements || [],
+      preferences: {
+        indoorOutdoor: 'indoor',
+      },
       createdAt: now,
       updatedAt: now,
     }
 
     const fallbackConcepts = enforceDeterministicBudgetCalculations(
-      generateThemeConcepts(mockEvent as any),
+      generateThemeConcepts(mockEvent),
       request.totalBudget,
       request.currency,
     )

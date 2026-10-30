@@ -14,6 +14,8 @@ import { Button } from '@/components/common/Button'
 import { INDIAN_EVENT_TEMPLATES } from '@/constants/indianEventTemplates'
 import { LotusMotif, JaaliDivider } from '@/components/common/IndianMotifs'
 
+import { EventCategory } from '@/types/event'
+
 interface TraditionCardProps {
   title: string
   region: string
@@ -21,7 +23,7 @@ interface TraditionCardProps {
   rituals: string[]
   colorTheme: string
   palette: string[]
-  recommendedCategory: 'wedding' | 'birthday' | 'anniversary' | 'community'
+  recommendedCategory: EventCategory
   onSelect: () => void
 }
 
@@ -271,7 +273,7 @@ export const LandingWelcomeView: React.FC = () => {
               rituals={tmpl.culturalPreferences.selectedCeremonies ? tmpl.culturalPreferences.selectedCeremonies.slice(0, 5) : []}
               colorTheme={tmpl.colorTheme}
               palette={tmpl.colorPalette.map((p) => p.hex)}
-              recommendedCategory={tmpl.category as any}
+              recommendedCategory={tmpl.category}
               onSelect={handleStartPlanning}
             />
           ))}

@@ -1,5 +1,6 @@
 import React from 'react'
 import { PlannerProvider, usePlanner } from '@/context/PlannerContext'
+import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { Shell } from '@/components/layout/Shell'
 import { LandingWelcomeView } from '@/features/landing/LandingWelcomeView'
 import { DashboardView } from '@/features/dashboard/DashboardView'
@@ -37,11 +38,13 @@ const MainContent: React.FC = () => {
 
 export function App() {
   return (
-    <PlannerProvider>
-      <Shell>
-        <MainContent />
-      </Shell>
-    </PlannerProvider>
+    <ErrorBoundary>
+      <PlannerProvider>
+        <Shell>
+          <MainContent />
+        </Shell>
+      </PlannerProvider>
+    </ErrorBoundary>
   )
 }
 

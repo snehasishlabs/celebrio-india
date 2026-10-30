@@ -39,6 +39,7 @@ export const VendorsView: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<'portfolio' | 'comparison'>('portfolio')
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all')
+  const [vendorPage, setVendorPage] = useState(1)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingVendorId, setEditingVendorId] = useState<string | null>(null)
 
@@ -108,11 +109,18 @@ export const VendorsView: React.FC = () => {
     (v) => v.contractStatus === 'contract-signed' || v.contractStatus === 'deposit-paid',
   ).length
 
-  // Filtered Vendors
+  // Filtered & Paginated Vendors
   const filteredVendors =
     selectedCategoryFilter === 'all'
       ? vendors
       : vendors.filter((v) => v.service === selectedCategoryFilter)
+
+  const VENDORS_PER_PAGE = 6
+  const totalVendorPages = Math.max(1, Math.ceil(filteredVendors.length / VENDORS_PER_PAGE))
+  const paginatedVendors = filteredVendors.slice(
+    (vendorPage - 1) * VENDORS_PER_PAGE,
+    vendorPage * VENDORS_PER_PAGE,
+  )
 
   const handleOpenAddModal = () => {
     setEditingVendorId(null)
@@ -347,7 +355,10 @@ export const VendorsView: React.FC = () => {
           {/* Category Filter Pills */}
           <div className="flex flex-wrap items-center gap-1.5 border-b border-ivory-200 pb-2">
             <button
-              onClick={() => setSelectedCategoryFilter('all')}
+              onClick={() => {
+                setSelectedCategoryFilter('all')
+                setVendorPage(1)
+              }}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
                 selectedCategoryFilter === 'all'
                   ? 'bg-forest-800 text-ivory-50'
@@ -362,7 +373,10 @@ export const VendorsView: React.FC = () => {
               return (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategoryFilter(cat.id)}
+                  onClick={() => {
+                    setSelectedCategoryFilter(cat.id)
+                    setVendorPage(1)
+                  }}
                   className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
                     selectedCategoryFilter === cat.id
                       ? 'bg-forest-800 text-ivory-50'
@@ -386,7 +400,7 @@ export const VendorsView: React.FC = () => {
                 </p>
               </Card>
             ) : (
-              filteredVendors.map((vendor) => {
+              paginatedVendors.map((vendor) => {
                 const categoryMeta = VENDOR_CATEGORY_METAS.find((m) => m.id === vendor.service)
                 const isContracted =
                   vendor.contractStatus === 'contract-signed' ||
@@ -627,6 +641,39 @@ export const VendorsView: React.FC = () => {
               })
             )}
           </div>
+
+          {/* Vendor Pagination Controls */}
+          {totalVendorPages > 1 && (
+            <div className="flex items-center justify-between p-4 bg-ivory-100/70 rounded-2xl border border-ivory-200 text-xs text-charcoal-600">
+              <div>
+                Showing {Math.min(filteredVendors.length, (vendorPage - 1) * VENDORS_PER_PAGE + 1)} to{' '}
+                {Math.min(filteredVendors.length, vendorPage * VENDORS_PER_PAGE)} of {filteredVendors.length} suppliers
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={vendorPage <= 1}
+                  onClick={() => setVendorPage((p) => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="font-medium text-charcoal-800">
+                  Page {vendorPage} of {totalVendorPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={vendorPage >= totalVendorPages}
+                  onClick={() => setVendorPage((p) => Math.min(totalVendorPages, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* 5. Vendor Comparison Worksheet Tab */

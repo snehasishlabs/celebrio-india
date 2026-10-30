@@ -1,7 +1,7 @@
 import { CelebrationEvent } from '@/types/event'
 import { BudgetItem } from '@/types/budget'
 import { TimelineTask } from '@/types/timeline'
-import { Vendor } from '@/types/vendor'
+import { Vendor, VendorService } from '@/types/vendor'
 import { AIRecommendation, PlanSyncAlert } from '@/types/ai'
 import { calculateBudgetSummary, formatCurrency, sanitizeAmount } from './budgetGuardian'
 import { calculateDaysRemaining, isTaskOverdue } from './timelineEngine'
@@ -111,13 +111,13 @@ export function generateEventRecommendations(
   }
 
   // 3. Check Pending Vendor Bookings vs Critical Categories
-  const criticalServices = ['venue', 'catering', 'photography', 'decor']
-  const confirmedServices = new Set(
+  const criticalServices: VendorService[] = ['venue', 'catering', 'photography', 'decor']
+  const confirmedServices = new Set<VendorService>(
     vendors
       .filter((v) => v.contractStatus === 'contract-signed' || v.contractStatus === 'deposit-paid')
       .map((v) => v.service),
   )
-  const pendingCritical = criticalServices.filter((s) => !confirmedServices.has(s as any))
+  const pendingCritical = criticalServices.filter((s) => !confirmedServices.has(s))
 
   if (pendingCritical.length > 0 && daysRem !== null && daysRem <= 90) {
     recommendations.push({

@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
+/* oxlint-disable react/only-export-components */
+/* eslint-disable react-refresh/only-export-components */
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   NavSection,
   CelebrationEvent,
@@ -15,94 +17,25 @@ import {
   ScenarioSimulationResult,
   AIPlanningSource,
 } from '@/types'
+import { Guest } from '@/types/guest'
 import { StorageService } from '@/services/storage/storageService'
 import { SAMPLE_ALERTS } from '@/services/storage/sampleData'
+import { verifyEventOwnership, DEFAULT_USER_ID } from '@/utils/security'
 import { generateThemeConcepts } from '@/services/ideas/conceptGenerator'
 import { generateCelebrationConcepts, fetchServerHealth } from '@/services/ai/aiPlanningService'
 import { calculateBudgetSummary, sanitizeAmount, formatCurrency } from '@/utils/budgetGuardian'
 import { generatePreparationTasks, addDays } from '@/utils/timelineEngine'
 import { generateEventRecommendations } from '@/utils/recommendationEngine'
 import { validateAIAction } from '@/utils/aiActionValidator'
-import { AIActionProposal, AIRecommendation } from '@/types/ai'
+import { AIActionProposal } from '@/types/ai'
 import {
   syncVendorToBudgetItems,
   generateDefaultPaymentMilestones,
   getVendorCategoryQuestions,
 } from '@/utils/vendorEngine'
+import { PlannerContext, PlannerContextType, EventDetailTab } from './PlannerContextDef'
 
-export type EventDetailTab =
-  | 'overview'
-  | 'ideas'
-  | 'budget'
-  | 'timeline'
-  | 'vendors'
-  | 'guest-experience'
-  | 'contingency'
-
-interface PlannerContextType {
-  currentSection: NavSection
-  setCurrentSection: (section: NavSection) => void
-  events: CelebrationEvent[]
-  activeEvent: CelebrationEvent | null
-  setActiveEventId: (id: string) => void
-  activeTab: EventDetailTab
-  setActiveTab: (tab: EventDetailTab) => void
-  budgetItems: BudgetItem[]
-  timelineTasks: TimelineTask[]
-  vendors: Vendor[]
-  activities: ActivityLogItem[]
-  themeConcepts: ThemeConcept[]
-  selectedConcept: ThemeConcept | null
-  selectThemeConcept: (conceptId: string) => void
-  aiPlanningSource: AIPlanningSource
-  aiModelName: string
-  isGeneratingIdeas: boolean
-  regenerateIdeasWithAI: () => Promise<void>
-  alerts: PlanSyncAlert[]
-  isMobileNavOpen: boolean
-  setIsMobileNavOpen: (open: boolean) => void
-  isCreateEventOpen: boolean
-  setIsCreateEventOpen: (open: boolean) => void
-  isSyncing: boolean
-  triggerManualSync: () => void
-  resetWorkspace: () => void
-  addEvent: (input: NewCelebrationInput) => CelebrationEvent
-  updateActiveEvent: (updates: Partial<CelebrationEvent>) => void
-  deleteEvent: (eventId: string) => void
-
-  // Timeline Task Operations
-  updateTaskStatus: (taskId: string, isCompleted: boolean) => void
-  addTimelineTask: (task: Omit<TimelineTask, 'id' | 'eventId'>) => TimelineTask
-  updateTimelineTask: (taskId: string, updates: Partial<TimelineTask>) => void
-  deleteTimelineTask: (taskId: string) => void
-  reopenTimelineTask: (taskId: string) => void
-  regenerateTimelineTasks: () => void
-
-  // Budget Item Operations
-  addBudgetItem: (item: Omit<BudgetItem, 'id' | 'eventId'>) => BudgetItem
-  updateBudgetItem: (itemId: string, updates: Partial<BudgetItem>) => void
-  deleteBudgetItem: (itemId: string) => void
-  applyCostSavingAlternative: (itemId: string, newAmount: number, description: string) => void
-
-  // Vendor Operations
-  addVendor: (vendor: Omit<Vendor, 'id' | 'eventId'>) => Vendor
-  updateVendor: (vendorId: string, updates: Partial<Vendor>) => void
-  deleteVendor: (vendorId: string) => void
-  toggleMilestonePaid: (vendorId: string, milestoneId: string) => void
-
-  // Adaptive Scenario Simulator
-  applyScenario: (input: ScenarioInput, result: ScenarioSimulationResult) => void
-
-  // AI Copilot & Recommendation Engine
-  recommendations: AIRecommendation[]
-  applyAIProposal: (proposal: AIActionProposal) => { success: boolean; message: string }
-  isCopilotOpen: boolean
-  setIsCopilotOpen: (open: boolean) => void
-  copilotInitialQuery: string
-  openCopilotWithQuery: (query: string) => void
-}
-
-const PlannerContext = createContext<PlannerContextType | undefined>(undefined)
+export type { EventDetailTab, PlannerContextType }
 
 export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentSection, setCurrentSection] = useState<NavSection>('dashboard')
@@ -121,6 +54,11 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const id = StorageService.getActiveEventId()
     return StorageService.getVendors(id)
   })
+  const [guests, setGuests] = useState<Guest[]>(() => {
+    const id = StorageService.getActiveEventId()
+    return StorageService.getGuests(id)
+  })
+  const [currentUserId] = useState<string>(DEFAULT_USER_ID)
   const [activities, setActivities] = useState<ActivityLogItem[]>(() => StorageService.getActivities())
   const [alertsOverride, setAlertsOverride] = useState<PlanSyncAlert[] | null>(null)
 
@@ -184,6 +122,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setBudgetItems(StorageService.getBudgetItems(id))
     setTimelineTasks(StorageService.getTasks(id))
     setVendors(StorageService.getVendors(id))
+    setGuests(StorageService.getGuests(id))
     setActivities(StorageService.getActivities(id))
   }, [])
 
@@ -719,6 +658,78 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     [activeEvent, vendors, updateVendor],
   )
 
+  // Guest Management CRUD Operations
+  const addGuest = useCallback(
+    (input: Omit<Guest, 'id' | 'createdAt' | 'updatedAt'>): Guest => {
+      if (!activeEvent) throw new Error('No active event selected')
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to add guests to this celebration.')
+      }
+
+      const now = new Date().toISOString()
+      const newGuest: Guest = {
+        ...input,
+        id: `gst-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        eventId: activeEvent.id,
+        name: input.name.trim(),
+        category: input.category || 'family',
+        rsvpStatus: input.rsvpStatus || 'awaiting',
+        plusOnes: Math.max(0, Number(input.plusOnes) || 0),
+        invitationSent: Boolean(input.invitationSent),
+        createdAt: now,
+        updatedAt: now,
+      }
+
+      const updated = [...guests, newGuest]
+      setGuests(updated)
+      StorageService.saveGuestsForEvent(activeEvent.id, updated)
+
+      const activity: ActivityLogItem = {
+        id: `act-${Date.now()}`,
+        eventId: activeEvent.id,
+        type: 'guest-updated',
+        title: 'Guest Added to Roster',
+        description: `Added "${newGuest.name}" (${newGuest.category}) with RSVP status: ${newGuest.rsvpStatus}.`,
+        timestamp: 'Just now',
+      }
+      StorageService.addActivity(activity)
+      setActivities(StorageService.getActivities())
+
+      return newGuest
+    },
+    [activeEvent, currentUserId, guests],
+  )
+
+  const updateGuest = useCallback(
+    (id: string, updates: Partial<Guest>) => {
+      if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to update guests for this celebration.')
+      }
+
+      const updated = guests.map((g) =>
+        g.id === id ? { ...g, ...updates, updatedAt: new Date().toISOString() } : g,
+      )
+      setGuests(updated)
+      StorageService.saveGuestsForEvent(activeEvent.id, updated)
+    },
+    [activeEvent, currentUserId, guests],
+  )
+
+  const deleteGuest = useCallback(
+    (id: string) => {
+      if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to delete guests from this celebration.')
+      }
+
+      const updated = guests.filter((g) => g.id !== id)
+      setGuests(updated)
+      StorageService.saveGuestsForEvent(activeEvent.id, updated)
+    },
+    [activeEvent, currentUserId, guests],
+  )
+
   // Add a newly created event with baseline data
   const addEvent = useCallback(
     (input: NewCelebrationInput): CelebrationEvent => {
@@ -727,6 +738,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const newEvent: CelebrationEvent = {
         id: eventId,
+        userId: currentUserId,
         title: input.title.trim(),
         category: input.category,
         date: input.date,
@@ -999,12 +1011,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return newEvent
     },
-    [events],
+    [events, currentUserId],
   )
 
   const updateActiveEvent = useCallback(
     (updates: Partial<CelebrationEvent>) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const updated = { ...activeEvent, ...updates, updatedAt: new Date().toISOString() }
       const updatedEvents = events.map((e) => (e.id === activeEvent.id ? updated : e))
       setEvents(updatedEvents)
@@ -1030,11 +1045,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       }
     },
-    [activeEvent, events, timelineTasks],
+    [activeEvent, currentUserId, events, timelineTasks],
   )
 
   const deleteEvent = useCallback(
     (eventId: string) => {
+      const target = events.find((e) => e.id === eventId)
+      if (target && !verifyEventOwnership(target, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to delete this celebration.')
+      }
       StorageService.deleteEvent(eventId)
       const remainingEvents = StorageService.getEvents()
       setEvents(remainingEvents)
@@ -1043,13 +1062,17 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setBudgetItems(StorageService.getBudgetItems(nextActiveId))
       setTimelineTasks(StorageService.getTasks(nextActiveId))
       setVendors(StorageService.getVendors(nextActiveId))
+      setGuests(StorageService.getGuests(nextActiveId))
     },
-    [],
+    [events, currentUserId],
   )
 
   const applyScenario = useCallback(
     (input: ScenarioInput, result: ScenarioSimulationResult) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
 
       const safeBudget = sanitizeAmount(input.totalBudget)
       const safeGuests = Math.max(1, Math.round(input.guestCount))
@@ -1146,7 +1169,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       StorageService.addActivity(activity)
       setActivities(StorageService.getActivities())
     },
-    [activeEvent, budgetItems, timelineTasks, vendors, events],
+    [activeEvent, currentUserId, budgetItems, timelineTasks, vendors, events],
   )
 
   const applyAIProposal = useCallback(
@@ -1159,7 +1182,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       }
 
-      const p = proposal.payload || {}
+      const p = (proposal.payload || {}) as Record<string, any>
       const now = new Date().toISOString()
 
       switch (proposal.actionType) {
@@ -1306,6 +1329,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setBudgetItems(StorageService.getBudgetItems(defId))
     setTimelineTasks(StorageService.getTasks(defId))
     setVendors(StorageService.getVendors(defId))
+    setGuests(StorageService.getGuests(defId))
     setActivities(StorageService.getActivities())
     setAlertsOverride(SAMPLE_ALERTS)
   }, [])
@@ -1321,6 +1345,11 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     budgetItems,
     timelineTasks,
     vendors,
+    guests,
+    addGuest,
+    updateGuest,
+    deleteGuest,
+    currentUserId,
     activities,
     themeConcepts,
     selectedConcept,
@@ -1366,10 +1395,4 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return <PlannerContext.Provider value={value}>{children}</PlannerContext.Provider>
 }
 
-export function usePlanner(): PlannerContextType {
-  const context = useContext(PlannerContext)
-  if (!context) {
-    throw new Error('usePlanner must be used within a PlannerProvider')
-  }
-  return context
-}
+export { usePlanner } from './usePlanner'

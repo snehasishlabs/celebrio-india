@@ -19,7 +19,7 @@ export function validateAIAction(
   activeEvent?: CelebrationEvent | null,
 ): ActionValidationResult {
   const errors: string[] = []
-  const p = proposal.payload || {}
+  const p = (proposal.payload || {}) as Record<string, any>
 
   switch (proposal.actionType) {
     case 'CREATE_EVENT': {
@@ -118,7 +118,7 @@ export function validateAIAction(
     }
 
     default:
-      errors.push(`Unknown AI action type: ${(proposal as any).actionType}`)
+      errors.push(`Unknown AI action type: ${String((proposal as { actionType?: unknown }).actionType)}`)
   }
 
   const isValid = errors.length === 0

@@ -21,7 +21,7 @@ import {
   Shield,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
-import { EventCategory, NewCelebrationInput, CulturalPreferences } from '@/types/event'
+import { EventCategory, NewCelebrationInput, CulturalPreferences, CeremonyScheduleType } from '@/types/event'
 import { Button } from '@/components/common/Button'
 import { addDays, formatDateIso } from '@/utils/timelineEngine'
 import { INDIAN_EVENT_TEMPLATES } from '@/constants/indianEventTemplates'
@@ -813,7 +813,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ isOpen, onCl
                 <select
                   id="wizard-schedule-type"
                   value={ceremonyScheduleType}
-                  onChange={(e) => setCeremonyScheduleType(e.target.value as any)}
+                  onChange={(e) => setCeremonyScheduleType(e.target.value as CeremonyScheduleType)}
                   className="w-full px-3 py-2 text-xs rounded-xl border border-ivory-300 bg-white focus:outline-none focus:ring-2 focus:ring-forest-700"
                 >
                   <option value="single-day">Single Day (Intensive / Reception)</option>

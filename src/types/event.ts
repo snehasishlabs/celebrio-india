@@ -12,11 +12,13 @@ export type EventStatus = 'draft' | 'planning' | 'confirmed' | 'completed' | 'ar
 
 export type SyncState = 'in-sync' | 'drift-detected' | 'syncing' | 'action-required';
 
+export type CeremonyScheduleType = 'single-day' | 'multi-day-2' | 'multi-day-3' | 'multi-day-4' | 'custom';
+
 export interface CulturalPreferences {
   traditionId?: string;
   regionOrState?: string;
   preferredLanguage?: string;
-  ceremonyScheduleType?: 'single-day' | 'multi-day-2' | 'multi-day-3' | 'multi-day-4' | 'custom';
+  ceremonyScheduleType?: CeremonyScheduleType;
   selectedCeremonies?: string[];
   auspiciousTimingPreference?: string;
   foodTradition?: string;
@@ -36,6 +38,7 @@ export interface EventPreferences {
 
 export interface CelebrationEvent {
   id: string;
+  userId?: string; // Owner user ID for object-level authorization & multi-tenant isolation
   title: string;
   tagline?: string;
   category: EventCategory;

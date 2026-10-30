@@ -146,7 +146,7 @@ export interface AIActionProposal {
   explanation: string
   impactSummary: string
   requiresConfirmation: boolean
-  payload: Record<string, any>
+  payload: Record<string, unknown>
   validationStatus: 'valid' | 'invalid'
   validationErrors?: string[]
 }
@@ -161,7 +161,7 @@ export interface AIRecommendation {
   potentialImpact: string
   suggestedAction: string
   actionType?: AIActionType
-  actionPayload?: Record<string, any>
+  actionPayload?: Record<string, unknown>
   createdAt: string
 }
 

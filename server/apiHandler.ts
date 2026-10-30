@@ -63,7 +63,9 @@ function sendJson(res: ServerResponse, statusCode: number, data: unknown, header
     'Content-Type': 'application/json; charset=utf-8',
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
-    'Cache-Control': 'no-store',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
     ...headers,
   })
   res.end(payload)
@@ -197,9 +199,10 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     // Unmatched API endpoint
     sendJson(res, 404, { error: 'API endpoint not found' })
     return true
-  } catch (err: any) {
-    const isPayloadTooLarge = err?.message?.includes('PAYLOAD_TOO_LARGE')
-    const isMalformedJson = err?.message?.includes('MALFORMED_JSON')
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    const isPayloadTooLarge = message.includes('PAYLOAD_TOO_LARGE')
+    const isMalformedJson = message.includes('MALFORMED_JSON')
 
     if (isPayloadTooLarge) {
       sendJson(res, 413, { error: 'Payload too large. Maximum size is 64KB.' })
