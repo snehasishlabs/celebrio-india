@@ -6,6 +6,11 @@ import {
   Cpu,
   CheckCircle2,
   Lock,
+  Share2,
+  Bell,
+  Users,
+  Copy,
+  Info,
 } from 'lucide-react'
 import { usePlanner } from '@/context/PlannerContext'
 import { Card } from '@/components/common/Card'
@@ -13,8 +18,16 @@ import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
 
 export const SettingsView: React.FC = () => {
-  const { activeEvent, resetWorkspace } = usePlanner()
+  const { activeEvent, alerts, resetWorkspace } = usePlanner()
   const [resetDone, setResetDone] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+
+  const handleCopyShareLink = () => {
+    const shareUrl = `${window.location.origin}/#share=${activeEvent?.id || 'demo'}&auth=read-only`
+    navigator.clipboard?.writeText(shareUrl)
+    setCopiedLink(true)
+    setTimeout(() => setCopiedLink(false), 2500)
+  }
 
   const handleReset = () => {
     if (window.confirm('Reset all celebration data back to the curated showcase event?')) {
@@ -112,6 +125,130 @@ export const SettingsView: React.FC = () => {
           <li>Safe environment template provided via <code>.env.example</code>.</li>
           <li>No raw unescaped HTML injection or unsafe DOM operations.</li>
         </ul>
+      </Card>
+
+      {/* Collaboration & Sharing */}
+      <Card variant="default" className="p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-ivory-300">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gold-100 text-gold-800 flex items-center justify-center">
+              <Share2 className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-base text-charcoal-900">
+                Collaboration &amp; Multi-User Access
+              </h3>
+              <p className="text-xs text-charcoal-500">Plan sharing &amp; role-based coordination</p>
+            </div>
+          </div>
+          <Badge variant="neutral" size="sm">
+            Partially Functional · Local-First
+          </Badge>
+        </div>
+
+        <div className="text-xs text-charcoal-600 space-y-3 leading-relaxed">
+          <div className="p-3 rounded-xl bg-ivory-100/70 border border-ivory-200 flex items-start gap-2.5">
+            <Info className="w-4 h-4 text-forest-700 shrink-0 mt-0.5" />
+            <p>
+              Celebrio AI operates on a <strong>local-first privacy architecture</strong>. Collaboration is currently achieved via encrypted/sanitized JSON export bundles and catering rosters. Multi-tenant live web-socket sync is in demonstration mode.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            <div className="p-3 rounded-xl bg-ivory-50 border border-ivory-200 space-y-1">
+              <div className="font-semibold text-charcoal-900 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-forest-700" />
+                <span>Primary Host</span>
+              </div>
+              <p className="text-[11px] text-charcoal-500">Full write permissions, budget approval, vendor contract signing.</p>
+            </div>
+            <div className="p-3 rounded-xl bg-ivory-50 border border-ivory-200 space-y-1">
+              <div className="font-semibold text-charcoal-900 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-gold-700" />
+                <span>Co-Planner</span>
+              </div>
+              <p className="text-[11px] text-charcoal-500">Task completion, vendor messaging, attendee dietary logging.</p>
+            </div>
+            <div className="p-3 rounded-xl bg-ivory-50 border border-ivory-200 space-y-1">
+              <div className="font-semibold text-charcoal-900 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-charcoal-500" />
+                <span>Read-Only Guest</span>
+              </div>
+              <p className="text-[11px] text-charcoal-500">View ceremony schedule, venue directions, and dress code.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div>
+              <span className="font-semibold text-charcoal-800 block text-xs">Shareable Read-Only Manifest URL</span>
+              <span className="text-[11px] text-charcoal-400">Share preview link with family elders and coordinators</span>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCopyShareLink}
+              leftIcon={<Copy className="w-3.5 h-3.5" />}
+            >
+              {copiedLink ? 'Link Copied!' : 'Copy Share Link'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Notifications & Plan Sync Feed */}
+      <Card variant="default" className="p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-ivory-300">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-forest-100 text-forest-800 flex items-center justify-center">
+              <Bell className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="font-serif font-bold text-base text-charcoal-900">
+                Proactive Notifications &amp; System Alerts
+              </h3>
+              <p className="text-xs text-charcoal-500">Autonomous drift detection &amp; financial alerts</p>
+            </div>
+          </div>
+          <Badge variant="forest" size="sm">
+            Fully Functional ({alerts.length} Active)
+          </Badge>
+        </div>
+
+        <div className="space-y-2.5">
+          {alerts.length > 0 ? (
+            alerts.map((al) => (
+              <div
+                key={al.id}
+                className="p-3.5 rounded-xl bg-ivory-50 border border-ivory-200 flex items-start justify-between gap-3 text-xs"
+              >
+                <div className="space-y-0.5">
+                  <div className="font-semibold text-charcoal-900 flex items-center gap-2">
+                    <span>{al.title}</span>
+                    <span
+                      className={`text-[10px] uppercase font-bold px-1.5 py-0.2 rounded ${
+                        al.severity === 'critical'
+                          ? 'bg-rose-100 text-rose-800'
+                          : al.severity === 'warning'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-forest-100 text-forest-800'
+                      }`}
+                    >
+                      {al.severity}
+                    </span>
+                  </div>
+                  <p className="text-charcoal-600">{al.description}</p>
+                  {al.suggestedAction && (
+                    <div className="text-[11px] text-forest-800 font-medium pt-1">
+                      Action: {al.suggestedAction}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-xs text-charcoal-500 py-2">No active warnings. All modules are synchronized.</p>
+          )}
+        </div>
       </Card>
 
       {/* Data Management */}

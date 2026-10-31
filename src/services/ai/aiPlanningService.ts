@@ -203,7 +203,7 @@ export async function explainUrgentTasks(
 
   const curr = request.currency === 'INR' ? '₹' : (request.currency === 'USD' ? '$' : request.currency)
 
-  const analyses = request.urgentTasks.slice(0, 4).map((task) => {
+  const analyses = (request.urgentTasks || []).slice(0, 5).map((task) => {
     const lower = task.title.toLowerCase()
     let whyItMatters = 'This milestone is on your celebration critical path.'
     let recommendedAction = 'Contact supplier candidates and finalize terms.'

@@ -75,6 +75,16 @@ export function simulateScenario(
   let userConfirmedDecisionsPreserved = 0
 
   const simulatedBudgetItems: BudgetItem[] = originalBudgetItems.map((item) => {
+    // Dynamic contingency reserve: Always maintained at 8% of the proposed celebration budget
+    if (item.isContingency || item.category === 'contingency') {
+      const targetContingency = Math.round(proposedBudget * 0.08)
+      return {
+        ...item,
+        allocatedAmount: targetContingency,
+        actualAmount: targetContingency,
+      }
+    }
+
     // PRESERVE USER INTENT: Confirmed allocations are strictly protected
     if (item.costStatus === 'confirmed') {
       userConfirmedDecisionsPreserved++
@@ -293,7 +303,16 @@ export function simulateScenario(
     })
   }
 
-  if (guestCountDelta > 20) {
+  if (guestCountDelta >= 20) {
+    tradeoffs.push({
+      id: 'to-staffing-logistics',
+      title: 'Banquet Staffing & Dual Buffet Deployment',
+      category: 'Catering & Staffing',
+      description: `With +${guestCountDelta} guests, deploy dual synchronized buffet counters and contract ${Math.ceil(guestCountDelta / 15)} additional service personnel.`,
+      savingsOrCost: Math.round(guestCountDelta * 180),
+      impactType: 'cost',
+      compromiseSummary: 'Eliminates meal queue bottlenecks and keeps elder dining transitions effortless.',
+    })
     tradeoffs.push({
       id: 'to-passed-hors-doeuvres',
       title: 'Passed Cocktail Stations',
@@ -309,10 +328,34 @@ export function simulateScenario(
   const infeasibilityReasons: string[] = []
 
   let venueCapacityWarning: string | undefined = undefined
-  if (scenarioInput.venueCapacity && scenarioInput.venueCapacity > 0 && proposedGuests > scenarioInput.venueCapacity) {
-    const overCapacity = proposedGuests - scenarioInput.venueCapacity
-    venueCapacityWarning = `Venue Capacity Exceeded: Proposed ${proposedGuests} guests exceeds certified facility limit (${scenarioInput.venueCapacity}) by ${overCapacity} attendees. Requires hall expansion or guest rotation.`
+  const effectiveCapacity =
+    scenarioInput.venueCapacity && scenarioInput.venueCapacity > 0
+      ? scenarioInput.venueCapacity
+      : (originalEvent.location?.capacity && originalEvent.location.capacity > 0
+        ? originalEvent.location.capacity
+        : (originalGuests >= 100 && proposedGuests > Math.round(originalGuests * 1.15)
+          ? Math.round(originalGuests * 1.15)
+          : undefined))
+
+  if (effectiveCapacity && proposedGuests > effectiveCapacity) {
+    const overCapacity = proposedGuests - effectiveCapacity
+    venueCapacityWarning = `Venue Capacity Exceeded: Proposed ${proposedGuests} guests exceeds certified facility limit (${effectiveCapacity}) by ${overCapacity} attendees. Requires hall expansion or guest rotation.`
     infeasibilityReasons.push(venueCapacityWarning)
+  }
+
+  if (scenarioInput.venueName && scenarioInput.venueName.trim() && scenarioInput.venueName !== originalEvent.location.venueName) {
+    infeasibilityReasons.push(
+      `Venue Relocation Notice: Relocating from "${originalEvent.location.venueName}" to "${scenarioInput.venueName}" requires renegotiating vendor load-in guidelines, curfew permissions, and security deposit transfer.`
+    )
+    tradeoffs.push({
+      id: 'to-venue-relocation-transit',
+      title: 'Coordinate Venue Transition & Logistics',
+      category: 'Logistics',
+      description: `Transmit updated venue address (${scenarioInput.venueName}) and arrival access instructions to all booked vendors.`,
+      savingsOrCost: 0,
+      impactType: 'neutral',
+      compromiseSummary: 'Ensures no day-of disruption or delivery delays to the previous address.',
+    })
   }
 
   if (proposedSummary.isOverBudget) {

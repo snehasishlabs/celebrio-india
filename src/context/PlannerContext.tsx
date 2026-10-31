@@ -1085,6 +1085,10 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         totalBudget: safeBudget,
         targetGuestCount: safeGuests,
         date: safeDate,
+        location: {
+          ...activeEvent.location,
+          venueName: input.venueName?.trim() || activeEvent.location.venueName,
+        },
         themePreference: input.themePreference?.trim() || activeEvent.themePreference,
         preferences: {
           ...activeEvent.preferences,

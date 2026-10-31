@@ -45,6 +45,7 @@ export interface ScenarioInput {
   eventDate: string;
   themePreference?: string;
   venueType: 'indoor' | 'outdoor' | 'hybrid';
+  venueName?: string;
   venueCapacity?: number;
   numberOfFunctions?: number;
   eventDurationDays?: number;

@@ -49,6 +49,7 @@ export interface CelebrationEvent {
     city: string;
     address?: string;
     isIndoor?: boolean;
+    capacity?: number;
   };
   totalBudget: number;
   currency: string;

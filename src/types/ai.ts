@@ -113,7 +113,7 @@ export interface AICopilotTaskAdviceRequest {
   totalBudget: number
   currency: string
   traditions?: string[]
-  urgentTasks: Array<{
+  urgentTasks?: Array<{
     id: string
     title: string
     deadline?: string

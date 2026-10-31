@@ -504,7 +504,96 @@ export async function explainUrgentTasksWithGemini(
       (request.city || '').toLowerCase().includes('kolkata') ||
       queryLower.includes('bengali')
 
-    // 1. Natural Language Scenario: "Plan a Bengali wedding for 150 guests in Kolkata"
+    // 1. Natural Language Scenario: "Plan my celebration within ₹2 lakh" or "Plan a Bengali wedding for 150 guests"
+    if (queryLower.includes('2 lakh') || queryLower.includes('2,00,000') || queryLower.includes('200000') || queryLower.includes('within 2 lakh')) {
+      const targetBudgetCap = 200000
+      const contingencyReserve = Math.round(targetBudgetCap * 0.08) // ₹16,000
+      const cateringAlloc = Math.round(targetBudgetCap * 0.32) // ₹64,000
+      const venueAlloc = Math.round(targetBudgetCap * 0.28) // ₹56,000
+      const decorAlloc = Math.round(targetBudgetCap * 0.13) // ₹26,000
+      const photoAlloc = Math.round(targetBudgetCap * 0.08) // ₹16,000
+      const miscAlloc = targetBudgetCap - (cateringAlloc + venueAlloc + decorAlloc + photoAlloc + contingencyReserve) // ₹22,000
+
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: `Celebration Plan Optimized for ${curr}2,00,000 Budget Cap`,
+        strategicSummary: `Structured a balanced, culturally rich celebration framework within ${curr}2,00,000 for ${targetGuestCount} guests in ${request.city || 'Kolkata'}. Ring-fences a protected ${curr}${contingencyReserve.toLocaleString()} (8%) contingency fund while preserving authentic ritual ceremonies.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-budget-venue-lock',
+            taskTitle: 'Lock Community Heritage Hall or Daylight Courtyard',
+            urgencyLevel: 'critical',
+            daysUntilDeadline: 7,
+            whyItMatters: `Allocates ${curr}${venueAlloc.toLocaleString()} (28%) to secure an authentic regional hall with load-in privileges.`,
+            recommendedAction: 'Execute venue agreement with verified morning load-in hours.',
+            culturalContext: 'Ensure open courtyard for holy rituals and sacred fire mandap.',
+          },
+          {
+            taskId: 'task-budget-catering-lock',
+            taskTitle: 'Approve Streamlined Feast with Regional Signature Staples',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 14,
+            whyItMatters: `Allocates ${curr}${cateringAlloc.toLocaleString()} (32%, ~${curr}${Math.round(cateringAlloc / targetGuestCount)}/head). Locking menu early protects against seasonal commodity surges.`,
+            recommendedAction: 'Choose seasonal fish/paneer preparations and fresh local sweet artisans (Halwais).',
+            culturalContext: 'Feature beloved classics like Rui Kalia, Chholar Dal with coconut, Luchi, and hot Rosogolla.',
+          },
+          {
+            taskId: 'task-budget-decor-botanical',
+            taskTitle: 'Adopt Indigenous Botanical & Brass Diya Decor',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 16,
+            whyItMatters: `Capped at ${curr}${decorAlloc.toLocaleString()} (13%). Replaces costly cold-storage imported flowers with fragrant Rajnigandha and marigolds.`,
+            recommendedAction: 'Engage local flower market guild for fresh morning delivery.',
+            culturalContext: 'Mango-leaf torans and traditional alpana patterns offer timeless elegance at modest expense.',
+          },
+          {
+            taskId: 'task-budget-photo-essential',
+            taskTitle: 'Contract Essential Heritage Photography Coverage',
+            urgencyLevel: 'medium',
+            daysUntilDeadline: 20,
+            whyItMatters: `Allocates ${curr}${photoAlloc.toLocaleString()} (8%) for high-quality single-cinematographer ceremony coverage.`,
+            recommendedAction: 'Confirm coverage window centered on vital ritual moments.',
+            culturalContext: 'Prioritize Saat Paake Ghaura, Sindoor Daan, and family blessing portraits.',
+          },
+          {
+            taskId: 'task-budget-rsvps',
+            taskTitle: 'Dispatch Digital Invitations & Track RSVPs',
+            urgencyLevel: 'medium',
+            daysUntilDeadline: 22,
+            whyItMatters: `Allocates ${curr}${miscAlloc.toLocaleString()} (11%) for digital invites, ritual items, and emergency sundries. Prevents plate wastage.`,
+            recommendedAction: 'Set firm RSVP deadline 14 days before celebration.',
+            culturalContext: 'Add dietary notes for pure-vegetarian elders and fasting relatives.',
+          },
+        ],
+        traditionAdvisories: [
+          'All authentic ceremonies remain fully protected; savings come from material choices, not cutting rituals.',
+          'Rely on warm hospitality, fresh food, and evening brass diyas for unforgettable celebratory atmosphere.',
+        ],
+        budgetGuidance: `Detailed allocation: Catering ${curr}${cateringAlloc.toLocaleString()} (32%), Venue ${curr}${venueAlloc.toLocaleString()} (28%), Decor ${curr}${decorAlloc.toLocaleString()} (13%), Attire & Sundries ${curr}${miscAlloc.toLocaleString()} (11%), Photography ${curr}${photoAlloc.toLocaleString()} (8%), Protected Contingency ${curr}${contingencyReserve.toLocaleString()} (8%).`,
+        suggestedNextSteps: [
+          'Review the itemized budget allocation breakdown.',
+          'Click "Apply Budget Optimization" to update active celebration limit.',
+          'Share menu constraints with shortlisted catering partners.',
+        ],
+        clarifyingQuestion: 'Would you prefer synchronized traditional banana-leaf service or a live buffet format?',
+        proposedAction: {
+          id: 'action-plan-2-lakh',
+          actionType: 'UPDATE_BUDGET',
+          title: `Set ${curr}2,00,000 Budget Cap`,
+          explanation: `Synchronize event budget to ${curr}2,00,000 with ${curr}${contingencyReserve.toLocaleString()} protected contingency.`,
+          impactSummary: `Adjusts category allocations proportionally while guaranteeing an 8% reserve.`,
+          requiresConfirmation: true,
+          validationStatus: 'valid',
+          payload: {
+            totalBudget: targetBudgetCap,
+            contingencyAmount: contingencyReserve,
+          },
+        },
+        generatedAt: now,
+      }
+    }
+
     if (queryLower.includes('plan a bengali wedding') || (queryLower.includes('bengali') && queryLower.includes('150'))) {
       return {
         source: 'deterministic-demo',
@@ -672,6 +761,49 @@ export async function explainUrgentTasksWithGemini(
     }
 
     // 4. Natural Language Scenario: "Suggest vegetarian catering options"
+    // 4. Natural Language Scenario: "Suggest affordable Bengali food options" or "vegetarian catering"
+    if (queryLower.includes('bengali food') || (queryLower.includes('bengali') && (queryLower.includes('food') || queryLower.includes('menu') || queryLower.includes('catering') || queryLower.includes('dishes')))) {
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: `Affordable Authentic Bengali Celebration Feast (${request.city || 'Kolkata'} • ${targetGuestCount} Guests)`,
+        strategicSummary: `Curated an authentic, high-reputation Bengali celebration menu balancing traditional prestige dishes with cost-effective wholesale ingredient sourcing. Optimizes per-plate budget to ~${curr}600-650/head while keeping beloved staples front and center.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-bengali-fish-market',
+            taskTitle: 'Lock Seasonal Katla/Rui Fish Vendor in Wholesale Batches',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 12,
+            whyItMatters: 'Using fresh Katla/Rui Kalia in place of expensive off-season Ilish or giant jumbo prawns preserves authentic celebratory taste while cutting fish spend by 30%.',
+            recommendedAction: 'Contract wholesale vendor for early morning delivery on wedding day.',
+            culturalContext: 'Fish is an indispensable auspicious symbol (Maaer Ashirbaad) in Bengali matrimony.',
+          },
+          {
+            taskId: 'task-bengali-halwai-lock',
+            taskTitle: 'Contract Traditional Halwai for Live Warm Chhena Rosogollas',
+            urgencyLevel: 'high',
+            daysUntilDeadline: 15,
+            whyItMatters: 'Freshly made cottage cheese sweets cost 40% less than imported bakery confections while providing far superior guest satisfaction.',
+            recommendedAction: 'Book dedicated sweet artisan team with mobile steaming karahis.',
+            culturalContext: 'Warm Nolen Gurer Rosogolla and Sandesh are cultural hallmarks of a Kolkata wedding.',
+          },
+        ],
+        traditionAdvisories: [
+          'Welcome Drink: Fragrant Gondhoraj Lebur Shorbot & Aam Pora Shorbot (refreshing and affordable).',
+          'Starters: Crispy Moong Dal Kochuri with sweet-spicy Chholar Dal (coconut slivers) & Postor Bora.',
+          'Main Course: Fluffy Lucchi, Basanti Pulao, Dhokar Dalna, and rich Rui Machher Kalia / Kosha Mangsho.',
+          'Dessert Trio: Hot Rosogolla handis, Nolen Gurer Sandesh, and thick artisan Mishti Doi.',
+        ],
+        budgetGuidance: `Estimated catering cost: ${curr}${Math.round(totalBudget * 0.32).toLocaleString()} (~32% of ${curr}${totalBudget.toLocaleString()} budget). Adopting live buffet or batch table service prevents unconsumed plate surcharges.`,
+        suggestedNextSteps: [
+          'Share this four-course traditional menu with your shortlisted catering partners.',
+          'Confirm separate cooking utensils for vegetarian and elder dietary preferences.',
+        ],
+        clarifyingQuestion: 'Would you like to include one mutton preparation (Kosha Mangsho) alongside the fish course?',
+        generatedAt: now,
+      }
+    }
+
     if (queryLower.includes('vegetarian') || queryLower.includes('pure veg') || queryLower.includes('sattvik') || queryLower.includes('catering options')) {
       return {
         source: 'deterministic-demo',
@@ -704,9 +836,11 @@ export async function explainUrgentTasksWithGemini(
       }
     }
 
-    // 5. Natural Language Scenario: "What happens if 30 additional guests attend?"
-    if (queryLower.includes('additional guests') || queryLower.includes('30 additional') || queryLower.includes('more guests')) {
-      const addedGuests = 30
+    // 5. Natural Language Scenario: "What happens if 50 more guests attend?" (or dynamic count)
+    const guestSurgeRegex = /(\d+)\s*(?:more|additional|extra)\s*guests/i
+    const surgeMatch = queryLower.match(guestSurgeRegex)
+    if (surgeMatch || queryLower.includes('additional guests') || queryLower.includes('more guests')) {
+      const addedGuests = surgeMatch ? Math.max(5, parseInt(surgeMatch[1], 10)) : 50
       const newGuests = targetGuestCount + addedGuests
       const estPerPlate = Math.round((totalBudget * 0.32) / targetGuestCount)
       const cateringDelta = estPerPlate * addedGuests
@@ -714,34 +848,43 @@ export async function explainUrgentTasksWithGemini(
       return {
         source: 'deterministic-demo',
         model: 'demo-rule-engine',
-        headline: `Ripple-Effect Analysis: +${addedGuests} Guests (${newGuests} Total)`,
-        strategicSummary: `Adding ${addedGuests} attendees expands your catering commitment by approximately ${curr}${cateringDelta.toLocaleString()} (at ~${curr}${estPerPlate}/plate). Venue seating and transit flow require re-verification.`,
+        headline: `Ripple-Effect Analysis: +${addedGuests} Guests (${newGuests} Total Headcount)`,
+        strategicSummary: `Adding ${addedGuests} attendees expands your catering commitment by approximately ${curr}${cateringDelta.toLocaleString()} (at ~${curr}${estPerPlate}/plate). Crucially, the physical hall seating and kitchen staging must accommodate ${newGuests} total attendees without overcrowding.`,
         urgentTaskAnalyses: [
           {
             taskId: 'task-venue-capacity-audit',
-            taskTitle: 'Verify Venue Capacity for 180 Attendees',
+            taskTitle: `Verify Venue Hall Seating Limit for ${newGuests} Attendees`,
             urgencyLevel: 'critical',
             daysUntilDeadline: 5,
-            whyItMatters: 'Exceeding physical hall capacity compresses circulation space around the mandap and dining counters.',
-            recommendedAction: 'Check facility fire clearance and request 4 additional round tables.',
+            whyItMatters: `Exceeding certified facility capacity by ${addedGuests} attendees compresses ceremonial circulation around the mandap and dining aisles.`,
+            recommendedAction: `Inspect facility safety certificate and request ${Math.ceil(addedGuests / 8)} additional round tables with linens.`,
+            culturalContext: 'Ensure sacred fire mandap remains clear and accessible for elder viewing.',
+          },
+          {
+            taskId: 'task-buffet-staffing-surge',
+            taskTitle: `Deploy Dual Synchronized Buffet Counters & ${Math.ceil(addedGuests / 15)} Extra Servers`,
+            urgencyLevel: 'high',
+            daysUntilDeadline: 8,
+            whyItMatters: `Single-line buffet queues for ${newGuests} people exceed 18 minutes. Dual counters eliminate bottlenecks.`,
+            recommendedAction: 'Instruct catering supervisor to stage split food replenishment stations.',
           },
         ],
         traditionAdvisories: [
-          'Ensure sufficient welcome drink replenishment so arriving guest groups never wait.',
-          'Stagger dining windows between family elders and younger guests.',
+          'Stagger elder banquet dining 30 minutes before younger cohorts to provide relaxed hospitality.',
+          'Add a secondary welcome drink station at the entrance to greet arriving family batches.',
         ],
-        budgetGuidance: `Catering scales by +${curr}${cateringDelta.toLocaleString()}. We recommend absorbing this by streamlining dessert courses or applying live buffet service.`,
+        budgetGuidance: `Catering scales by +${curr}${cateringDelta.toLocaleString()}. Absorbing this without budget expansion requires shifting from plated courses to live buffet or trimming floral imports.`,
         suggestedNextSteps: [
-          'Open the What-If Simulator to preview side-by-side financial deltas.',
-          'Confirm venue chair and linen inventory for 180 seats.',
+          `Open the What-If Simulator with ${newGuests} guests to preview side-by-side category impacts.`,
+          `Confirm venue chair and table rental inventory for ${newGuests} seats.`,
         ],
-        clarifyingQuestion: 'Should we launch the What-If Simulator with 180 guests to preview all category ripples?',
+        clarifyingQuestion: `Would you like to simulate this ${newGuests}-guest scenario in the What-If Simulator right now?`,
         proposedAction: {
           id: 'action-simulate-guest-surge',
           actionType: 'CREATE_WHAT_IF_SCENARIO',
           title: `Simulate ${newGuests} Guests Scenario`,
           explanation: `Simulate guest headcount increase from ${targetGuestCount} to ${newGuests}.`,
-          impactSummary: `Calculates catering scaling (+${curr}${cateringDelta.toLocaleString()}) and checks venue feasibility.`,
+          impactSummary: `Calculates catering scaling (+${curr}${cateringDelta.toLocaleString()}) and checks venue seating capacity.`,
           requiresConfirmation: true,
           validationStatus: 'valid',
           payload: {
@@ -749,6 +892,51 @@ export async function explainUrgentTasksWithGemini(
             totalBudget: totalBudget,
           },
         },
+        generatedAt: now,
+      }
+    }
+
+    // 6. Natural Language Scenario: "Explain why my budget is exceeding the limit"
+    if (queryLower.includes('exceeding') || queryLower.includes('over budget') || queryLower.includes('deficit') || queryLower.includes('exceed the limit')) {
+      const budgetItemsList = Array.isArray(request.budgetItems) ? request.budgetItems : []
+      const totalAllocated = budgetItemsList.reduce((acc, b) => acc + (Number(b.allocatedAmount) || 0), 0)
+      const overage = Math.max(0, totalAllocated - totalBudget)
+
+      return {
+        source: 'deterministic-demo',
+        model: 'demo-rule-engine',
+        headline: `Budget Variance Diagnostic: ${overage > 0 ? `${curr}${overage.toLocaleString()} Exceeding Cap` : 'Protected Budget Headroom Analysis'}`,
+        strategicSummary: overage > 0
+          ? `Your planned spending (${curr}${totalAllocated.toLocaleString()}) exceeds the authorized budget limit (${curr}${totalBudget.toLocaleString()}) by ${curr}${overage.toLocaleString()}. This variance is driven primarily by overlapping vendor commitments and unoptimized premium decor lines.`
+          : `Your allocations currently total ${curr}${totalAllocated.toLocaleString()} against a limit of ${curr}${totalBudget.toLocaleString()}. Your 8% contingency reserve (${curr}${Math.round(totalBudget * 0.08).toLocaleString()}) is safe, but variable catering and rentals require vigilance.`,
+        urgentTaskAnalyses: [
+          {
+            taskId: 'task-audit-catering-variance',
+            taskTitle: 'Reconcile High-Variance Catering & Dining Commitments',
+            urgencyLevel: 'critical',
+            daysUntilDeadline: 4,
+            whyItMatters: 'Catering typically drives overages when guest counts or premium live stations expand without ceiling caps.',
+            recommendedAction: 'Transition from formal synchronized table service to a curated live buffet format to save ~12% in staffing.',
+          },
+          {
+            taskId: 'task-protect-contingency-buffer',
+            taskTitle: `Restore 8% Ring-Fenced Contingency (${curr}${Math.round(totalBudget * 0.08).toLocaleString()})`,
+            urgencyLevel: 'high',
+            daysUntilDeadline: 6,
+            whyItMatters: 'Never absorb budget deficits by zeroing out the contingency buffer; unexpected ceremonial items require emergency cash reserves.',
+            recommendedAction: 'Trim non-essential imported florals and specialty lighting to replenish the reserve.',
+          },
+        ],
+        traditionAdvisories: [
+          'Protect all essential cultural rituals (ceremony sacred mandap, priest Dakshina, traditional prasad/sweets).',
+          'Apply savings exclusively to non-cultural line items like bespoke printing and imported botanicals.',
+        ],
+        budgetGuidance: `To restore balanced headroom, we recommend shaving 5% from decor and 7% from entertainment, preserving your complete ceremony calendar.`,
+        suggestedNextSteps: [
+          'Review the over-allocated line items in your Budget Planner.',
+          'Launch the What-If Simulator to preview rebalancing options.',
+        ],
+        clarifyingQuestion: 'Would you like Celebrio to automatically generate 3 cost-saving alternatives for your top expenses?',
         generatedAt: now,
       }
     }
@@ -804,8 +992,8 @@ export async function explainUrgentTasksWithGemini(
       }
     }
 
-    // Default: Urgent Tasks & General Cultural Guidance
-    const analyses = urgentTasks.slice(0, 4).map((task) => {
+    // Default: Urgent Tasks & General Cultural Guidance (Provides up to 5 top prioritized tasks)
+    const analyses = urgentTasks.slice(0, 5).map((task) => {
       const lowerTitle = (task.title || '').toLowerCase()
       let whyItMatters = `This milestone is on the critical planning path. Delaying past the deadline causes downstream logistical bottlenecks.`
       let recommendedAction = `Review supplier requirements, verify budget allocation, and finalize the agreement.`
@@ -892,7 +1080,7 @@ A user is planning:
 - Date / Timeline Horizon: ${request.eventDate || '30 days sprint'}
 
 URGENT / CRITICAL TASKS:
-${request.urgentTasks.map((t) => `- [${t.priority.toUpperCase()}] ${t.title} (${t.status})`).join('\n')}
+${(request.urgentTasks || []).map((t) => `- [${t.priority.toUpperCase()}] ${t.title} (${t.status})`).join('\n')}
 
 USER QUERY:
 ${request.query || 'Explain the most urgent tasks and provide cultural, timeline, and budget recommendations.'}
@@ -973,8 +1161,8 @@ Return ONLY a valid JSON object matching this schema:
       strategicSummary: String(parsed.strategicSummary || 'Strategic roadmap generated.').slice(0, 350),
       urgentTaskAnalyses: Array.isArray(parsed.urgentTaskAnalyses)
         ? parsed.urgentTaskAnalyses.slice(0, 5).map((a: any, idx: number) => ({
-            taskId: String(a.taskId || request.urgentTasks[idx]?.id || `task-${idx}`).slice(0, 64),
-            taskTitle: String(a.taskTitle || request.urgentTasks[idx]?.title || 'Milestone').slice(0, 150),
+            taskId: String(a.taskId || (request.urgentTasks && request.urgentTasks[idx]?.id) || `task-${idx}`).slice(0, 64),
+            taskTitle: String(a.taskTitle || (request.urgentTasks && request.urgentTasks[idx]?.title) || 'Milestone').slice(0, 150),
             urgencyLevel: ['critical', 'high', 'medium'].includes(a.urgencyLevel) ? a.urgencyLevel : 'high',
             daysUntilDeadline: Number(a.daysUntilDeadline) || 7,
             whyItMatters: String(a.whyItMatters || 'Critical path requirement.').slice(0, 250),

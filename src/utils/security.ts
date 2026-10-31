@@ -23,13 +23,15 @@ export function verifyEventOwnership(
  */
 export function sanitizePii(
   value: string | undefined | null,
-  type: 'phone' | 'email' = 'phone',
+  type?: 'phone' | 'email',
 ): string {
   if (!value || typeof value !== 'string') return ''
   const trimmed = value.trim()
   if (!trimmed) return ''
 
-  if (type === 'email') {
+  const detectedType = type || (trimmed.includes('@') ? 'email' : 'phone')
+
+  if (detectedType === 'email') {
     const parts = trimmed.split('@')
     if (parts.length !== 2) return '***@***.***'
     const [name, domain] = parts

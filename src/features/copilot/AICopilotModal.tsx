@@ -23,12 +23,13 @@ import { formatCurrency } from '@/utils/budgetGuardian'
 import { isTaskOverdue, isTaskDueSoon, calculateDaysRemaining } from '@/utils/timelineEngine'
 
 const QUICK_PROMPTS = [
-  'Plan a Bengali wedding for 150 guests in Kolkata',
-  'Suggest a traditional yet affordable decoration theme',
-  'Reduce my budget by ₹40,000 without removing important functions',
-  'What are my most urgent pending tasks?',
+  'Plan my celebration within ₹2 lakh',
+  'What are my five most urgent tasks?',
+  'Suggest affordable Bengali food options',
+  'Reduce decoration costs without compromising the overall theme',
+  'What happens if 50 more guests attend?',
+  'Explain why my budget is exceeding the limit',
   'Suggest vegetarian catering options',
-  'What happens if 30 additional guests attend?',
   'Reorganise my schedule if the venue changes',
 ]
 
