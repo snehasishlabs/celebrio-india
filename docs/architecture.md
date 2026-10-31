@@ -19,9 +19,9 @@ flowchart TD
         Storage["StorageService & Local-First Cache<br/>(LocalStorage with Tenant & Checksum Isolation)"]
     end
 
-    subgraph Server["Server Tier (Node.js / Express Proxy)"]
-        API["Express API Gateway<br/>(/api/ai/concepts, /api/ai/copilot-advice)"]
-        Security["Security & Rate Limiting<br/>(Helmet, CORS, Payload Sanitization)"]
+    subgraph Server["Server Tier (Node.js HTTP Server & Vite Middleware Proxy)"]
+        API["Node HTTP API Gateway<br/>(/api/plan/*, /api/copilot/*, /api/health)"]
+        Security["Security & Rate Limiting<br/>(DoS 64KB Cap, RateLimiter, Security Headers)"]
         GeminiService["Gemini Planning Engine<br/>(@google/genai, Gemini 2.5 Flash)"]
         Fallback["Deterministic Offline Engine<br/>(High-Fidelity Culturally Attuned Fallback)"]
     end

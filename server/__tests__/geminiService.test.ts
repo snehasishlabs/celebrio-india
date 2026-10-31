@@ -116,7 +116,7 @@ describe('Server Gemini AI Service (geminiService.ts)', () => {
 
       const result = await explainTradeoffsWithGemini(tradeoffReq)
       expect(result.source).toBe('deterministic-demo')
-      expect(result.strategicSummary).toMatch(/Budget reduced by \$5,000/i)
+      expect(result.strategicSummary).toMatch(/Budget reduced by [₹$]5,000/i)
       expect(result.culinaryRecommendations.length).toBeGreaterThan(0)
       expect(result.entertainmentAlternatives.length).toBeGreaterThan(0)
       expect(result.budgetSavingTips.length).toBeGreaterThan(0)

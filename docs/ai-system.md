@@ -20,7 +20,7 @@ Celebrio India's AI Copilot and Concept Studio solve this by combining **Generat
 flowchart TD
     UserQuery["User Input / Prompt Query<br/>(e.g., 'Plan celebration within ₹2 Lakh')"] --> Modal["AICopilotModal (Client)"]
     ContextBuilder["Active Celebration Context Builder<br/>(City, Budget, Guests, Rituals, Urgent Tasks, Ledger)"] --> Modal
-    Modal -->|HTTPS POST (Sanitized)| Proxy["/api/ai/copilot-advice (Server Gateway)"]
+    Modal -->|HTTPS POST (Sanitized)| Proxy["/api/copilot/explain-urgent-tasks (Server Gateway)"]
     Proxy --> GeminiEngine["Gemini 2.5 Flash Planning Engine"]
     GeminiEngine -->|Output Verification| Parser["JSON Cleaner & Schema Validator"]
     Parser --> ActionValidator["AI Action Proposal Validator<br/>(Budget Invariants & Non-Negative Clamping)"]
@@ -34,8 +34,8 @@ flowchart TD
 ## 2. Server-Side Proxy & Zero Client Secrets
 
 To ensure strict production security:
-- **Zero Client-Side Keys:** No `VITE_GEMINI_API_KEY` exists in frontend bundles. The client communicates strictly with the backend proxy (`/api/ai/concepts`, `/api/ai/copilot-advice`).
-- **Server Environment:** The Express server loads `GEMINI_API_KEY` securely from server environment variables via `dotenv`.
+- **Zero Client-Side Keys:** No `VITE_GEMINI_API_KEY` exists in frontend bundles. The client communicates strictly with the backend proxy (`/api/plan/generate-concepts`, `/api/copilot/explain-urgent-tasks`, `/api/plan/explain-tradeoffs`).
+- **Server Environment:** The server loads `GEMINI_API_KEY` securely from server environment variables via `dotenv`.
 - **Telemetry & Timeout Shield:** All live model invocations are wrapped in a 12,000ms race condition with automatic abort controllers:
   ```typescript
   const response = await Promise.race([

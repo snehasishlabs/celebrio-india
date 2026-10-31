@@ -374,9 +374,10 @@ export async function explainTradeoffsWithGemini(
 
   // Fallback / deterministic generator
   const getDeterministicTradeoff = (): AITradeoffExplanationResponse => {
+    const currencySymbol = '₹'
     let summary = isBudgetReduced
-      ? `Budget reduced by $${Math.abs(request.deltas.budgetDelta).toLocaleString()}. Recommend prioritizing non-negotiable anchor experiences (venue & catering) while adopting modular styling and seasonal florals.`
-      : `Budget expanded by $${Math.abs(request.deltas.budgetDelta).toLocaleString()}. Excellent opportunity to enrich guest hospitality with interactive culinary stations and live musical enhancement.`
+      ? `Budget reduced by ${currencySymbol}${Math.abs(request.deltas.budgetDelta).toLocaleString('en-IN')}. Recommend prioritizing non-negotiable anchor experiences (venue & catering) while adopting modular styling and seasonal florals.`
+      : `Budget expanded by ${currencySymbol}${Math.abs(request.deltas.budgetDelta).toLocaleString('en-IN')}. Excellent opportunity to enrich guest hospitality with interactive culinary stations and live musical enhancement.`
 
     if (isGuestsExpanded) {
       summary += ' With per-guest spend constrained, consider buffet or family-style service to maintain high satisfaction.'

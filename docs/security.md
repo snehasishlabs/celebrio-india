@@ -96,7 +96,7 @@ No secret keys, access tokens, or sensitive API credentials exist in the client 
 - The browser environment only knows its backend proxy route (`/api/ai/...`).
 
 ### 3.2 Secure Server Gateway
-The Express proxy located in `server/index.ts` is the single point of contact with Google's Generative AI infrastructure:
+The Node HTTP proxy located in `server/index.ts` (and embedded in Vite dev/preview via `vite.config.ts`) is the single point of contact with Google's Generative AI infrastructure:
 - Credentials (`GEMINI_API_KEY`) are loaded via `dotenv` from an unversioned `.env` file on the server.
 - `.env` is permanently excluded via `.gitignore`.
 - An audit of the git commit history confirms zero committed credentials.
@@ -145,23 +145,23 @@ Unit tests in `src/__tests__/priorityVerificationAudit.test.ts` verify that sens
 ### 5.1 Defense Strategy
 1. **DOMPurify Integration:** Any user-supplied notes, descriptions, or AI-generated Markdown rendered into HTML are passed through `DOMPurify.sanitize()` using strict HTML tag and attribute allowlists.
 2. **React 19 Safe Escaping:** Default JSX string interpolation escapes malicious strings like `<script>alert(1)</script>` or `<img src=x onerror=...>` automatically.
-3. **Schema Validation:** Inbound API responses and scenario inputs are strictly parsed using runtime schema validators to reject prototype pollution or unexpected type coercions.
+3. **Schema Validation:** Inbound API responses and scenario inputs are strictly parsed using runtime schema validators in `server/validator.ts` to reject prototype pollution or unexpected type coercions.
 
 ---
 
 ## 6. HTTP Transport Security & Headers
 
-The backend Express proxy enforces enterprise-grade HTTP security headers configured via `helmet`:
+The backend API proxy enforces HTTP security headers directly on all API responses (`server/apiHandler.ts`):
 
 | Header | Directive | Purpose |
 | :--- | :--- | :--- |
-| `Content-Security-Policy` | `default-src 'self'` | Prevents script injection from untrusted CDNs |
-| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | Enforces HTTPS connections |
-| `X-Frame-Options` | `DENY` | Prevents clickjacking in iframes |
 | `X-Content-Type-Options` | `nosniff` | Blocks MIME-sniffing exploits |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking in iframes |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Protects URI path leakages |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disables device hardware access |
+| `Cache-Control` | `no-store, no-cache, must-revalidate` | Prevents caching of sensitive event financial plans |
 
-In addition, CORS is restricted to authorized origin domains, preventing unauthorized cross-origin AJAX queries.
+In addition, requests are strictly capped at 64 KB (`MAX_BODY_BYTES`) to prevent Denial-of-Service attacks, and an in-memory `RateLimiter` enforces a 30 requests/minute threshold.
 
 ---
 
