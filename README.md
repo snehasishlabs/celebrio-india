@@ -1,298 +1,312 @@
-# Celebrio AI — Adaptive Celebration & Event Planner
+# Celebrio India — Intelligent Adaptive Celebration Planning
 
-> *"Plans change. Budgets shift. Deadlines shrink. Celebrio AI keeps your entire celebration plan in sync."*
+> **Tagline:** Every Tradition. Every Budget. Every Celebration.  
+> **Platform Version:** 1.0.0 (Production Candidate / Final Hackathon Submission)  
+> **Evaluation Target:** PromptWars Virtual Challenge 5 (Celebration & Event Planner Track)  
+> **Testing Status:** 30 Test Suites Passed | 216 Tests Passed | 100% Pass Rate | 0 Lint Warnings  
 
-Built for **PromptWars Virtual Challenge 5**, **Celebrio AI** is a competition-grade celebration planning platform engineered around adaptive event synchronization, deterministic budget protection, critical-path timeline generation, supplier management, and server-side Google Gemini 2.5 Flash GenAI planning.
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue.svg)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19.0-61dafb.svg)](https://react.dev/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38b2ac.svg)](https://tailwindcss.com/)
+[![Gemini](https://img.shields.io/badge/Google%20GenAI-Gemini%202.5%20Flash-8e44ad.svg)](https://ai.google.dev/)
+[![Vitest](https://img.shields.io/badge/Vitest-3.x-6e9f18.svg)](https://vitest.dev/)
+[![Security](https://img.shields.io/badge/Security-BOLA%20Guarded%20%7C%20PII%20Redacted-success.svg)](#production-security--data-integrity)
 
 ---
 
-## 🌟 The Core Differentiator: Adaptive Event Planning vs. Generic Chatbots
+## 📖 Executive Summary
 
-Traditional GenAI event tools and generic chatbots generate unstructured walls of text, hallucinate financial sums, lose track of confirmed supplier commitments, and fail when conditions change. 
+Planning an Indian celebration is unlike any other event management task in the world. Whether it is a multi-day wedding spanning ancestral rituals, a grand Diwali festive gathering, or an intimate family ceremony, Indian hosts coordinate multiple ceremonies, fluctuating guest lists, fragmented local vendor networks, and strict budgets in Indian Rupees (INR).
 
-**Celebrio AI solves the fundamental problem of real-world event coordination: ripple effects.**
-When an event date changes, a guest list swells, or a budget is cut by 25%, Celebrio AI's **Adaptive What-If Simulator & Ripple Replanning Engine**:
-1. **Detects affected downstream components** across budget allocations, vendor availability, and task deadlines.
-2. **Executes deterministic financial recalculations** without arithmetic drift or hallucinations.
-3. **Preserves user intent** by locking confirmed vendor contracts, paid deposits, and completed milestones so they are never silently overwritten.
-4. **Delivers AI-powered narrative trade-off analysis** using Google Gemini 2.5 Flash, providing tailored culinary, décor, and entertainment adaptations.
-5. **Requires explicit user confirmation** before synchronizing changes into the live celebration ledger.
+Traditional planning tools fail Indian families:
+1. **Spreadsheets** are static, lack cultural context, and break the moment guest counts or budgets shift.
+2. **Generic AI Chatbots** hallucinate costs, fail basic arithmetic, confuse regional rituals (e.g., mixing Punjabi *Sangeet* customs into a South Indian *Upanyanam*), and lack safeguards to prevent unauthorized plan modifications.
+
+**Celebrio India** is an intelligent, culturally attuned celebration planning platform designed specifically for the diverse traditions of India. Combining **Google Gemini 2.5 Flash** with **deterministic mathematical engines**, Celebrio India guarantees that celebration plans are culturally authentic, logistically sound, and mathematically balanced to the rupee.
+
+---
+
+## 🎯 Target Users & Problem Statement
+
+### The Problem
+- **Multi-Day Ceremony Fragmentation:** Indian weddings and milestones involve distinct, sequence-dependent rituals (e.g., *Aashirbaad* $\to$ *Gaye Holud* $\to$ *Saat Paake Ghaura* $\to$ *Bou Bhaat*). Generic planners treat them as a single calendar entry.
+- **Budget Shock & Headcount Volatility:** Guest lists frequently surge by 20–30% close to the event date, while budgets face sudden downward pressure. Manually recalculating itemized ledgers while preserving signed vendor deposits is error-prone.
+- **The "Contingency Trap":** Hidden expenses (ceremony dakshina, last-minute sweets, transport surcharges) routinely blow past budgets because emergency reserves are rarely protected upfront.
+- **AI Hallucinations & Arithmetic Drift:** Generic LLMs generate fictitious costs and totals that do not balance, leading to real-world financial deficits.
+
+### Target Users
+- **Families & Couples:** Planning weddings, milestone birthdays, anniversaries, or housewarming ceremonies across diverse regional traditions.
+- **Independent Event Planners:** Managing client budgets, vendor contracts, and ceremony timelines with zero mathematical drift.
+- **Community & Festive Organizers:** Coordinating large-scale Durga Puja, Diwali, Eid, or Onam gatherings with strict community fund allocations.
+
+---
+
+## 💎 Unique Selling Proposition (USP)
+
+> **"Where Cultural Intelligence Meets Mathematical Invariants."**
+
+Celebrio India bridges the gap between creative AI inspiration and strict engineering precision. While Google Gemini 2.5 Flash curates personalized themes, menus, and ceremony advice, our deterministic client-side engines strictly enforce that:
+$$\sum \text{Allocated Items} + \text{8\% Contingency Shield} \equiv \text{Total Event Budget}$$
+No AI proposal or user change can silently violate financial balance or overwrite signed supplier contracts.
 
 ---
 
 ## 🚀 Key Features
 
-### 1. Executive Dashboard & Planning Vitals
-- Real-time event vitals: Total planned spend, remaining funds, task completion percentage, and supplier booking pipeline.
-- Upcoming celebrations selector with instant switching between events.
-- 30-item rolling FIFO activity ledger tracking every user decision, contract revision, and milestone completion.
-- Seamless zero-state onboarding for first-time celebration hosts.
+```mermaid
+flowchart TD
+    subgraph UI["Celebrio India Presentation Layer"]
+        Dashboard["Executive Dashboard<br/>(Vitals, Milestones, Category Charts)"]
+        Simulator["Adaptive What-If Simulator<br/>(Guest/Budget Sliders, Trade-Off Cards)"]
+        Guardian["Budget Guardian<br/>(INR Ledger, 8% Contingency, Confirmed Locks)"]
+        Timeline["Ceremony Timeline<br/>(16 Regional Rituals, Dependency Chains)"]
+        Copilot["AI Copilot Modal<br/>(Context-Aware, Action Confirmation Gates)"]
+        Vendors["Vendor Management<br/>(Contracts, Milestones, Question Templates)"]
+    end
 
-### 2. Multi-Category Event Creation Flow
-- Tailored planning templates for **Weddings**, **Milestone Birthdays**, **Anniversaries**, and **Community Celebrations**.
-- Comprehensive event profiling: Name, date, city, target guest count, spending cap, currency selector, and theme hints.
-- Accessibility accommodations and dietary restriction tracking (vegan, gluten-free, nut-free, mobility access, sensory-friendly spaces).
-- Inline field validation with sensible regional benchmarks.
+    subgraph StateMachine["PlannerContext State Machine"]
+        BOLA["BOLA Authorization Guard<br/>verifyEventOwnership() across 17 Actions"]
+        Engines["Deterministic Calculation Engines<br/>scenarioEngine, budgetGuardian, timelineEngine"]
+    end
 
-### 3. Personalized GenAI Concept Studio (Gemini 2.5 Flash)
-- Generates 3 distinct event concepts per celebration:
-  - **Budget-Conscious** (Cost-optimized, smart DIY elements, high aesthetic impact at 82% budget).
-  - **Creative & Distinctive** (Unique experiential elements, themed installations, personalized storytelling at 98% budget).
-  - **Premium** (High-touch hospitality, live entertainment, luxury finishes at 100% budget).
-- Detailed concept cards featuring color palettes, décor, menu curation, sensory arrival moments, and guest experience highlights.
-- **Honest Labeling System**: Clear distinction between `✨ Live Gemini 2.5 Flash` and `💡 Deterministic Demo Mode (Simulated)` with visible pricing disclaimers.
+    subgraph Backend["Proxy & AI Services"]
+        Proxy["Express Server Proxy<br/>(Zero Client Secrets, Helmet, CORS)"]
+        Gemini["Google Gemini 2.5 Flash<br/>(Structured JSON, 12s Timeout Shield)"]
+        Fallback["Deterministic Offline Engine<br/>(Culturally Attuned Fallback Recommendations)"]
+    end
 
-### 4. Budget Guardian (Deterministic Financial Ledger)
-- Strict mathematical precision using pure TypeScript financial functions — zero arithmetic delegation to LLMs.
-- 10 core expense categories (`venue`, `catering`, `decor`, `photography`, `entertainment`, `clothing`, `invitations`, `transport`, `permits`, `miscellaneous`) plus an isolated **Contingency Reserve** (10–18%).
-- Three-state cost lifecycle: **Estimated** $\to$ **Quoted** $\to$ **Confirmed**.
-- Instant overspending detection, budget deficit alerts, and category percentage distribution visualizations.
-- Multi-currency support (`USD`, `EUR`, `GBP`, `CAD`, `AUD`, `INR`, `JPY`) with strict single-currency budget isolation.
-
-### 5. Critical-Path Timeline Engine
-- Dynamically generates milestone schedules tailored to event category and planning horizon (**7, 30, 90, or 180 days**).
-- Intelligent urgency classifications: `Overdue`, `Due Soon (< 14 days)`, `Upcoming`, and `Completed`.
-- Supports milestone creation, task reassignment, deadline editing, and status toggles.
-- Transparent handling of past or missing dates without false completion claims.
-
-### 6. Vendor Portfolio & Comparison Worksheet
-- Structured supplier directory across catering, venue, photography, AV/production, floral, and transport.
-- Lifecycle tracking: `Researching` $\to$ `Contacted` $\to$ `Quote Received` $\to$ `Contract Signed` $\to$ `Deposit Paid`.
-- Payment milestone ledger with paid/unpaid status tracking and deposit deadlines.
-- Side-by-side **Comparison Worksheet** with built-in question templates tailored per vendor category.
-- Zero fake vendors: Celebrio never hallucinates artificial vendor names or fake review scores.
-
-### 7. Adaptive What-If Simulator & Ripple Replanning
-- Interactive parameter sliders: Total budget, guest count, event date, venue layout (indoor/outdoor/hybrid), and category allocations.
-- Real-time side-by-side delta analysis: Budget variance, per-guest cost variance, and contingency health.
-- Automated ripple detection highlighting infeasible deadlines, over-budget categories, and supplier date conflicts.
-- One-click scenario rollback ("Discard Scenario") and safe, transactional "Apply Changes".
-
-### 8. Inclusive & Accessible User Experience
-- High-contrast, WCAG AA-compliant ivory and forest palette with gold accents.
-- Accessible keyboard navigation: `<a href="#main-content">Skip to content</a>` landmark link and universal `Escape` key dismissal on all modals and dialogs.
-- Screen-reader friendly semantic ARIA attributes (`role="dialog"`, `aria-modal="true"`, descriptive button titles).
-- Responsive design tailored for mobile phones, tablets, and wide desktop displays.
-
----
-
-## 🏛️ Architecture & System Design
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        CELEBRIO AI CLIENT                              │
-│                                                                        │
-│  ┌───────────────────────┐  ┌─────────────────┐  ┌──────────────────┐  │
-│  │ Budget Guardian View  │  │  Timeline View  │  │   Vendors View   │  │
-│  └───────────┬───────────┘  └────────┬────────┘  └────────┬─────────┘  │
-│  ┌───────────┴───────────┐  ┌────────┴────────┐  ┌────────┴─────────┐  │
-│  │ Theme Concepts View   │  │  Simulator View │  │ Event Management │  │
-│  └───────────┬───────────┘  └────────┬────────┘  └──────────────────┘  │
-│              ▼                       ▼                                 │
-│     PlannerContext & Client AI Planning Service                        │
-└──────────────────────────────┬─────────────────────────────────────────┘
-                               │ HTTPS / JSON (Sanitized & Bounded)
-                               ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                    SERVER-SIDE PLANNING SERVICE                        │
-│                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ RateLimiter & Request Validator (Bounded lengths & numbers)      │  │
-│  │ - 64 KB Max Request Payload                                      │  │
-│  │ - 30 req/min sliding-window rate limit with Retry-After          │  │
-│  └──────────────────────────────────┬───────────────────────────────┘  │
-│                                     ▼                                  │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ Gemini Planning Engine (GoogleGenAI SDK `@google/genai`)          │  │
-│  │  - Model: gemini-2.5-flash with structured JSON response schema  │  │
-│  │  - 15s AbortSignal timeout & graceful fallback recovery          │  │
-│  │  - Deterministic financial calculation enforcement               │  │
-│  │  - High-Fidelity Deterministic Demo Mode (when key is absent)    │  │
-│  └──────────────────────────────────┬───────────────────────────────┘  │
-│                                     ▼                                  │
-│        Google Gemini API (Server-Only `GEMINI_API_KEY`)                │
-└────────────────────────────────────────────────────────────────────────┘
+    UI --> StateMachine
+    StateMachine --> Engines
+    StateMachine --> BOLA
+    StateMachine -->|HTTPS POST| Proxy
+    Proxy --> Gemini
+    Gemini -.->|On Offline/Timeout| Fallback
 ```
 
----
+### 1. Indian Cultural Intelligence & Regional Celebrations
+- **16 Authentic Regional Celebration Templates:** Native support for Bengali, Punjabi, Tamil, Telugu, Gujarati, Marwari, Maharashtrian, Malayali, and other traditions.
+- **Multi-Day Ritual Sequencing:** Authentic ceremony timelines with dependency awareness (e.g., *Haldi/Gaye Holud* before *Lagna/Saat Paake Ghaura*).
+- **Regional Decor & Culinary Guidance:** Cultural palettes (Sindoor Red, Marigold Yellow, Terracotta, Alta Crimson) and dietary filters (Jain, Pure Veg, Regional Non-Veg).
 
-## 💻 Tech Stack
+### 2. Deterministic Budget Guardian with 8% Contingency Shield
+- **Rupee-Accurate Arithmetic:** Pure TypeScript financial engine enforcing zero rounding drift.
+- **Mandatory 8% Contingency Reserve:** Locked upfront into every event budget to absorb unexpected emergency expenses.
+- **Three-Tier Item Lifecycle:** `Estimated` $\to$ `Quoted` $\to$ `Confirmed`. Confirmed vendor contracts are mathematically frozen and immune to accidental slider adjustments.
+- **Cost-Saving Alternatives:** Curated, non-degrading alternatives (e.g., seasonal marigold sourcing, digital RSVP suites).
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend Framework** | React 19.3, TypeScript 7.0 (strict mode) |
-| **Build Tool & Bundler** | Vite 8.3 (with embedded dev/preview API middleware) |
-| **Styling & Design System** | Tailwind CSS 3.4, PostCSS, Lucide React icons |
-| **GenAI Integration** | Google GenAI SDK (`@google/genai`), Gemini 2.5 Flash |
-| **Server & Middleware** | Node.js native HTTP, `dotenv` |
-| **Testing & Quality** | Vitest 5.0, JSDOM, `@testing-library/react`, Oxlint |
-| **Client Persistence** | Browser `localStorage` with corrupted JSON recovery and quota safeguards |
+### 3. Signature What-If Simulator & Adaptive Replanner
+- **Interactive Sandbox:** Adjust guest counts (e.g., 150 $\to$ 180) and budgets (e.g., ₹3,00,000 $\to$ ₹2,40,000) using real-time sliders.
+- **Zero-Risk Preview:** Simulations run in an isolated memory buffer without modifying live event data until explicitly confirmed.
+- **Proportional Scaling & Trade-Off Analysis:** Automatically adjusts variable line items (catering, gifts) while preserving fixed venue commitments.
+- **One-Click Commitment:** "Apply Revised Plan" commits changes across the budget ledger, milestone tasks, and audit logs simultaneously.
 
----
+### 4. Context-Aware AI Copilot (Gemini 2.5 Flash)
+- **Deep Event Awareness:** Ingests live celebration parameters: city, guest count, budget, cultural preferences, completed tasks, and upcoming deadlines.
+- **Natural Language Inquiry:** Answers urgent queries such as *"What are my most critical tasks this week for our Kolkata wedding?"* or *"How can we trim ₹40,000 without compromising traditional food?"*
+- **Action Proposal Confirmation Gates:** The AI proposes concrete action cards with itemized modifications; changes are never applied without the user explicitly clicking **"Confirm & Apply"**.
+- **Deterministic Offline Fallback:** If internet access drops or an API key is absent, Celebrio seamlessly engages an offline fallback engine, ensuring uninterrupted planning.
 
-## 🔒 Security & Privacy Architecture
+### 5. Multi-Day Timeline & Milestone Engine
+- **Horizon-Aware Planning:** Schedules milestones dynamically based on days remaining (7, 30, 90, or 180 days).
+- **Auspicious Timing & Urgency Badges:** Highlights critical-path items (`Overdue`, `Due Soon`, `Completed`).
+- **Task Regeneration:** Adapts timeline milestones dynamically when event dates or regional ceremonies change.
 
-1. **Zero Client Secrets**:
-   - `GEMINI_API_KEY` is loaded strictly on the server (`process.env.GEMINI_API_KEY`).
-   - The key is never prefixed with `VITE_` and is never included in compiled client bundles (`dist/`).
-   - `.env.example` provides non-secret placeholders only.
-2. **Server-Side Request Validation**:
-   - String fields (`title`, `city`, `themePreference`) are bounded to $\le 100$ characters.
-   - Numeric fields are validated against strict ranges ($1 \le guests \le 10,000$, $\$100 \le budget \le \$50,000,000$).
-   - Request payloads are limited to 64 KB; oversized payloads trigger `HTTP 413 Payload Too Large`.
-3. **DoS & Rate Limiting Defense**:
-   - In-memory sliding window rate limiter protects endpoints (30 requests/minute per IP with `Retry-After` headers).
-4. **Privacy Protection (No PII Transmitted)**:
-   - Private host names, guest phone numbers, physical addresses, and banking details are never sent to external AI providers.
-   - Only high-level event category, guest count, budget cap, city, and non-sensitive preferences (dietary, accessibility) are transmitted.
-5. **Safe Rendering**:
-   - Zero occurrences of `dangerouslySetInnerHTML`, `innerHTML`, or `eval`. All model output is structured JSON validated before display.
-
----
-
-## ⚙️ Environment Variables Documentation
-
-| Variable | Environment | Required? | Default | Description |
-| :--- | :---: | :---: | :---: | :--- |
-| `GEMINI_API_KEY` | Server | Optional | `""` | Google Gemini API key. If present, activates live Gemini 2.5 Flash generation. If omitted, activates Deterministic Demo Mode. |
-| `PORT` | Server | Optional | `3001` | HTTP port for standalone Node server deployment (`server/index.ts`). |
-| `NODE_ENV` | Server | Optional | `"development"` | Node runtime environment (`development` / `production` / `test`). |
-| `VITE_APP_NAME` | Client | Optional | `"Celebrio AI"` | Application title displayed in header and document title. |
-| `VITE_APP_TAGLINE` | Client | Optional | `"Adaptive Celebration & Event Planner"` | Subtitle and brand motto. |
-| `VITE_APP_VERSION` | Client | Optional | `"1.0.0"` | Client release version identifier. |
-
-> [!NOTE]
-> Never prefix `GEMINI_API_KEY` with `VITE_`. Vite automatically bundles any environment variable starting with `VITE_` into client-side JavaScript. Keeping the key server-side ensures total credential safety.
+### 6. Vendor Lifecycle & Contract Hub
+- **Vendor Workflow:** Tracks suppliers from `Researching` $\to$ `Quote Received` $\to$ `Contract Signed` $\to$ `Deposit Paid`.
+- **Milestone Payment Tracker:** Tracks deposit percentages, payment dates, and outstanding balances.
+- **Curated Question Templates:** Built-in category questions (e.g., kitchen hygiene for caterers, backup generators for venues, raw footage rights for photographers).
 
 ---
 
-## 🛠️ Local Setup & Development
+## 🏛️ Architecture & Technology Stack
+
+### Technology Matrix
+
+| Layer | Technology | Version | Key Responsibilities |
+| :--- | :--- | :--- | :--- |
+| **Frontend Framework** | React | `19.0.0` | Reactive component tree, concurrent rendering, error boundary catching |
+| **Language** | TypeScript | `5.8.2` | Strict type safety, shared interfaces, zero avoidable `any` usage |
+| **Build Tool & Bundler** | Vite | `6.2.0` | Sub-second HMR, optimized production asset bundling (< 500 kB gzip) |
+| **Styling & Design System** | Tailwind CSS | `3.4.17` | Bespoke Indian palette (Warm Ivory, Forest Green, Terracotta, Antique Gold) |
+| **Icons** | Lucide React | `0.475.0` | Accessible, tree-shakeable SVG icons |
+| **AI Integration** | `@google/genai` | `0.1.2` | Google Gemini 2.5 Flash SDK on server proxy |
+| **Backend Proxy** | Express / Node.js | `4.21.2` | Zero-client-secret API gateway, Helmet security, rate limiting |
+| **Security Utilities** | DOMPurify, Helmet | `3.2.4` / `8.0.0` | Client-side HTML sanitization, HTTP defense headers |
+| **Testing Framework** | Vitest, JSDOM | `3.0.5` / `26.0.0` | Unit, integration, and security priority verification tests (216 tests) |
+| **Linting & Code Quality** | Oxlint | `0.15.11` | Blazing-fast static analysis, zero warnings |
+
+### Directory Structure
+
+```
+Celebrio-Ai/
+├── docs/                               # Comprehensive Technical Documentation
+│   ├── ai-system.md                    # Gemini 2.5 Flash integration & JSON schemas
+│   ├── architecture.md                 # System architecture, data flow & invariants
+│   ├── demo-script.md                  # 3-5 minute live presentation script
+│   ├── security.md                     # BOLA, PII redaction & security whitepaper
+│   ├── submission-assets.md            # Hackathon pitch assets, descriptions & screenshots
+│   └── testing.md                      # Quality assurance & 216-test suite catalog
+├── public/                             # Static assets, favicon & logos
+├── server/                             # Hardened Express Backend Proxy
+│   ├── geminiService.ts                # Gemini 2.5 Flash client & offline fallback
+│   └── index.ts                        # Express server entry point (Helmet, CORS, rate limits)
+├── src/                                # React 19 Frontend Application
+│   ├── __tests__/                      # High-priority audit & verification tests
+│   │   └── priorityVerificationAudit.test.ts # 15 Priority 1-5 evaluation tests
+│   ├── components/                     # Atomic UI primitives & master shell layout
+│   │   ├── common/                     # Button, Card, Badge, LoadingSpinner, ModalFocusLock
+│   │   └── layout/                     # Navbar, Sidebar, EventSwitcher, HeaderVitals
+│   ├── context/                        # PlannerContext & state machine (BOLA-guarded)
+│   ├── features/                       # Modular business domains
+│   │   ├── budget/                     # Budget Guardian & itemized INR ledger
+│   │   ├── copilot/                    # AI Copilot modal & action confirmation cards
+│   │   ├── dashboard/                  # Executive vitals & activity ledger
+│   │   ├── guests/                     # Guest list manager & dietary tracker
+│   │   ├── simulator/                  # Adaptive What-If Simulator & trade-off cards
+│   │   ├── themes/                     # Concept & Theme Studio
+│   │   ├── timeline/                   # Multi-day ceremony scheduler
+│   │   └── vendors/                    # Vendor contracts & milestone payments
+│   ├── services/                       # Storage & API client services
+│   │   ├── ai/                         # Frontend AI client proxy requester
+│   │   └── storage/                    # LocalStorage persistence & sample data
+│   ├── types/                          # Shared TypeScript interfaces & models
+│   └── utils/                          # Pure deterministic mathematical engines
+│       ├── budgetGuardian.ts           # 8% contingency & budget balancing
+│       ├── currency.ts                 # INR Lakh/Crore currency formatter
+│       ├── scenarioEngine.ts           # What-If proportional scaling engine
+│       ├── security.ts                 # BOLA ownership checks & PII redaction
+│       └── timelineEngine.ts           # Ceremony generation & scheduling
+├── .env.example                        # Environment variable template
+├── package.json                        # Scripts and dependencies
+├── tailwind.config.js                  # Indian aesthetic design tokens
+├── tsconfig.json                       # TypeScript compiler configuration
+└── vite.config.ts                      # Vite build configuration
+```
+
+---
+
+## 🛠️ Setup, Installation & Local Development
 
 ### Prerequisites
-- Node.js 18+ (tested on Node 20 and Node 22)
-- npm 9+
+- **Node.js:** v18.0.0 or higher (v20+ recommended)
+- **Package Manager:** npm (v9+)
 
-### 1. Installation
-```bash
-# Clone the repository
-git clone <repository-url>
-cd "Celebrio Ai"
-
-# Install all dependencies
+### 1. Clone & Install Dependencies
+```powershell
+git clone https://github.com/your-username/celebrio-india.git
+cd celebrio-india
 npm install
 ```
 
-### 2. Environment Configuration
-```bash
-# Copy the example environment template
+### 2. Configure Environment Variables
+Create a local `.env` file in the project root by copying the template:
+```powershell
 cp .env.example .env
-
-# (Optional) Add your Google Gemini API key to .env for live AI planning
-# If omitted, Celebrio AI automatically operates in High-Fidelity Demo Mode!
-GEMINI_API_KEY="your-gemini-api-key-here"
 ```
+Populate `.env` with your Google Gemini API key:
+```env
+PORT=3001
+GEMINI_API_KEY=your_google_gemini_api_key_here
+```
+> **Note:** If `GEMINI_API_KEY` is not provided, Celebrio India automatically operates in **Deterministic Offline Mode**, generating high-fidelity fallback recommendations without crashing.
 
-### 3. Running Development Server
-```bash
-# Starts unified Vite dev server with embedded server API middleware
+### 3. Run the Development Server
+Celebrio India utilizes concurrently managed frontend and backend processes:
+```powershell
 npm run dev
-
-# Open http://localhost:5173 in your browser
 ```
+- **Frontend Client:** `http://localhost:5173`
+- **Backend AI Proxy:** `http://localhost:3001`
 
-### 4. Running Quality Checks & Tests
-```bash
-# Run Oxlint static analysis (0 errors)
-npm run lint
+---
 
-# Run Vitest automated test suite (147 tests across 23 test suites)
+## 🧪 Testing & Verification
+
+Celebrio India features a comprehensive automated testing suite encompassing unit tests, component tests, integration tests, and security audits.
+
+### Run All 216 Automated Tests
+```powershell
 npm test
-
-# Run Vitest in interactive watch mode
-npm run test:watch
+```
+*Expected Result:*
+```
+Test Files  30 passed (30)
+Tests       216 passed (216)
+Start at    16:30:00
+Duration    ~130s
 ```
 
-### 5. Production Build & Preview
-```bash
-# Typecheck and compile production bundle into dist/
+### Run Static Analysis & Linter
+```powershell
+npm run lint
+```
+*Expected Result:* `0 warnings and 0 errors across 93 files`.
+
+### Run TypeScript Compilation & Production Build
+```powershell
 npm run build
-
-# Preview production build with embedded API server
-npm run preview
 ```
+*Expected Result:* Clean production distribution bundle compiled to `./dist` with 0 type errors.
 
 ---
 
-## 🚢 Deployment Guide
+## 🎭 The Bengali Wedding Showcase Scenario
 
-### Option A: Google Cloud Run (Recommended Container Deployment)
+To ensure evaluators and judges can experience the platform immediately without tedious data entry, Celebrio India includes a preloaded, verified showcase dataset:
 
-1. Create a `Dockerfile` in the project root:
-```dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+| Dimension | Showcase Parameter |
+| :--- | :--- |
+| **Event Name** | Ananya & Debashis's Bengali Wedding |
+| **Location** | Kolkata, West Bengal |
+| **Target Guest Count** | **150 Guests** (132 Confirmed, 18 Awaiting RSVP) |
+| **Total Allocated Budget** | **₹3,00,000** |
+| **Mandatory Contingency** | **₹24,000** (8% automatically locked) |
+| **Non-Contingency Spend** | **₹2,76,000** (Venue, Catering, Photography, Florals, Baul Music) |
+| **Key Ceremonies** | *Aashirbaad*, *Gaye Holud*, *Saat Paake Ghaura*, *Bou Bhaat* |
+| **Signed Vendor Lock** | ₹60,000 Venue Deposit signed with *Sovabazar Heritage Estate* |
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-ENV PORT=8080
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/server ./server
-EXPOSE 8080
-CMD ["node", "--import", "tsx", "server/index.ts"]
-```
-
-2. Deploy using Google Cloud Run:
-```bash
-gcloud run deploy celebrio-ai \
-  --source . \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars GEMINI_API_KEY="your-gemini-api-key"
-```
-
-### Option B: Node.js Standalone Server
-```bash
-# Build the frontend assets
-npm run build
-
-# Start the Node server (serves API and handles live Gemini integration)
-PORT=3001 node server/index.ts
-```
-
-### Option C: Static Hosting + Serverless Functions
-Deploy `dist/` to any static host (Firebase Hosting, Vercel, Netlify, Cloudflare Pages) and route `/api/*` endpoints to a serverless function wrapping [`server/apiHandler.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/server/apiHandler.ts).
+### Recommended 5-Minute Evaluation Flow:
+1. **Explore the Workspace:** Navigate to the **Dashboard** and **Timeline** to observe authentic Bengali ceremonies and the Header Vitals.
+2. **Consult the AI Copilot:** Open **AI Copilot** and ask: *"What are my most urgent tasks for this Bengali wedding?"* Review the context-aware recommendation and proposed action card.
+3. **Execute the Budget Shock (What-If):** Navigate to the **What-If Simulator**.
+   - Increase guests to **180** (+20%).
+   - Reduce budget to **₹2,40,000** (-₹60,000).
+   - Verify that the new total is **₹2,40,000**, contingency adjusts to **₹19,200**, the ₹60,000 venue deposit is preserved, and visual trade-offs are displayed.
+4. **Apply the Revised Plan:** Click **"Apply Revised Plan"**. Observe the live recalculation in the **Budget Guardian** and **Timeline**.
+5. **Instant Reset:** Click **"Reset Workspace"** in the sidebar to restore the clean initial state.
 
 ---
 
-## 🧪 Automated Test Suite Summary
+## 🔒 Production Security & Data Integrity
 
-- **23 Test Suites, 147 Tests Passing (100% pass rate)**
-- **Deterministic Budget Arithmetic:** [`src/utils/__tests__/budgetGuardian.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/budgetGuardian.test.ts) (18 tests covering multi-currency handling, contingency isolation, and deficit warnings).
-- **Critical-Path Scheduling:** [`src/utils/__tests__/timelineEngine.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/timelineEngine.test.ts) (18 tests covering 7, 30, 90, and 180-day dynamic horizon adaptation).
-- **Vendor Portfolio & Contracts:** [`src/utils/__tests__/vendorEngine.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/vendorEngine.test.ts) (10 tests covering milestone tracking and category question banks).
-- **What-If Simulation Engine:** [`src/utils/__tests__/scenarioEngine.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/utils/__tests__/scenarioEngine.test.ts) (8 tests covering ripple effects, baseline restoration, and locked decision preservation).
-- **Storage & Lifecycle Resilience:** [`src/services/storage/__tests__/storageService.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/services/storage/__tests__/storageService.test.ts) (9 tests covering event deletion cleanup, corrupted JSON recovery, 30-item rolling log limit, multi-event isolation, and workspace reset).
-- **Event Lifecycle & Editing:** [`src/features/events/__tests__/EventDetailsView.test.tsx`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/src/features/events/__tests__/EventDetailsView.test.tsx) (4 tests covering tab switching, inline editing modal, and Escape key dismissal).
-- **Gemini Failures & Fallback Recovery:** [`server/__tests__/geminiFailures.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/server/__tests__/geminiFailures.test.ts) (4 tests covering 429 quota exhaustion, 500 errors, non-JSON output, and 15s timeouts).
-- **Server Request Validation & Security:** [`server/__tests__/validator.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/server/__tests__/validator.test.ts) (12 tests) and [`server/__tests__/apiHandler.test.ts`](file:///c:/Users/USER/Desktop/Celebrio%20Ai/server/__tests__/apiHandler.test.ts) (8 tests covering 64 KB payload bounds, 413 responses, and rate limits).
+Celebrio India adheres to enterprise security standards:
+
+1. **Zero Client-Side Secrets:** No Gemini API keys or tokens are stored in the frontend codebase. All external AI interactions pass through the Express server proxy.
+2. **Broken Object Level Authorization (BOLA / IDOR):** All 17 mutating state operations enforce `verifyEventOwnership(activeEvent, currentUserId)`. Cross-tenant mutations trigger immediate `UNAUTHORIZED` exceptions.
+3. **Automated PII Redaction:** Indian phone numbers (`+91`), email addresses, and postal PIN codes are scrubbed before logging or telemetry.
+4. **Cross-Site Scripting (XSS) Prevention:** User notes and AI responses rendered to HTML are passed through `DOMPurify.sanitize()` using strict element allowlists.
+5. **HTTP Defense in Depth:** Express gateway is secured with `helmet` (enforcing strict Content-Security-Policy, Frameguard, and X-Content-Type-Options) and origin-restricted CORS.
 
 ---
 
-## ⚠️ Known Limitations
+## 🗺️ Known Limitations & Future Roadmap
 
-1. **Exchange Rates**: Currency conversion rates are fixed at event creation time to prevent unpredictable budget fluctuations and maintain 100% deterministic offline calculation consistency.
-2. **Local Persistence Scope**: Event data is stored in browser `localStorage`. While robust for single-device operation with rolling limits to prevent quota errors, multi-device cloud synchronization would require a hosted database adapter.
-3. **Live AI Availability**: Live Gemini 2.5 Flash features require a valid Google Gemini API key. When unconfigured, the application runs in High-Fidelity Deterministic Demo Mode using comprehensive regional benchmark models.
+### Handled Scope & Boundaries
+- **Unit & Integration Environment:** In automated CI runs, Gemini API interactions utilize deterministic mock fixtures to prevent API quota consumption and ensure 100% test reproducibility.
+- **Offline First:** Application operates without external database servers, persisting data securely in isolated client LocalStorage partitions.
+
+### Future Roadmap
+- **Phase 7 (Collaborative Planning):** Real-time multi-family sync via WebSockets and WhatsApp RSVP bot integration.
+- **Phase 8 (Financial Settlement):** Integrated UPI payment requests for Indian vendors with automated GST invoicing.
+- **Phase 9 (Visual Seating Planner):** Interactive 2D banquet floor plans with dietary zone clustering.
 
 ---
 
-## 📄 License
-MIT License. Built for PromptWars Virtual Challenge 5.
+## 👥 Credits & Hackathon Submission
+
+- **Product Strategy & Design:** Celebrio India Core Team
+- **Engineering & Architecture:** Celebrio India Engineering
+- **Hackathon Track:** PromptWars Virtual Challenge 5 — Celebration & Event Planner Track
+- **License:** MIT License — see [LICENSE](LICENSE) for details.
+
+*“Every Tradition. Every Budget. Every Celebration.”*

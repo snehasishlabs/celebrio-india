@@ -27,8 +27,8 @@ describe('VendorsView Component (Vendor Portfolio & Worksheet)', () => {
       </PlannerProvider>,
     )
 
-    expect(screen.getByText(/The Royal Botanical Conservatory/i)).toBeInTheDocument()
-    expect(screen.getByText(/Heirloom Table Gastronomy/i)).toBeInTheDocument()
+    expect(screen.getByText(/Sovabazar Heritage Estate/i)).toBeInTheDocument()
+    expect(screen.getByText(/Sonar Bangla Catering Guild/i)).toBeInTheDocument()
   })
 
   it('allows switching to Comparison Worksheet tab', () => {
