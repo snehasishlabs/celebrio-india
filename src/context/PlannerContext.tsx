@@ -176,6 +176,9 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const selectThemeConcept = useCallback(
     (conceptId: string) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const concept = themeConcepts.find((c) => c.id === conceptId)
       if (!concept) return
 
@@ -201,13 +204,16 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       StorageService.addActivity(activity)
       setActivities(StorageService.getActivities())
     },
-    [activeEvent, themeConcepts, events],
+    [activeEvent, currentUserId, themeConcepts, events],
   )
 
   // Toggle task status
   const updateTaskStatus = useCallback(
     (taskId: string, isCompleted: boolean) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const updatedTasks = timelineTasks.map((t) => {
         if (t.id === taskId) {
           return { ...t, status: isCompleted ? ('completed' as const) : ('todo' as const) }
@@ -233,7 +239,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivities(StorageService.getActivities())
       }
     },
-    [activeEvent, timelineTasks],
+    [activeEvent, currentUserId, timelineTasks],
   )
 
   const reopenTimelineTask = useCallback(
@@ -246,6 +252,9 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const addTimelineTask = useCallback(
     (taskInput: Omit<TimelineTask, 'id' | 'eventId'>): TimelineTask => {
       if (!activeEvent) throw new Error('No active event selected')
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
 
       const newTask: TimelineTask = {
         ...taskInput,
@@ -277,12 +286,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return newTask
     },
-    [activeEvent, timelineTasks],
+    [activeEvent, currentUserId, timelineTasks],
   )
 
   const updateTimelineTask = useCallback(
     (taskId: string, updates: Partial<TimelineTask>) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
 
       const updated = timelineTasks.map((task) => {
         if (task.id === taskId) {
@@ -315,12 +327,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivities(StorageService.getActivities())
       }
     },
-    [activeEvent, timelineTasks],
+    [activeEvent, currentUserId, timelineTasks],
   )
 
   const deleteTimelineTask = useCallback(
     (taskId: string) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const target = timelineTasks.find((t) => t.id === taskId)
       const updated = timelineTasks.filter((t) => t.id !== taskId)
       setTimelineTasks(updated)
@@ -339,11 +354,14 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivities(StorageService.getActivities())
       }
     },
-    [activeEvent, timelineTasks],
+    [activeEvent, currentUserId, timelineTasks],
   )
 
   const regenerateTimelineTasks = useCallback(() => {
     if (!activeEvent) return
+    if (!verifyEventOwnership(activeEvent, currentUserId)) {
+      throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+    }
     const regenerated = generatePreparationTasks(activeEvent)
     setTimelineTasks(regenerated)
     StorageService.saveTasksForEvent(activeEvent.id, regenerated)
@@ -358,12 +376,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     StorageService.addActivity(activity)
     setActivities(StorageService.getActivities())
-  }, [activeEvent])
+  }, [activeEvent, currentUserId])
 
   // Budget item management with instant recalculation
   const addBudgetItem = useCallback(
     (itemInput: Omit<BudgetItem, 'id' | 'eventId'>): BudgetItem => {
       if (!activeEvent) throw new Error('No active event selected')
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
 
       const newItem: BudgetItem = {
         ...itemInput,
@@ -382,7 +403,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const updated = [...budgetItems, newItem]
       setBudgetItems(updated)
-      StorageService.saveBudgetItems(updated)
+      StorageService.saveBudgetItemsForEvent(activeEvent.id, updated)
 
       // Recalculate summary and update event sync state
       const summary = calculateBudgetSummary(activeEvent.totalBudget, updated)
@@ -407,12 +428,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return newItem
     },
-    [activeEvent, budgetItems, events],
+    [activeEvent, currentUserId, budgetItems, events],
   )
 
   const updateBudgetItem = useCallback(
     (itemId: string, updates: Partial<BudgetItem>) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
 
       const updated = budgetItems.map((item) => {
         if (item.id === itemId) {
@@ -431,7 +455,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
 
       setBudgetItems(updated)
-      StorageService.saveBudgetItems(updated)
+      StorageService.saveBudgetItemsForEvent(activeEvent.id, updated)
 
       const target = updated.find((i) => i.id === itemId)
       if (target) {
@@ -447,16 +471,19 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivities(StorageService.getActivities())
       }
     },
-    [activeEvent, budgetItems],
+    [activeEvent, currentUserId, budgetItems],
   )
 
   const deleteBudgetItem = useCallback(
     (itemId: string) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const target = budgetItems.find((i) => i.id === itemId)
       const updated = budgetItems.filter((i) => i.id !== itemId)
       setBudgetItems(updated)
-      StorageService.saveBudgetItems(updated)
+      StorageService.saveBudgetItemsForEvent(activeEvent.id, updated)
 
       if (target) {
         const activity: ActivityLogItem = {
@@ -471,12 +498,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivities(StorageService.getActivities())
       }
     },
-    [activeEvent, budgetItems],
+    [activeEvent, currentUserId, budgetItems],
   )
 
   const applyCostSavingAlternative = useCallback(
     (itemId: string, newAmount: number, description: string) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const safeNewAmt = sanitizeAmount(newAmount)
       const target = budgetItems.find((i) => i.id === itemId)
       if (!target) return
@@ -494,7 +524,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
 
       setBudgetItems(updated)
-      StorageService.saveBudgetItems(updated)
+      StorageService.saveBudgetItemsForEvent(activeEvent.id, updated)
 
       const activity: ActivityLogItem = {
         id: `act-${Date.now()}`,
@@ -507,12 +537,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       StorageService.addActivity(activity)
       setActivities(StorageService.getActivities())
     },
-    [activeEvent, budgetItems],
+    [activeEvent, currentUserId, budgetItems],
   )
 
   const addVendor = useCallback(
     (vendorInput: Omit<Vendor, 'id' | 'eventId'>): Vendor => {
       if (!activeEvent) throw new Error('No active event selected')
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
 
       const newVendorId = `ven-${Date.now()}`
       const standardQuestions = getVendorCategoryQuestions(vendorInput.service)
@@ -556,12 +589,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       return newVendor
     },
-    [activeEvent, vendors, budgetItems],
+    [activeEvent, currentUserId, vendors, budgetItems],
   )
 
   const updateVendor = useCallback(
     (vendorId: string, updates: Partial<Vendor>) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
 
       let updatedVendorObj: Vendor | null = null
       const updatedVendors = vendors.map((v) => {
@@ -609,12 +645,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivities(StorageService.getActivities())
       }
     },
-    [activeEvent, vendors, budgetItems, events],
+    [activeEvent, currentUserId, vendors, budgetItems, events],
   )
 
   const deleteVendor = useCallback(
     (vendorId: string) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const target = vendors.find((v) => v.id === vendorId)
       const updatedVendors = vendors.filter((v) => v.id !== vendorId)
       setVendors(updatedVendors)
@@ -633,12 +672,15 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setActivities(StorageService.getActivities())
       }
     },
-    [activeEvent, vendors],
+    [activeEvent, currentUserId, vendors],
   )
 
   const toggleMilestonePaid = useCallback(
     (vendorId: string, milestoneId: string) => {
       if (!activeEvent) return
+      if (!verifyEventOwnership(activeEvent, currentUserId)) {
+        throw new Error('UNAUTHORIZED: You do not have permission to modify this celebration.')
+      }
       const targetVendor = vendors.find((v) => v.id === vendorId)
       if (!targetVendor || !targetVendor.paymentMilestones) return
 
@@ -655,7 +697,7 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       updateVendor(vendorId, { paymentMilestones: updatedMilestones })
     },
-    [activeEvent, vendors, updateVendor],
+    [activeEvent, currentUserId, vendors, updateVendor],
   )
 
   // Guest Management CRUD Operations
@@ -1102,20 +1144,28 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
 
       // 2. Update budget items based on simulated proposed allocations (preserving confirmed decisions)
-      const updatedBudgetItems = budgetItems.map((item) => {
-        // Never overwrite confirmed allocations silently
-        if (item.costStatus === 'confirmed') return item
+      const updatedBudgetItems = result.simulatedBudgetItems
+        ? result.simulatedBudgetItems.map((simItem) => {
+            const originalItem = budgetItems.find((b) => b.id === simItem.id)
+            if (originalItem && originalItem.costStatus === 'confirmed') {
+              return originalItem
+            }
+            return simItem
+          })
+        : budgetItems.map((item) => {
+            // Never overwrite confirmed allocations silently
+            if (item.costStatus === 'confirmed') return item
 
-        const affected = result.affectedCategories.find((c) => c.category === item.category)
-        if (affected && affected.proposedAllocation > 0) {
-          return {
-            ...item,
-            allocatedAmount: affected.proposedAllocation,
-            actualAmount: item.costStatus === 'quoted' ? item.actualAmount : affected.proposedAllocation,
-          }
-        }
-        return item
-      })
+            const affected = result.affectedCategories.find((c) => c.category === item.category)
+            if (affected && affected.proposedAllocation > 0) {
+              return {
+                ...item,
+                allocatedAmount: affected.proposedAllocation,
+                actualAmount: item.costStatus === 'quoted' ? item.actualAmount : affected.proposedAllocation,
+              }
+            }
+            return item
+          })
 
       // 3. Update timeline tasks with shifted deadlines (preserving completed tasks)
       const updatedTasks = timelineTasks.map((task) => {

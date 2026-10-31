@@ -141,6 +141,7 @@ export interface ScenarioSimulationResult {
   affectedCategories: AffectedCategoryImpact[];
   affectedTasks: AffectedTaskImpact[];
   affectedVendors: AffectedVendorImpact[];
+  simulatedBudgetItems?: import('./budget').BudgetItem[];
   tradeoffs: ScenarioTradeoff[];
   hasCriticalWarnings: boolean;
   venueCapacityWarning?: string;

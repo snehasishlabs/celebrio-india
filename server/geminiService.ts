@@ -588,6 +588,7 @@ export async function explainUrgentTasksWithGemini(
           payload: {
             totalBudget: targetBudgetCap,
             contingencyAmount: contingencyReserve,
+            contingencyReserve: contingencyReserve,
           },
         },
         generatedAt: now,
@@ -1001,7 +1002,7 @@ export async function explainUrgentTasksWithGemini(
         ? `Ensure ceremony spaces and timing accommodate sacred ritual steps without rushed transitions.`
         : undefined
 
-      if (lowerTitle.includes('venue') || lowerTitle.includes('contract') || lowerTitle.includes('deposit')) {
+      if (lowerTitle.includes('venue') || lowerTitle.includes('contract') || lowerTitle.includes('deposit') || lowerTitle.includes('courtyard') || lowerTitle.includes('hall') || lowerTitle.includes('rajbari')) {
         whyItMatters = `In ${request.city || 'prime metropolitan areas'}, high-demand celebration venues book up rapidly. Delaying contract finalization risks date loss or expensive emergency relocations.`
         recommendedAction = `Execute the facility agreement and disburse the booking retainer to guarantee physical access and vendor load-in windows.`
         if (isBengali) {

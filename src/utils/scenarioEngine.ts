@@ -74,6 +74,14 @@ export function simulateScenario(
 
   let userConfirmedDecisionsPreserved = 0
 
+  // Pre-calculate unconfirmed allocation totals per category for proportional category adjustments
+  const categoryUnconfirmedTotals: Record<string, number> = {}
+  originalBudgetItems.forEach((item) => {
+    if (!item.isContingency && item.category !== 'contingency' && item.costStatus !== 'confirmed') {
+      categoryUnconfirmedTotals[item.category] = (categoryUnconfirmedTotals[item.category] || 0) + item.allocatedAmount
+    }
+  })
+
   const simulatedBudgetItems: BudgetItem[] = originalBudgetItems.map((item) => {
     // Dynamic contingency reserve: Always maintained at 8% of the proposed celebration budget
     if (item.isContingency || item.category === 'contingency') {
@@ -95,7 +103,13 @@ export function simulateScenario(
 
     // Check if user specified an explicit adjustment for this category
     if (scenarioInput.categoryAdjustments && scenarioInput.categoryAdjustments[item.category] !== undefined) {
-      newAllocated = sanitizeAmount(scenarioInput.categoryAdjustments[item.category])
+      const targetCatTotal = sanitizeAmount(scenarioInput.categoryAdjustments[item.category])
+      const unconfirmedTotal = categoryUnconfirmedTotals[item.category] || 0
+      if (unconfirmedTotal > 0) {
+        newAllocated = Math.round(targetCatTotal * (item.allocatedAmount / unconfirmedTotal))
+      } else {
+        newAllocated = targetCatTotal
+      }
     } else if (variableCategories.has(item.category) && guestCountDelta !== 0 && !item.isContingency) {
       // 40% fixed baseline + 60% variable scaling with guest count
       newAllocated = Math.round(item.allocatedAmount * (0.4 + 0.6 * guestRatio))
@@ -432,6 +446,7 @@ export function simulateScenario(
     affectedCategories,
     affectedTasks: simulatedTasks,
     affectedVendors,
+    simulatedBudgetItems,
     tradeoffs,
     hasCriticalWarnings: infeasibilityReasons.length > 0,
     venueCapacityWarning,
