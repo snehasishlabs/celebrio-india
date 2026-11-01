@@ -176,9 +176,30 @@ Once the application is running, perform these 12 manual smoke checks:
 ## 10. Rollback Considerations & Emergency Recovery
 
 - **Instant Workspace Reset:** If sample state or local test inputs become corrupted, click **"Reset Workspace"** in the sidebar (or execute `StorageService.resetAllData()` in console). This flushes all local celebration keys and cleanly restores the verified Bengali Wedding showcase dataset.
-- **Git Rollback:** The last verified stable release commit is `c0af6b8` on branch `master`. To roll back any uncommitted experimental state:
+
+- **Vercel Instant Production Rollback (Zero Downtime, No Git Impact):**
+  1. Open the Vercel Dashboard for the Celebrio AI project.
+  2. Navigate to **Deployments**.
+  3. Locate the last verified stable production deployment (baseline commit `2bcee28`).
+  4. Click the three dots (`...`) menu and select **"Promote to Production"** (or execute `vercel rollback` via CLI).
+  5. Production traffic is instantly redirected to the verified build within seconds without modifying repository history.
+
+- **Safe Git Revert Procedure (Preserving Commit History):**
+  To roll back a newly deployed single-parent release commit on `master` without destructive history modification:
   ```powershell
-  git checkout master
-  git clean -fd
+  # Safe linear revert for standard single-parent commit (do NOT use -m 1, which is reserved for merge commits):
+  git revert HEAD --no-edit
+  git push origin master
+  ```
+  *(Note: Never use `git reset --hard` or `git push --force` for routine production rollbacks, as they rewrite public history and risk data loss.)*
+
+- **Safe State Preservation (No Destructive Clean):**
+  If experimental or uncommitted changes must be set aside during troubleshooting, never use `git clean -fd` or `git reset --hard`. Instead, safely preserve the working tree using Git stash or an isolated branch:
+  ```powershell
+  # Stash all tracked and untracked changes safely:
+  git stash push -u -m "wip-pre-rollback-backup"
+
+  # Or isolate changes in a dedicated branch:
+  git checkout -b archive/pre-rollback-experiments
   ```
 

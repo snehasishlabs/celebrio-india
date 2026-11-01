@@ -6,6 +6,7 @@ import {
   AITradeoffExplanationResponse,
   AICopilotTaskAdviceRequest,
   AICopilotTaskAdviceResponse,
+  AIActionProposal,
 } from '../src/types/ai'
 import { ThemeConcept, ConceptTier } from '../src/types/concept'
 import { CelebrationEvent, EventCategory } from '../src/types/event'
@@ -213,7 +214,7 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
     const responseText = response.text || ''
     const cleanedText = cleanJsonOutput(responseText)
 
-    let parsed: any
+    let parsed: unknown
     try {
       parsed = JSON.parse(cleanedText)
     } catch {
@@ -221,11 +222,11 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
     }
 
     // Extract concepts array
-    let rawConcepts: any[] = []
+    let rawConcepts: Record<string, unknown>[] = []
     if (Array.isArray(parsed)) {
-      rawConcepts = parsed
-    } else if (parsed && Array.isArray(parsed.concepts)) {
-      rawConcepts = parsed.concepts
+      rawConcepts = parsed as Record<string, unknown>[]
+    } else if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { concepts?: unknown[] }).concepts)) {
+      rawConcepts = (parsed as { concepts: Record<string, unknown>[] }).concepts
     } else {
       throw new Error('AI_MALFORMED_OUTPUT: Response does not contain a concepts array')
     }
@@ -238,18 +239,27 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
     const tiers: ConceptTier[] = ['budget-conscious', 'creative-distinctive', 'premium']
     const concepts: ThemeConcept[] = tiers.map((tier, idx) => {
       const item = rawConcepts[idx] || rawConcepts.find((c) => c.tier === tier) || rawConcepts[0]
+      const decor = (item.decor && typeof item.decor === 'object') ? (item.decor as Record<string, unknown>) : {}
+      const fnb = (item.foodAndBeverage && typeof item.foodAndBeverage === 'object') ? (item.foodAndBeverage as Record<string, unknown>) : {}
+      const ent = (item.entertainment && typeof item.entertainment === 'object') ? (item.entertainment as Record<string, unknown>) : {}
+      const gx = (item.guestExperience && typeof item.guestExperience === 'object') ? (item.guestExperience as Record<string, unknown>) : {}
+      const to = (item.tradeoffs && typeof item.tradeoffs === 'object') ? (item.tradeoffs as Record<string, unknown>) : {}
+
       return {
-        id: item.id || `concept-${request.eventId}-${tier}`,
+        id: (item.id as string) || `concept-${request.eventId}-${tier}`,
         eventId: request.eventId,
         tier,
         title: String(item.title || `${tier} Celebration Concept`).slice(0, 80),
         tagline: String(item.tagline || 'Curated celebration aesthetic').slice(0, 100),
         description: String(item.description || 'Thoughtfully curated celebratory design').slice(0, 500),
         colorPalette: Array.isArray(item.colorPalette) && item.colorPalette.length > 0
-          ? item.colorPalette.slice(0, 4).map((c: any) => ({
-              name: String(c.name || 'Accent').slice(0, 30),
-              hex: String(c.hex || '#1B4332').slice(0, 10),
-            }))
+          ? item.colorPalette.slice(0, 4).map((rawColor: unknown) => {
+              const c = (rawColor && typeof rawColor === 'object') ? (rawColor as Record<string, unknown>) : {}
+              return {
+                name: String(c.name || 'Accent').slice(0, 30),
+                hex: String(c.hex || '#1B4332').slice(0, 10),
+              }
+            })
           : [
               { name: 'Ivory', hex: '#FAF6F0' },
               { name: 'Forest', hex: '#1B4332' },
@@ -257,29 +267,29 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
               { name: 'Gold', hex: '#C5A059' },
             ],
         decor: {
-          focalPoint: String(item.decor?.focalPoint || 'Bespoke central installation').slice(0, 200),
-          lighting: String(item.decor?.lighting || 'Ambient warm wash lighting').slice(0, 200),
-          tableSettings: String(item.decor?.tableSettings || 'Refined linen and tableware').slice(0, 200),
-          botanicals: String(item.decor?.botanicals || 'Seasonal florals and foliage').slice(0, 200),
+          focalPoint: String(decor.focalPoint || 'Bespoke central installation').slice(0, 200),
+          lighting: String(decor.lighting || 'Ambient warm wash lighting').slice(0, 200),
+          tableSettings: String(decor.tableSettings || 'Refined linen and tableware').slice(0, 200),
+          botanicals: String(decor.botanicals || 'Seasonal florals and foliage').slice(0, 200),
         },
         foodAndBeverage: {
-          serviceStyle: String(item.foodAndBeverage?.serviceStyle || 'Curated plated service').slice(0, 150),
-          highlights: Array.isArray(item.foodAndBeverage?.highlights)
-            ? item.foodAndBeverage.highlights.slice(0, 4).map((h: any) => String(h).slice(0, 100))
+          serviceStyle: String(fnb.serviceStyle || 'Curated plated service').slice(0, 150),
+          highlights: Array.isArray(fnb.highlights)
+            ? fnb.highlights.slice(0, 4).map((h: unknown) => String(h).slice(0, 100))
             : ['Chef selection', 'Seasonal produce'],
-          signatureDrink: String(item.foodAndBeverage?.signatureDrink || 'Signature Celebration Spritz').slice(0, 100),
+          signatureDrink: String(fnb.signatureDrink || 'Signature Celebration Spritz').slice(0, 100),
         },
         entertainment: {
-          mainAct: String(item.entertainment?.mainAct || 'Live musical ensemble').slice(0, 150),
-          interactiveElements: Array.isArray(item.entertainment?.interactiveElements)
-            ? item.entertainment.interactiveElements.slice(0, 3).map((e: any) => String(e).slice(0, 100))
+          mainAct: String(ent.mainAct || 'Live musical ensemble').slice(0, 150),
+          interactiveElements: Array.isArray(ent.interactiveElements)
+            ? ent.interactiveElements.slice(0, 3).map((e: unknown) => String(e).slice(0, 100))
             : ['Guest keepsake station'],
         },
         guestExperience: {
-          arrivalMoment: String(item.guestExperience?.arrivalMoment || 'Welcome beverage reception').slice(0, 150),
-          takeawayFavor: String(item.guestExperience?.takeawayFavor || 'Artisanal celebration keepsake').slice(0, 150),
-          comfortFeatures: Array.isArray(item.guestExperience?.comfortFeatures)
-            ? item.guestExperience.comfortFeatures.slice(0, 3).map((f: any) => String(f).slice(0, 100))
+          arrivalMoment: String(gx.arrivalMoment || 'Welcome beverage reception').slice(0, 150),
+          takeawayFavor: String(gx.takeawayFavor || 'Artisanal celebration keepsake').slice(0, 150),
+          comfortFeatures: Array.isArray(gx.comfortFeatures)
+            ? gx.comfortFeatures.slice(0, 3).map((f: unknown) => String(f).slice(0, 100))
             : ['Comfort lounge vignettes'],
         },
         costEstimation: {
@@ -289,11 +299,11 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
           disclaimer: BASE_PRICE_DISCLAIMER,
         },
         tradeoffs: {
-          advantages: Array.isArray(item.tradeoffs?.advantages)
-            ? item.tradeoffs.advantages.slice(0, 4).map((a: any) => String(a).slice(0, 150))
+          advantages: Array.isArray(to.advantages)
+            ? to.advantages.slice(0, 4).map((a: unknown) => String(a).slice(0, 150))
             : ['High guest satisfaction', 'Tailored design'],
-          compromises: Array.isArray(item.tradeoffs?.compromises)
-            ? item.tradeoffs.compromises.slice(0, 3).map((c: any) => String(c).slice(0, 150))
+          compromises: Array.isArray(to.compromises)
+            ? to.compromises.slice(0, 3).map((c: unknown) => String(c).slice(0, 150))
             : ['Standard lead-time required'],
         },
       }
@@ -459,23 +469,23 @@ Return ONLY a valid JSON object matching this schema:
     ])
 
     const text = cleanJsonOutput(response.text || '')
-    const parsed = JSON.parse(text)
+    const parsed = (JSON.parse(text) || {}) as Record<string, unknown>
 
     return {
       source: 'gemini-live',
       model: MODEL_NAME,
       strategicSummary: String(parsed.strategicSummary || 'Adaptive scenario analysis complete').slice(0, 300),
       culinaryRecommendations: Array.isArray(parsed.culinaryRecommendations)
-        ? parsed.culinaryRecommendations.slice(0, 3).map((r: any) => String(r).slice(0, 150))
+        ? parsed.culinaryRecommendations.slice(0, 3).map((r: unknown) => String(r).slice(0, 150))
         : ['Curate seasonal menu selections'],
       entertainmentAlternatives: Array.isArray(parsed.entertainmentAlternatives)
-        ? parsed.entertainmentAlternatives.slice(0, 3).map((r: any) => String(r).slice(0, 150))
+        ? parsed.entertainmentAlternatives.slice(0, 3).map((r: unknown) => String(r).slice(0, 150))
         : ['Optimize entertainment schedule'],
       budgetSavingTips: Array.isArray(parsed.budgetSavingTips)
-        ? parsed.budgetSavingTips.slice(0, 4).map((r: any) => String(r).slice(0, 150))
+        ? parsed.budgetSavingTips.slice(0, 4).map((r: unknown) => String(r).slice(0, 150))
         : ['Repurpose ceremony elements for reception'],
       guestExperienceRiskMitigation: Array.isArray(parsed.guestExperienceRiskMitigation)
-        ? parsed.guestExperienceRiskMitigation.slice(0, 3).map((r: any) => String(r).slice(0, 150))
+        ? parsed.guestExperienceRiskMitigation.slice(0, 3).map((r: unknown) => String(r).slice(0, 150))
         : ['Maintain strong guest arrival hospitality'],
       generatedAt: now,
     }
@@ -1139,20 +1149,20 @@ Return ONLY a valid JSON object matching this schema:
     ])
 
     const text = cleanJsonOutput(response.text || '')
-    const parsed = JSON.parse(text)
+    const parsed = (JSON.parse(text) || {}) as Record<string, unknown>
 
-    let structuredAction: any = undefined
+    let structuredAction: AIActionProposal | undefined = undefined
     if (parsed.proposedAction && typeof parsed.proposedAction === 'object') {
-      const pa = parsed.proposedAction
+      const pa = parsed.proposedAction as Record<string, unknown>
       structuredAction = {
         id: `action-${Date.now()}`,
-        actionType: pa.actionType || 'UPDATE_BUDGET',
+        actionType: (pa.actionType as AIActionProposal['actionType']) || 'UPDATE_BUDGET',
         title: String(pa.title || 'Proposed Planning Action').slice(0, 120),
         explanation: String(pa.explanation || 'AI proposed action based on your request.').slice(0, 300),
         impactSummary: String(pa.impactSummary || 'Updates celebration parameters.').slice(0, 200),
         requiresConfirmation: true,
         validationStatus: 'valid',
-        payload: pa.payload || {},
+        payload: (pa.payload && typeof pa.payload === 'object' ? (pa.payload as Record<string, unknown>) : {}),
       }
     }
 
@@ -1162,22 +1172,28 @@ Return ONLY a valid JSON object matching this schema:
       headline: String(parsed.headline || `Urgent Milestones for ${request.eventTitle}`).slice(0, 150),
       strategicSummary: String(parsed.strategicSummary || 'Strategic roadmap generated.').slice(0, 350),
       urgentTaskAnalyses: Array.isArray(parsed.urgentTaskAnalyses)
-        ? parsed.urgentTaskAnalyses.slice(0, 5).map((a: any, idx: number) => ({
-            taskId: String(a.taskId || (request.urgentTasks && request.urgentTasks[idx]?.id) || `task-${idx}`).slice(0, 64),
-            taskTitle: String(a.taskTitle || (request.urgentTasks && request.urgentTasks[idx]?.title) || 'Milestone').slice(0, 150),
-            urgencyLevel: ['critical', 'high', 'medium'].includes(a.urgencyLevel) ? a.urgencyLevel : 'high',
-            daysUntilDeadline: Number(a.daysUntilDeadline) || 7,
-            whyItMatters: String(a.whyItMatters || 'Critical path requirement.').slice(0, 250),
-            recommendedAction: String(a.recommendedAction || 'Execute immediately.').slice(0, 200),
-            culturalContext: typeof a.culturalContext === 'string' ? a.culturalContext.slice(0, 200) : undefined,
-          }))
+        ? parsed.urgentTaskAnalyses.slice(0, 5).map((rawItem: unknown, idx: number) => {
+            const a = (rawItem && typeof rawItem === 'object') ? (rawItem as Record<string, unknown>) : {}
+            const urgency = a.urgencyLevel === 'critical' || a.urgencyLevel === 'high' || a.urgencyLevel === 'medium'
+              ? a.urgencyLevel
+              : 'high'
+            return {
+              taskId: String(a.taskId || (request.urgentTasks && request.urgentTasks[idx]?.id) || `task-${idx}`).slice(0, 64),
+              taskTitle: String(a.taskTitle || (request.urgentTasks && request.urgentTasks[idx]?.title) || 'Milestone').slice(0, 150),
+              urgencyLevel: urgency,
+              daysUntilDeadline: Number(a.daysUntilDeadline) || 7,
+              whyItMatters: String(a.whyItMatters || 'Critical path requirement.').slice(0, 250),
+              recommendedAction: String(a.recommendedAction || 'Execute immediately.').slice(0, 200),
+              culturalContext: typeof a.culturalContext === 'string' ? a.culturalContext.slice(0, 200) : undefined,
+            }
+          })
         : getDeterministicAdvice().urgentTaskAnalyses,
       traditionAdvisories: Array.isArray(parsed.traditionAdvisories)
-        ? parsed.traditionAdvisories.slice(0, 4).map((t: any) => String(t).slice(0, 150))
+        ? parsed.traditionAdvisories.slice(0, 4).map((t: unknown) => String(t).slice(0, 150))
         : getDeterministicAdvice().traditionAdvisories,
       budgetGuidance: String(parsed.budgetGuidance || getDeterministicAdvice().budgetGuidance).slice(0, 250),
       suggestedNextSteps: Array.isArray(parsed.suggestedNextSteps)
-        ? parsed.suggestedNextSteps.slice(0, 4).map((s: any) => String(s).slice(0, 150))
+        ? parsed.suggestedNextSteps.slice(0, 4).map((s: unknown) => String(s).slice(0, 150))
         : getDeterministicAdvice().suggestedNextSteps,
       clarifyingQuestion: typeof parsed.clarifyingQuestion === 'string' ? parsed.clarifyingQuestion.slice(0, 180) : undefined,
       proposedAction: structuredAction || getDeterministicAdvice().proposedAction,

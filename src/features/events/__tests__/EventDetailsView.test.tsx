@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { EventDetailsView } from '../EventDetailsView'
 import { PlannerProvider } from '@/context/PlannerContext'
 
@@ -20,7 +20,7 @@ describe('EventDetailsView Component', () => {
     expect(screen.getByRole('tab', { name: /contingency plan/i })).toBeInTheDocument()
   })
 
-  it('switches to Guest Experience tab when clicked', () => {
+  it('switches to Guest Experience tab when clicked', async () => {
     render(
       <PlannerProvider>
         <EventDetailsView />
@@ -28,14 +28,16 @@ describe('EventDetailsView Component', () => {
     )
 
     const guestTab = screen.getByRole('tab', { name: /guest experience/i })
-    fireEvent.click(guestTab)
+    await act(async () => {
+      fireEvent.click(guestTab)
+    })
 
     expect(
       screen.getByText(/Guest Experience, Dietary & Accessibility/i),
     ).toBeInTheDocument()
   })
 
-  it('switches to Contingency Plan tab when clicked', () => {
+  it('switches to Contingency Plan tab when clicked', async () => {
     render(
       <PlannerProvider>
         <EventDetailsView />
@@ -43,14 +45,16 @@ describe('EventDetailsView Component', () => {
     )
 
     const contingencyTab = screen.getByRole('tab', { name: /contingency plan/i })
-    fireEvent.click(contingencyTab)
+    await act(async () => {
+      fireEvent.click(contingencyTab)
+    })
 
     expect(
       screen.getByText(/Contingency & Disruption Playbook/i),
     ).toBeInTheDocument()
   })
 
-  it('opens Edit Celebration Plan modal when clicking Edit Plan and closes on Escape', () => {
+  it('opens Edit Celebration Plan modal when clicking Edit Plan and closes on Escape', async () => {
     render(
       <PlannerProvider>
         <EventDetailsView />
@@ -58,13 +62,17 @@ describe('EventDetailsView Component', () => {
     )
 
     const editBtn = screen.getByRole('button', { name: /edit plan/i })
-    fireEvent.click(editBtn)
+    await act(async () => {
+      fireEvent.click(editBtn)
+    })
 
     expect(screen.getByRole('heading', { name: /edit celebration plan/i })).toBeInTheDocument()
     expect(screen.getByLabelText(/celebration name \*/i)).toBeInTheDocument()
 
     // Test Escape key closes modal
-    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' })
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' })
+    })
     expect(screen.queryByRole('heading', { name: /edit celebration plan/i })).not.toBeInTheDocument()
   })
 })

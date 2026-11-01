@@ -4,12 +4,14 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   NavSection,
   CelebrationEvent,
+  EventCategory,
   SyncState,
   NewCelebrationInput,
   ActivityLogItem,
   ThemeConcept,
   BudgetItem,
   TimelineTask,
+  TimelinePhase,
   TaskPriority,
   Vendor,
   PlanSyncAlert,
@@ -1236,19 +1238,19 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       }
 
-      const p = (proposal.payload || {}) as Record<string, any>
+      const p = (proposal.payload || {}) as Record<string, unknown>
       const now = new Date().toISOString()
 
       switch (proposal.actionType) {
         case 'CREATE_EVENT': {
           const created = addEvent({
-            title: p.title || 'New Celebration',
-            category: p.category || 'wedding',
-            date: p.date || addDays(now, 60),
-            venueName: p.venueName || 'Heritage Venue',
-            city: p.city || 'Kolkata',
+            title: typeof p.title === 'string' ? p.title : 'New Celebration',
+            category: (typeof p.category === 'string' ? p.category : 'wedding') as EventCategory,
+            date: typeof p.date === 'string' ? p.date : addDays(now, 60),
+            venueName: typeof p.venueName === 'string' ? p.venueName : 'Heritage Venue',
+            city: typeof p.city === 'string' ? p.city : 'Kolkata',
             totalBudget: Number(p.totalBudget) || 300000,
-            currency: p.currency || 'INR',
+            currency: typeof p.currency === 'string' ? p.currency : 'INR',
             targetGuestCount: Number(p.targetGuestCount) || 150,
             themePreference: p.traditionId ? String(p.traditionId).replace('-', ' ') : 'Traditional celebration',
             priorities: ['Catering & Feast', 'Sacred Ceremonies', 'Guest Hospitality'],
@@ -1305,25 +1307,28 @@ export const PlannerProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         case 'ADD_TASK': {
           if (!activeEvent) return { success: false, message: 'No active celebration selected.' }
+          const targetDeadline = (typeof p.targetDate === 'string' ? p.targetDate : undefined) ||
+            (typeof p.deadline === 'string' ? p.deadline : undefined) ||
+            activeEvent.date
           addTimelineTask({
-            title: p.title || 'New Milestone',
-            description: p.description || proposal.explanation,
-            targetDate: p.targetDate || p.deadline || activeEvent.date,
-            deadline: p.targetDate || p.deadline || activeEvent.date,
+            title: typeof p.title === 'string' ? p.title : 'New Milestone',
+            description: typeof p.description === 'string' ? p.description : proposal.explanation,
+            targetDate: targetDeadline,
+            deadline: targetDeadline,
             status: 'todo',
-            priority: p.priority || 'high',
-            phase: p.phase || 'logistics-coordination',
-            isMilestone: p.isMilestone ?? true,
-            isCriticalPath: p.isCriticalPath ?? true,
-            dependencyIds: p.dependencyIds || [],
-            category: p.category || 'general',
+            priority: (typeof p.priority === 'string' ? p.priority : 'high') as TaskPriority,
+            phase: (typeof p.phase === 'string' ? p.phase : 'logistics-coordination') as TimelinePhase,
+            isMilestone: typeof p.isMilestone === 'boolean' ? p.isMilestone : true,
+            isCriticalPath: typeof p.isCriticalPath === 'boolean' ? p.isCriticalPath : true,
+            dependencyIds: Array.isArray(p.dependencyIds) ? (p.dependencyIds as string[]) : [],
+            category: typeof p.category === 'string' ? p.category : 'general',
           })
           break
         }
 
         case 'UPDATE_TIMELINE': {
           if (!activeEvent) return { success: false, message: 'No active celebration selected.' }
-          if (p.eventDate) {
+          if (typeof p.eventDate === 'string') {
             updateActiveEvent({ date: p.eventDate })
           }
           break

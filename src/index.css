@@ -28,6 +28,24 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #C9BCAB;
   }
+
+  /* Accessible focus indicators (WCAG 2.2 AA Criteria 2.4.7 & 2.4.11) */
+  :focus-visible {
+    outline: 2px solid #1B4332;
+    outline-offset: 2px;
+  }
+
+  /* Reduced motion for vestibular and motion sensitivities (WCAG 2.2 Criterion 2.3.3) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer utilities {
@@ -40,6 +58,12 @@
     background-color: rgba(253, 251, 247, 0.85);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(235, 227, 215, 0.9);
+  }
+
+  /* Minimum 44x44px touch target utility (WCAG 2.2 Criterion 2.5.8) */
+  .touch-target-min {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   /* Subtle, restrained Indian architectural & textile patterns */

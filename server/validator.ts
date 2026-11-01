@@ -246,23 +246,29 @@ export function validateCopilotTaskAdviceRequest(body: unknown): ValidationResul
 
   // Urgent tasks sanitization (limit to top 15 tasks)
   const rawTasks = Array.isArray(data.urgentTasks) ? data.urgentTasks : []
-  const sanitizedTasks = rawTasks.slice(0, 15).map((t: any) => ({
-    id: String(t.id || '').slice(0, 64),
-    title: String(t.title || 'Task').slice(0, 150),
-    deadline: typeof t.deadline === 'string' ? t.deadline.slice(0, 30) : undefined,
-    isCriticalPath: Boolean(t.isCriticalPath),
-    priority: String(t.priority || 'medium').slice(0, 20),
-    phase: String(t.phase || 'concept-planning').slice(0, 40),
-    status: String(t.status || 'todo').slice(0, 20),
-  }))
+  const sanitizedTasks = rawTasks.slice(0, 15).map((item: unknown) => {
+    const t = (item && typeof item === 'object') ? (item as Record<string, unknown>) : {}
+    return {
+      id: String(t.id || '').slice(0, 64),
+      title: String(t.title || 'Task').slice(0, 150),
+      deadline: typeof t.deadline === 'string' ? t.deadline.slice(0, 30) : undefined,
+      isCriticalPath: Boolean(t.isCriticalPath),
+      priority: String(t.priority || 'medium').slice(0, 20),
+      phase: String(t.phase || 'concept-planning').slice(0, 40),
+      status: String(t.status || 'todo').slice(0, 20),
+    }
+  })
 
   const rawTraditions = Array.isArray(data.traditions) ? data.traditions.slice(0, 10).map((t) => String(t).slice(0, 50)) : []
   const rawBudgetItems = Array.isArray(data.budgetItems)
-    ? data.budgetItems.slice(0, 15).map((b: any) => ({
-        category: String(b.category || 'general').slice(0, 40),
-        allocatedAmount: Number(b.allocatedAmount) || 0,
-        costStatus: String(b.costStatus || 'estimated').slice(0, 20),
-      }))
+    ? data.budgetItems.slice(0, 15).map((item: unknown) => {
+        const b = (item && typeof item === 'object') ? (item as Record<string, unknown>) : {}
+        return {
+          category: String(b.category || 'general').slice(0, 40),
+          allocatedAmount: Number(b.allocatedAmount) || 0,
+          costStatus: String(b.costStatus || 'estimated').slice(0, 20),
+        }
+      })
     : undefined
 
   return {

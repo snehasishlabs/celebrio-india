@@ -19,7 +19,7 @@ export function validateAIAction(
   activeEvent?: CelebrationEvent | null,
 ): ActionValidationResult {
   const errors: string[] = []
-  const p = (proposal.payload || {}) as Record<string, any>
+  const p = (proposal.payload || {}) as Record<string, unknown>
 
   switch (proposal.actionType) {
     case 'CREATE_EVENT': {
@@ -34,7 +34,7 @@ export function validateAIAction(
       if (!Number.isFinite(guests) || guests <= 0 || guests > 50000) {
         errors.push('Target guest count must be between 1 and 50,000.')
       }
-      if (p.date && !parseSafeDate(p.date)) {
+      if (p.date && !parseSafeDate(typeof p.date === 'string' ? p.date : undefined)) {
         errors.push('Event date must be a valid YYYY-MM-DD date string.')
       }
       break
@@ -71,18 +71,18 @@ export function validateAIAction(
       if (!p.title || typeof p.title !== 'string' || !p.title.trim()) {
         errors.push('Task title is required.')
       }
-      if (p.targetDate && !parseSafeDate(p.targetDate)) {
+      if (p.targetDate && !parseSafeDate(typeof p.targetDate === 'string' ? p.targetDate : undefined)) {
         errors.push('Target deadline must be a valid YYYY-MM-DD date string.')
       }
       const validPriorities = ['critical', 'high', 'medium', 'low']
-      if (p.priority && !validPriorities.includes(p.priority)) {
+      if (p.priority && typeof p.priority === 'string' && !validPriorities.includes(p.priority)) {
         errors.push(`Priority must be one of: ${validPriorities.join(', ')}`)
       }
       break
     }
 
     case 'UPDATE_TIMELINE': {
-      if (!p.eventDate || !parseSafeDate(p.eventDate)) {
+      if (!p.eventDate || !parseSafeDate(typeof p.eventDate === 'string' ? p.eventDate : undefined)) {
         errors.push('Updated celebration date must be a valid YYYY-MM-DD date.')
       }
       break
@@ -111,7 +111,7 @@ export function validateAIAction(
       if (!Number.isFinite(simGuests) || simGuests <= 0) {
         errors.push('Scenario simulation guest count must be greater than zero.')
       }
-      if (p.eventDate && !parseSafeDate(p.eventDate)) {
+      if (p.eventDate && !parseSafeDate(typeof p.eventDate === 'string' ? p.eventDate : undefined)) {
         errors.push('Scenario event date must be valid.')
       }
       break
