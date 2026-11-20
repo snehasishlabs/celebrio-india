@@ -787,7 +787,7 @@ function parseTimeToMinutes(timeStr?: string): number | null {
  * Detects scheduling anomalies, dependency order violations, critical path compression,
  * and overlapping venue/ceremony time slots.
  */
-export function detectScheduleConflicts(tasks: TimelineTask[]): ScheduleConflict[] {
+export function detectScheduleConflicts(tasks: TimelineTask[], referenceDate: Date = new Date()): ScheduleConflict[] {
   const conflicts: ScheduleConflict[] = []
   const taskMap = new Map<string, TimelineTask>()
   tasks.forEach((t) => taskMap.set(t.id, t))
@@ -817,7 +817,7 @@ export function detectScheduleConflicts(tasks: TimelineTask[]): ScheduleConflict
     })
 
     // If critical path task is overdue and downstream dependent tasks exist
-    if (task.isCriticalPath && task.status !== 'completed' && isTaskOverdue(task)) {
+    if (task.isCriticalPath && task.status !== 'completed' && isTaskOverdue(task, referenceDate)) {
       conflicts.push({
         taskId: task.id,
         conflictType: 'deadline-compression',

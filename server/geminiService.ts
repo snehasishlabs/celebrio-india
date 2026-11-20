@@ -490,7 +490,13 @@ Return ONLY a valid JSON object matching this schema:
       generatedAt: now,
     }
   } catch {
-    return getDeterministicTradeoff()
+    const fallback = getDeterministicTradeoff()
+    return {
+      ...fallback,
+      model: 'fallback-rule-engine',
+      strategicSummary: `${fallback.strategicSummary} (Live AI analysis unavailable; operating in calibrated fallback mode).`,
+      generatedAt: now,
+    }
   }
 }
 
@@ -1200,6 +1206,11 @@ Return ONLY a valid JSON object matching this schema:
       generatedAt: now,
     }
   } catch {
-    return getDeterministicAdvice()
+    const fallback = getDeterministicAdvice()
+    return {
+      ...fallback,
+      model: 'fallback-rule-engine',
+      generatedAt: now,
+    }
   }
 }

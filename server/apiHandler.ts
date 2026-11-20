@@ -293,6 +293,8 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         hasGeminiKey: configured,
         model: 'gemini-2.5-flash',
         mode: configured ? 'live' : 'demo',
+        geminiStatus: configured ? 'configured' : 'unconfigured',
+        fallbackMode: configured ? 'ready-as-backup' : 'active-primary',
         version: '1.0.0',
       })
       return true
