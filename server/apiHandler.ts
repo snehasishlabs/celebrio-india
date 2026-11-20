@@ -19,12 +19,24 @@ const rateLimiter = new RateLimiter(30, 60000) // 30 requests per minute
  * Extracts and safely parses JSON body with size bounding
  */
 export async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const contentLength = req.headers['content-length']
+  if (contentLength && parseInt(contentLength, 10) > MAX_BODY_BYTES) {
+    throw new Error('PAYLOAD_TOO_LARGE: Request exceeds 64KB limit')
+  }
+
   const preParsed = req as unknown as { body?: unknown }
   if (preParsed.body !== undefined) {
     if (typeof preParsed.body === 'object' && preParsed.body !== null) {
+      const serialized = JSON.stringify(preParsed.body)
+      if (Buffer.byteLength(serialized) > MAX_BODY_BYTES) {
+        throw new Error('PAYLOAD_TOO_LARGE: Request exceeds 64KB limit')
+      }
       return preParsed.body
     }
     if (typeof preParsed.body === 'string') {
+      if (Buffer.byteLength(preParsed.body) > MAX_BODY_BYTES) {
+        throw new Error('PAYLOAD_TOO_LARGE: Request exceeds 64KB limit')
+      }
       try {
         return JSON.parse(preParsed.body)
       } catch {

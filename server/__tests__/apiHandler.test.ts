@@ -144,6 +144,27 @@ describe('Server API Request Handler (apiHandler.ts)', () => {
       expect(body.error).toMatch(/Payload too large/i)
     })
 
+    it('returns 413 Payload Too Large when pre-parsed body object exceeds 64KB', async () => {
+      const req = createMockReq('POST', '/api/plan/generate-concepts')
+      ;(req as unknown as { body: unknown }).body = {
+        eventId: 'evt-oversized-preparsed',
+        title: 'Huge Pre-parsed Plan',
+        category: 'wedding',
+        targetGuestCount: 100,
+        totalBudget: 50000,
+        currency: 'USD',
+        bloat: 'x'.repeat(70 * 1024),
+      }
+      const { res, getStatusCode, getJsonBody } = createMockRes()
+
+      const handled = await handleApiRequest(req, res)
+      expect(handled).toBe(true)
+      expect(getStatusCode()).toBe(413)
+
+      const body = getJsonBody()
+      expect(body.error).toMatch(/Payload too large/i)
+    })
+
     it('returns 400 when request contains malformed JSON', async () => {
       const req = createMockReq('POST', '/api/plan/generate-concepts', '{ bad json: invalid ')
       const { res, getStatusCode, getJsonBody } = createMockRes()
