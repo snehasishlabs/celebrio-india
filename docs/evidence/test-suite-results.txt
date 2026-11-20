@@ -1,0 +1,66 @@
+================================================================================
+CELEBRIO INDIA — AUTOMATED TEST SUITE & STATIC ANALYSIS AUDIT
+================================================================================
+Timestamp: 2026-11-20T22:54:30+05:30
+Environment: Windows Node.js v24.15.0 / Vitest v5.0.5 / Oxlint v1.89.0 / Vite v8.3.5
+
+LINT CHECK (oxlint):
+> celebrio-ai@0.1.0 lint
+> oxlint
+Found 0 warnings and 0 errors.
+Finished in 217ms on 97 files with 116 rules using 4 threads.
+
+BUILD CHECK (tsc -b && vite build):
+> celebrio-ai@0.1.0 build
+> tsc -b && vite build
+vite v8.3.5 building client environment for production...
+✓ 1981 modules transformed.
+dist/index.html                             1.57 kB │ gzip:   0.73 kB
+dist/assets/index-BWBast2X.css             46.83 kB │ gzip:   8.46 kB
+dist/assets/rolldown-runtime-WkwZ5CU-.js    0.59 kB │ gzip:   0.36 kB
+dist/assets/icons-DzT3BNkA.js              30.90 kB │ gzip:  10.99 kB
+dist/assets/vendor-DlM4w0sV.js            210.90 kB │ gzip:  65.85 kB
+dist/assets/index-CTA-fkO0.js             498.08 kB │ gzip: 120.13 kB
+✓ built in 4.21s
+
+TEST SUITE RESULTS (vitest run):
+> celebrio-ai@0.1.0 test
+> vitest run
+
+ ✓ src/__tests__/culturalExperience.test.tsx (8 tests)
+ ✓ src/__tests__/bengaliWeddingE2E.test.tsx (1 test)
+ ✓ src/__tests__/productionAuditE2EJourney.test.tsx (1 test)
+ ✓ src/features/events/__tests__/CreateEventModal.test.tsx (4 tests)
+ ✓ src/features/simulator/__tests__/SimulatorView.test.tsx (5 tests)
+ ✓ src/features/ideas/__tests__/ThemeConceptsView.test.tsx (5 tests)
+ ✓ src/features/budget/__tests__/BudgetView.test.tsx (5 tests)
+ ✓ src/features/timeline/__tests__/TimelineView.test.tsx (4 tests)
+ ✓ src/features/vendors/__tests__/VendorsView.test.tsx (4 tests)
+ ✓ src/features/dashboard/__tests__/DashboardView.test.tsx (4 tests)
+ ✓ src/features/events/__tests__/EventDetailsView.test.tsx (4 tests)
+ ✓ src/components/common/__tests__/Button.test.tsx (5 tests)
+ ✓ src/components/layout/__tests__/Sidebar.test.tsx (2 tests)
+ ✓ server/__tests__/apiHandler.test.ts (39 tests)
+ ✓ src/components/common/__tests__/Badge.test.tsx (2 tests)
+ ✓ src/components/common/__tests__/Card.test.tsx (2 tests)
+ ✓ src/utils/__tests__/scenarioEngine.test.ts (8 tests)
+ ✓ src/__tests__/advancedAIIntelligence.test.ts (20 tests)
+ ✓ src/utils/__tests__/budgetGuardian.test.ts (18 tests)
+ ✓ src/__tests__/securityAndGuestManagement.test.ts (15 tests)
+ ✓ server/__tests__/geminiFailures.test.ts (7 tests)
+ ✓ src/services/ai/__tests__/aiPlanningService.test.ts (5 tests)
+ ✓ api/__tests__/index.test.ts (11 tests)
+ ✓ src/__tests__/priorityVerificationAudit.test.ts (15 tests)
+ ✓ src/__tests__/promptwarsEvaluationSimulation.test.ts (6 tests)
+ ✓ server/__tests__/geminiLive.test.ts (3 tests)
+ ✓ src/services/storage/__tests__/storageService.test.ts (9 tests)
+ ✓ server/__tests__/geminiService.test.ts (5 tests)
+ ✓ src/services/ideas/__tests__/conceptGenerator.test.ts (4 tests)
+ ✓ src/utils/__tests__/timelineEngine.test.ts (18 tests)
+ ✓ server/__tests__/validator.test.ts (14 tests)
+ ✓ src/utils/__tests__/vendorEngine.test.ts (10 tests)
+
+ Test Files  32 passed (32)
+      Tests  263 passed (263)
+   Duration  100.18s
+================================================================================

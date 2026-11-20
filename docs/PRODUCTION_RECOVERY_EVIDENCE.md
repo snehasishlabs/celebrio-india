@@ -80,3 +80,4 @@ To maintain complete architectural integrity before the PromptWars judges, the t
    - `GEMINI_API_KEY` was never committed to version control.
    - `GEMINI_API_KEY` was never prefixed with `VITE_` or bundled into client assets.
    - All tests use mocked SDK responses and consume 0 production API quota.
+
