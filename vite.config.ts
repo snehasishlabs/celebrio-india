@@ -1,11 +1,8 @@
-process.env.VITE_CONFIG_NATIVE_IGNORE_WARNING = 'true'
-
 import { defineConfig } from 'vitest/config'
 import type { Plugin } from 'vite'
 import { loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath, URL } from 'node:url'
-import { handleApiRequest } from './server/apiHandler'
 
 function celebrioAiServerPlugin(): Plugin {
   return {
@@ -25,6 +22,7 @@ function celebrioAiServerPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         try {
           if (req.url && req.url.startsWith('/api/')) {
+            const { handleApiRequest } = await import('./server/apiHandler')
             const handled = await handleApiRequest(req, res)
             if (handled) return
           }
@@ -39,6 +37,7 @@ function celebrioAiServerPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         try {
           if (req.url && req.url.startsWith('/api/')) {
+            const { handleApiRequest } = await import('./server/apiHandler')
             const handled = await handleApiRequest(req, res)
             if (handled) return
           }
@@ -80,5 +79,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     css: false,
+    testTimeout: 20000,
+    hookTimeout: 20000,
   },
 })

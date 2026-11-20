@@ -226,7 +226,7 @@ describe('Timeline Engine - Deterministic Milestone & Schedule System', () => {
           eventId: 'ev-1',
           phase: 'concept-planning',
           title: 'Sign Venue Contract',
-          targetDate: '2026-11-15', // LATER than tasting
+          targetDate: '2027-11-15', // LATER than tasting
           status: 'todo',
           priority: 'critical',
           isMilestone: true,
@@ -238,7 +238,7 @@ describe('Timeline Engine - Deterministic Milestone & Schedule System', () => {
           eventId: 'ev-1',
           phase: 'vendor-curation',
           title: 'Menu Tasting',
-          targetDate: '2026-11-10', // EARLIER than venue dependency
+          targetDate: '2027-11-10', // EARLIER than venue dependency
           status: 'todo',
           priority: 'high',
           isMilestone: false,

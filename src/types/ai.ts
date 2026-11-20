@@ -91,6 +91,8 @@ export interface AIServerHealthResponse {
   model: string
   mode: 'live' | 'demo'
   version: string
+  geminiStatus?: 'configured' | 'unconfigured'
+  fallbackMode?: 'ready-as-backup' | 'active-primary'
 }
 
 export interface AICopilotUrgentTaskAnalysis {

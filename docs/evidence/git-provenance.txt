@@ -1,0 +1,29 @@
+================================================================================
+CELEBRIO INDIA — GIT REPOSITORY PROVENANCE & COMMIT HIERARCHY
+================================================================================
+Repository: https://github.com/snehasishlabs/celebrio-india
+Production URL: https://celebrio-india.vercel.app/
+
+ORIGINAL SUBMISSION COMMIT (Preserved on master & origin/master):
+Commit:    2bcee28bf5102d74fdc9cd0e091c4b9ff50c06f9
+Author:    Celebrio AI Architect <dev@celebrio.ai>
+Date:      Sat Oct 31 19:09:38 2026 +0530
+Subject:   docs(submission): Add official PromptWars Challenge 5 submission package and final handover report
+
+INTERMEDIATE HARDENING COMMIT (On release/celebrio-preview):
+Commit:    f7f9789312423bc0c2815961858e0392fd150a25
+Author:    Celebrio AI Architect <dev@celebrio.ai>
+Date:      Sun Nov 1 22:19:12 2026 +0530
+Subject:   fix: finalize Vercel API routing and release hardening
+
+POST-SUBMISSION RECOVERY COMMITS (On fix/vercel-gemini-production):
+Commit:    9783562ada697936512d622cf3814d55f124941a
+Author:    Celebrio AI Architect <dev@celebrio.ai>
+Date:      Fri Nov 20 16:55:33 2026 +0530
+Subject:   fix(vercel): recovery and verification of production Vercel serverless routing and Gemini 2.5 Flash live mode
+
+Commit:    24a033230623f738f6b5b508eeea3143c4ae8dc9
+Author:    Celebrio AI Architect <dev@celebrio.ai>
+Date:      Fri Nov 20 22:52:40 2026 +0530
+Subject:   docs: add PRODUCTION_RECOVERY_EVIDENCE and harden pre-parsed payload bounding in apiHandler
+================================================================================

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { TimelineView } from '../TimelineView'
 import { PlannerProvider } from '@/context/PlannerContext'
 
@@ -20,7 +20,7 @@ describe('TimelineView Component (Critical Path Scheduling)', () => {
     expect(screen.getAllByText(/Critical Path/i)[0]).toBeInTheDocument()
   })
 
-  it('renders filter tabs and allows switching between views', () => {
+  it('renders filter tabs and allows switching between views', async () => {
     render(
       <PlannerProvider>
         <TimelineView />
@@ -35,7 +35,9 @@ describe('TimelineView Component (Critical Path Scheduling)', () => {
     expect(criticalBtn).toBeInTheDocument()
     expect(completedBtn).toBeInTheDocument()
 
-    fireEvent.click(criticalBtn)
+    await act(async () => {
+      fireEvent.click(criticalBtn)
+    })
     expect(criticalBtn).toHaveClass('bg-forest-800')
   })
 
@@ -47,7 +49,9 @@ describe('TimelineView Component (Critical Path Scheduling)', () => {
     )
 
     const addBtn = screen.getByRole('button', { name: /Add Milestone/i })
-    fireEvent.click(addBtn)
+    await act(async () => {
+      fireEvent.click(addBtn)
+    })
 
     expect(
       await screen.findByRole('heading', { name: /Add Preparation Milestone/i }),
@@ -56,7 +60,7 @@ describe('TimelineView Component (Critical Path Scheduling)', () => {
     expect(screen.getByLabelText(/Planning Phase/i)).toBeInTheDocument()
   })
 
-  it('allows toggling milestone completion and reopening tasks', () => {
+  it('allows toggling milestone completion and reopening tasks', async () => {
     render(
       <PlannerProvider>
         <TimelineView />
@@ -68,10 +72,14 @@ describe('TimelineView Component (Critical Path Scheduling)', () => {
     expect(toggleBtns.length).toBeGreaterThan(0)
 
     const firstToggle = toggleBtns[0]
-    fireEvent.click(firstToggle)
+    await act(async () => {
+      fireEvent.click(firstToggle)
+    })
 
     // Re-clicking toggles / reopens
-    fireEvent.click(firstToggle)
+    await act(async () => {
+      fireEvent.click(firstToggle)
+    })
   })
 })
 

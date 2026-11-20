@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { ThemeConceptsView } from '../ThemeConceptsView'
 import { PlannerProvider } from '@/context/PlannerContext'
 
@@ -43,7 +43,7 @@ describe('ThemeConceptsView Component', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders the Regenerate Concepts button and allows clicking', () => {
+  it('renders the Regenerate Concepts button and allows clicking', async () => {
     render(
       <PlannerProvider>
         <ThemeConceptsView />
@@ -52,10 +52,15 @@ describe('ThemeConceptsView Component', () => {
 
     const regenBtn = screen.getByRole('button', { name: /Regenerate Concepts/i })
     expect(regenBtn).toBeInTheDocument()
-    fireEvent.click(regenBtn)
+    await act(async () => {
+      fireEvent.click(regenBtn)
+    })
+    await waitFor(() => {
+      expect(screen.getByText(/Personalized Theme Concepts/i)).toBeInTheDocument()
+    })
   })
 
-  it('allows user to click Select This Concept and updates state', () => {
+  it('allows user to click Select This Concept and updates state', async () => {
     render(
       <PlannerProvider>
         <ThemeConceptsView />
@@ -69,7 +74,9 @@ describe('ThemeConceptsView Component', () => {
     expect(selectButtons.length).toBe(3)
 
     // Click the first concept's select button if not already selected
-    fireEvent.click(selectButtons[0])
+    await act(async () => {
+      fireEvent.click(selectButtons[0])
+    })
     expect(screen.getByText(/Active Concept Selected/i)).toBeInTheDocument()
   })
 })
