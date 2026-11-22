@@ -13,8 +13,14 @@ import type { CelebrationEvent, EventCategory } from '../src/types/event'
 import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
 
 const MODEL_NAME = 'gemini-2.5-flash'
-const CANDIDATE_MODELS = [MODEL_NAME, 'gemini-3.8-flash']
-const TIMEOUT_MS = 50000
+const CANDIDATE_MODELS = [
+  MODEL_NAME,
+  'gemini-flash-latest',
+  'gemini-3.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-3.8-flash',
+]
+const TIMEOUT_MS = 12000
 
 const BASE_PRICE_DISCLAIMER =
   'Estimated approximation based on regional vendor averages. Not a verified commercial quotation.'
