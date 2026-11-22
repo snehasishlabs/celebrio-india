@@ -4,7 +4,7 @@
 **Target URL:** https://celebrio-india.vercel.app/  
 **Original Submission Commit:** `2bcee28`  
 **Recovery Branch:** `fix/vercel-gemini-production`  
-**Latest Recovery Commit:** `1356ef2` (HEAD)  
+**Latest Recovery Commit:** `6b9eb8c` (HEAD)  
 **Report Date:** November 22, 2026  
 
 ---
@@ -108,3 +108,39 @@ curl -s -X POST https://celebrio-india.vercel.app/api/plan/generate-concepts \
 - `model`: `"gemini-2.5-flash"`
 - `concepts`: 3 complete concepts with validated tiers (`budget-conscious`, `creative-distinctive`, `premium`).
 - `costEstimation`: Deterministically calculated to ₹4,10,000 (82%), ₹4,90,000 (98%), and ₹5,00,000 (100%).
+
+---
+
+## 5. Pre-Deployment Preview Deployment Inspection Evidence
+
+### Deployment Metadata
+- **Commit SHA:** `6b9eb8c88c08b865d58e4a72085fa4c889a4d789`
+- **Vercel Check Run ID:** `137130120414` (Completed Nov 22, 2026, 07:10:27 UTC)
+- **Preview Deployment URL:** `https://celebrio-india-git-fix-vercel-gemi-b6f55b-snehasish-s-projects1.vercel.app`
+- **Vercel Build Status:** Succeeded (`status: "completed"`, `conclusion: "success"`)
+
+### HTTP Inspection Log
+```http
+GET /api/health HTTP/1.1
+Host: celebrio-india-git-fix-vercel-gemi-b6f55b-snehasish-s-projects1.vercel.app
+
+HTTP/1.1 302 Found
+Server: Vercel
+Location: https://vercel.com/sso-api?url=https%3A%2F%2Fcelebrio-india-git-fix-vercel-gemi-b6f55b-snehasish-s-projects1.vercel.app%2Fapi%2Fhealth&nonce=...
+X-Vercel-Id: bom1::c76k7-1795331858055-eba8551d66ed
+Content-Type: text/plain
+
+Protected by Vercel Authentication
+To access this deployment with an authenticated Vercel CLI, run: vercel curl <deployment-url>
+With an authorized Vercel MCP connection (https://mcp.vercel.com), call web_fetch_vercel_url with url set to the full deployment URL.
+```
+
+### Analysis of Current Gate
+1. **Deployment Succeeded:** Vercel successfully processed and deployed commit `6b9eb8c`. The build error that previously failed on `api/index.ts` is 100% resolved by the bundled `api/index.js`.
+2. **Access Barrier:** Vercel's edge network intercepts requests to this preview deployment because **Vercel Authentication (Deployment Protection)** is active on Preview environments for the `celebrio-india` project.
+3. **Distinction of Verification Levels:**
+   - **Local Tests:** PASSED (263/263 tests, Rolldown bundle, Oxlint, local HTTP simulation).
+   - **Preview Deployment Tests:** DEPLOYED, but currently GATED by Vercel Authentication (HTTP 302).
+   - **Actual Gemini API Generation in Cloud:** PENDING either preview gate bypass (`x-vercel-protection-bypass` / disabling Vercel Authentication for Preview in Vercel settings) or approved Production deployment.
+   - **Production Deployment:** NOT YET DEPLOYED (awaiting user approval to merge `fix/vercel-gemini-production` commit `6b9eb8c` into `master`).
+

@@ -32,7 +32,7 @@ Author:    Celebrio AI Architect <dev@celebrio.ai>
 Date:      Sat Nov 21 00:08:44 2026 +0530
 Subject:   docs: add PRODUCTION_VERIFICATION_REPORT, PROMPTWARS_GRIEVANCE_DRAFT, and audit evidence
 
-Commit:    [PENDING_RECOVERY_COMMIT]
+Commit:    6b9eb8c88c08b865d58e4a72085fa4c889a4d789
 Author:    Celebrio AI Architect <dev@celebrio.ai>
 Date:      Sun Nov 22 12:40:00 2026 +0530
 Subject:   fix(vercel): resolve Vercel 500 runtime by bundling api/index.js and bypassing ts-loader
