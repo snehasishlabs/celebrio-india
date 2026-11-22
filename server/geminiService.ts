@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import {
+import type {
   AIConceptGenerationRequest,
   AIConceptGenerationResponse,
   AITradeoffExplanationRequest,
@@ -8,15 +8,65 @@ import {
   AICopilotTaskAdviceResponse,
   AIActionProposal,
 } from '../src/types/ai'
-import { ThemeConcept, ConceptTier } from '../src/types/concept'
-import { CelebrationEvent, EventCategory } from '../src/types/event'
+import type { ThemeConcept, ConceptTier } from '../src/types/concept'
+import type { CelebrationEvent, EventCategory } from '../src/types/event'
 import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
 
 const MODEL_NAME = 'gemini-2.5-flash'
+const CANDIDATE_MODELS = [
+  MODEL_NAME,
+  'gemini-3.5-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
+  'gemini-flash-latest',
+]
 const TIMEOUT_MS = 15000
 
 const BASE_PRICE_DISCLAIMER =
   'Estimated approximation based on regional vendor averages. Not a verified commercial quotation.'
+
+/**
+ * Executes a Gemini generateContent call, gracefully trying candidate models
+ * if Google's API returns a 404 / deprecation for newer API keys.
+ */
+async function generateContentWithFallback(
+  ai: GoogleGenAI,
+  prompt: string,
+  temperature: number,
+  timeoutMs: number,
+): Promise<{ text: string; activeModel: string }> {
+  let lastError: unknown = null
+
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const response = await Promise.race([
+        ai.models.generateContent({
+          model: modelName,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            temperature,
+          },
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`AI_TIMEOUT: Gemini response timed out for ${modelName}`)), timeoutMs),
+        ),
+      ])
+
+      const text = cleanJsonOutput(response.text || '')
+      if (text) {
+        return { text, activeModel: modelName }
+      }
+    } catch (err: unknown) {
+      lastError = err
+      const errStr = err instanceof Error ? err.message : String(err)
+      console.warn(`[Gemini Model Attempt] ${modelName} failed or timed out:`, errStr.slice(0, 250))
+      continue
+    }
+  }
+
+  throw lastError || new Error('AI_EMPTY_RESPONSE: No response text returned by model')
+}
 
 /**
  * Checks whether a valid Gemini API key is configured in server environment variables.
@@ -25,6 +75,27 @@ const BASE_PRICE_DISCLAIMER =
 export function isGeminiConfigured(): boolean {
   const key = process.env.GEMINI_API_KEY
   return typeof key === 'string' && key.trim().length > 0
+}
+
+/**
+ * Lists available models from the Google GenAI provider for diagnostics.
+ */
+export async function listGeminiModels(): Promise<string[]> {
+  if (!isGeminiConfigured()) return []
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    const pager = await ai.models.list()
+    const names: string[] = []
+    for await (const m of pager) {
+      if (m && typeof m === 'object' && 'name' in m && typeof m.name === 'string') {
+        names.push(m.name)
+      }
+    }
+    return names
+  } catch (err: unknown) {
+    const errStr = err instanceof Error ? err.message : String(err)
+    return [`ERROR: ${errStr.slice(0, 200)}`]
+  }
 }
 
 /**
@@ -156,7 +227,7 @@ REQUIRED CONCEPTS (3 distinct tiers):
 2. tier: "creative-distinctive" (Signature character, bespoke guest interactions, uses ~98% of budget)
 3. tier: "premium" (Uncompromising elegance, white-glove hospitality, fully utilizes budget)
 
-Return ONLY a JSON array of 3 concept objects. Each object MUST match this schema:
+Return ONLY a JSON array of 3 concept objects. Keep descriptions concise and evocative (maximum 2 sentences per field). Each object MUST match this schema:
 {
   "id": "concept-${request.eventId}-<tier>",
   "eventId": "${request.eventId}",
@@ -196,22 +267,14 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
   }
 }`
 
-    // Call Gemini with timeout
-    const response = await Promise.race([
-      ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.7,
-        },
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AI_TIMEOUT: Gemini response timed out')), TIMEOUT_MS),
-      ),
-    ])
+    // Call Gemini with model fallback if deprecated/not found
+    const { text: responseText, activeModel } = await generateContentWithFallback(
+      ai,
+      prompt,
+      0.7,
+      TIMEOUT_MS,
+    )
 
-    const responseText = response.text || ''
     const cleanedText = cleanJsonOutput(responseText)
 
     let parsed: unknown
@@ -318,7 +381,7 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
 
     return {
       source: 'gemini-live',
-      model: MODEL_NAME,
+      model: activeModel,
       concepts: validatedConcepts,
       generatedAt: now,
       disclaimer: BASE_PRICE_DISCLAIMER,
@@ -326,6 +389,11 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
   } catch (error: unknown) {
     // Log sanitized error without leaking API keys, private data, or headers
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const sanitizedError = errorMessage
+      .replace(/AIza[0-9A-Za-z-_]{35}/g, '[REDACTED]')
+      .replace(/key=[^&\s]+/g, 'key=[REDACTED]')
+      .slice(0, 300)
+    console.error('[Gemini Service Error]:', sanitizedError)
     // Fall back to deterministic engine gracefully
     const mockEvent: CelebrationEvent = {
       id: request.eventId,
@@ -367,7 +435,7 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
       generatedAt: now,
       disclaimer:
         'Generated via Celebrio Fallback Engine. Live AI call was unavailable or encountered an error.',
-      notes: `Provider status: ${errorMessage.startsWith('AI_TIMEOUT') ? 'Request timed out' : 'Fallback recovery activated'}.`,
+      notes: `Provider status: ${errorMessage.includes('AI_TIMEOUT') || errorMessage.includes('timed out') ? 'Request timed out' : `Fallback recovery activated (${sanitizedError})`}.`,
     }
   }
 }
@@ -454,26 +522,18 @@ Return ONLY a valid JSON object matching this schema:
   "guestExperienceRiskMitigation": [string, string]
 }`
 
-    const response = await Promise.race([
-      ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.6,
-        },
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AI_TIMEOUT: Trade-off generation timed out')), TIMEOUT_MS),
-      ),
-    ])
+    const { text, activeModel } = await generateContentWithFallback(
+      ai,
+      prompt,
+      0.6,
+      TIMEOUT_MS,
+    )
 
-    const text = cleanJsonOutput(response.text || '')
     const parsed = (JSON.parse(text) || {}) as Record<string, unknown>
 
     return {
       source: 'gemini-live',
-      model: MODEL_NAME,
+      model: activeModel,
       strategicSummary: String(parsed.strategicSummary || 'Adaptive scenario analysis complete').slice(0, 300),
       culinaryRecommendations: Array.isArray(parsed.culinaryRecommendations)
         ? parsed.culinaryRecommendations.slice(0, 3).map((r: unknown) => String(r).slice(0, 150))
@@ -1140,21 +1200,13 @@ Return ONLY a valid JSON object matching this schema:
   }
 }`
 
-    const response = await Promise.race([
-      ai.models.generateContent({
-        model: MODEL_NAME,
-        contents: prompt,
-        config: {
-          responseMimeType: 'application/json',
-          temperature: 0.5,
-        },
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('AI_TIMEOUT: Copilot advice timed out')), TIMEOUT_MS),
-      ),
-    ])
+    const { text, activeModel } = await generateContentWithFallback(
+      ai,
+      prompt,
+      0.5,
+      TIMEOUT_MS,
+    )
 
-    const text = cleanJsonOutput(response.text || '')
     const parsed = (JSON.parse(text) || {}) as Record<string, unknown>
 
     let structuredAction: AIActionProposal | undefined = undefined
@@ -1174,7 +1226,7 @@ Return ONLY a valid JSON object matching this schema:
 
     return {
       source: 'gemini-live',
-      model: MODEL_NAME,
+      model: activeModel,
       headline: String(parsed.headline || `Urgent Milestones for ${request.eventTitle}`).slice(0, 150),
       strategicSummary: String(parsed.strategicSummary || 'Strategic roadmap generated.').slice(0, 350),
       urgentTaskAnalyses: Array.isArray(parsed.urgentTaskAnalyses)

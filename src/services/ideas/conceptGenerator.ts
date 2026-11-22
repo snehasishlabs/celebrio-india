@@ -1,5 +1,5 @@
-import { CelebrationEvent } from '@/types/event'
-import { ThemeConcept } from '@/types/concept'
+import type { CelebrationEvent } from '../../types/event'
+import type { ThemeConcept } from '../../types/concept'
 
 const PRICE_DISCLAIMER =
   'Estimated approximation based on regional vendor averages. Not a verified commercial quotation.'

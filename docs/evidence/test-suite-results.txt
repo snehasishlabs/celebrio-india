@@ -1,18 +1,18 @@
 ================================================================================
 CELEBRIO INDIA — AUTOMATED TEST SUITE & STATIC ANALYSIS AUDIT
 ================================================================================
-Timestamp: 2026-11-20T22:54:30+05:30
-Environment: Windows Node.js v24.15.0 / Vitest v5.0.5 / Oxlint v1.89.0 / Vite v8.3.5
+Timestamp: 2026-11-22T12:30:00+05:30
+Environment: Windows Node.js v24.15.0 / Vitest v5.0.5 / Oxlint v1.89.0 / Vite v8.3.5 / Rolldown v1.2.15
 
-LINT CHECK (oxlint):
+LINT CHECK (oxlint src server):
 > celebrio-ai@0.1.0 lint
-> oxlint
+> oxlint src server
 Found 0 warnings and 0 errors.
-Finished in 217ms on 97 files with 116 rules using 4 threads.
+Finished in 200ms on 93 files with 116 rules using 4 threads.
 
-BUILD CHECK (tsc -b && vite build):
+BUILD CHECK (tsc -b && vite build && rolldown server/apiEntry.ts -o api/index.js):
 > celebrio-ai@0.1.0 build
-> tsc -b && vite build
+> tsc -b && vite build && rolldown server/apiEntry.ts -o api/index.js --platform node --format esm --inlineDynamicImports
 vite v8.3.5 building client environment for production...
 ✓ 1981 modules transformed.
 dist/index.html                             1.57 kB │ gzip:   0.73 kB
@@ -21,7 +21,9 @@ dist/assets/rolldown-runtime-WkwZ5CU-.js    0.59 kB │ gzip:   0.36 kB
 dist/assets/icons-DzT3BNkA.js              30.90 kB │ gzip:  10.99 kB
 dist/assets/vendor-DlM4w0sV.js            210.90 kB │ gzip:  65.85 kB
 dist/assets/index-CTA-fkO0.js             498.08 kB │ gzip: 120.13 kB
-✓ built in 4.21s
+✓ built in 7.76s
+api/index.js chunk │ size: 1,806.26 kB
+✓ rolldown v1.2.15 Finished in 360.50 ms
 
 TEST SUITE RESULTS (vitest run):
 > celebrio-ai@0.1.0 test
@@ -62,5 +64,5 @@ TEST SUITE RESULTS (vitest run):
 
  Test Files  32 passed (32)
       Tests  263 passed (263)
-   Duration  100.18s
+   Duration  91.64s
 ================================================================================
