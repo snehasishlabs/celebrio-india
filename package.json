@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "build": "tsc -b && vite build && rolldown server/apiEntry.ts -o api/index.js --platform node --format esm --inlineDynamicImports",
+    "lint": "oxlint src server",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"

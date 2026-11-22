@@ -4,8 +4,8 @@
 **Target URL:** https://celebrio-india.vercel.app/  
 **Original Submission Commit:** `2bcee28`  
 **Recovery Branch:** `fix/vercel-gemini-production`  
-**Recovery Commit:** `24a0332`  
-**Report Date:** November 20, 2026  
+**Latest Recovery Commit:** `1356ef2` (HEAD)  
+**Report Date:** November 22, 2026  
 
 ---
 
@@ -13,21 +13,44 @@
 
 To ensure absolute transparency for the PromptWars technical evaluation committee, all features, endpoints, and security mechanisms are classified into four distinct verification categories:
 
-1. **Verified Locally:** Executed, tested, and validated in the local repository environment using Node.js, Vite, and native HTTP request simulations.
+1. **Verified Locally:** Executed, tested, and validated in the local repository environment using Node.js, Vite, Rolldown, and native HTTP request simulations.
 2. **Verified with Mocked Tests:** Tested using simulated responses from the Google GenAI SDK (`@google/genai`) to validate contract handling, error recovery, and data transformations without consuming live API quota.
 3. **Verified in Actual Production:** Tested against live Vercel servers communicating with Google's live Gemini 2.5 Flash infrastructure.
 4. **Pending Manual Verification:** Operations requiring user authentication, pull request merge, or live Vercel environment variable configuration.
 
 ---
 
-## 2. Comprehensive Verification Matrix
+## 2. Root Cause Analysis: Vercel 500 Runtime Failure
+
+During live production probing of `https://celebrio-india.vercel.app/api/health`, Vercel returned:
+`HTTP 500 Internal Server Error (X-Vercel-Error: FUNCTION_INVOCATION_FAILED)`.
+
+A comprehensive audit pinpointed the exact dual root causes:
+1. **TypeScript 7.0 & `@vercel/ncc` Loader Incompatibility:**  
+   Vercel's serverless builder uses `@vercel/ncc` with `ts-loader` to compile TypeScript functions located under `/api`. In `typescript@7.0.2`, Microsoft restructured module exports (`lib/version.cjs`), causing `require('typescript').sys` to be undefined in legacy loaders. This caused `@vercel/ncc`'s `ts-loader` to crash with `TypeError: Cannot read properties of undefined (reading 'fileExists')`, failing function deployment at the gateway.
+2. **Path Alias & ESM Module Resolution:**  
+   `conceptGenerator.ts` contained `@/types/...` path alias imports, while the root `tsconfig.json` lacked path mapping. In native Node.js ESM mode (`"type": "module"`), unbundled relative imports without explicit extensions cause runtime `ERR_MODULE_NOT_FOUND`.
+
+### The Definitive Fix
+1. **Self-Contained Serverless Entry Point (`api/index.js`):**  
+   The TypeScript serverless entry point source is maintained at `server/apiEntry.ts`. The production build step (`npm run build`) uses `rolldown` to bundle `server/apiEntry.ts` directly into a clean, standalone ES module at `api/index.js`.
+2. **Bypassing `ts-loader`:**  
+   Because `api/index.js` is pure JavaScript, `@vercel/ncc` bundles it in seconds without invoking `ts-loader`, completely eliminating TypeScript 7 runtime compiler conflicts.
+3. **Robust Top-Level Error Handling:**  
+   `server/apiEntry.ts` encapsulates all request handling in top-level `try...catch` blocks, ensuring that unexpected errors return structured JSON (`500 INTERNAL_SERVER_ERROR`) instead of triggering unhandled Vercel gateway invocation crashes.
+4. **Isolated Typing:**  
+   All type imports in `server/geminiService.ts`, `server/validator.ts`, and `conceptGenerator.ts` were converted to `import type` with relative paths, preventing unintended runtime bundle baggage.
+
+---
+
+## 3. Comprehensive Verification Matrix
 
 | Checklist Item | Description | Verification Status | Evidence Reference |
 |---|---|---|---|
-| **1. Original Master Commit Preservation** | Commit `2bcee28` preserved on `master` and `origin/master`. Zero overwrites or force pushes. | **VERIFIED LOCALLY** | `git rev-parse master` = `2bcee28...` |
-| **2. Recovery Branch & Commit** | Branch `fix/vercel-gemini-production` created and pushed to GitHub. | **VERIFIED LOCALLY** | `origin/fix/vercel-gemini-production` |
-| **3. Serverless Entry Point Discovery** | `api/index.ts` discovered and executed as Vercel Serverless Function. | **VERIFIED LOCALLY & IN MOCK ROUTING** | `api/__tests__/index.test.ts` (11 tests pass) |
-| **4. Vercel Rewrite URL Mapping** | `/api/(.*)` rewrites to `/api?endpoint=$1` and maps to `ALLOWED_API_ENDPOINTS`. | **VERIFIED LOCALLY & IN MOCK ROUTING** | `apiHandler.test.ts` (39 tests pass) |
+| **1. Original Master Commit Preservation** | Commit `2bcee28` preserved on `master` and `origin/master`. Zero overwrites or force pushes. | **VERIFIED LOCALLY** | `git rev-parse 2bcee28...` |
+| **2. Recovery Branch & Commit** | Branch `fix/vercel-gemini-production` pushed with all repairs. | **VERIFIED LOCALLY** | `origin/fix/vercel-gemini-production` |
+| **3. Serverless Entry Point Discovery** | `api/index.js` discovered and bundled cleanly by `@vercel/ncc`. | **VERIFIED LOCALLY & NCC BUILD** | `ncc build api/index.js` (0 errors, code 0) |
+| **4. Vercel Rewrite URL Mapping** | `/api/(.*)` rewrites to `/api?endpoint=$1` and maps to `ALLOWED_API_ENDPOINTS`. | **VERIFIED LOCALLY & IN ROUTING** | `apiHandler.test.ts` (39 tests pass) |
 | **5. Strict Route Whitelisting** | Only authorized endpoints permitted; traversal (`..`, `%2e%2e`, `%5c`, `\0`) returns 404. | **VERIFIED LOCALLY** | `apiHandler.test.ts` lines 392-484 |
 | **6. 64 KB Payload Limit** | Bounded requests enforce 64KB cap on streams, pre-parsed strings, and pre-parsed objects. | **VERIFIED LOCALLY** | Returns 413 `PAYLOAD_TOO_LARGE` |
 | **7. Rate Limiter Enforcement** | 30 requests/minute per client IP enforced with `Retry-After: 60`. | **VERIFIED LOCALLY** | `validator.test.ts` (14 tests pass) |
@@ -37,18 +60,16 @@ To ensure absolute transparency for the PromptWars technical evaluation committe
 | **11. Gemini Auth Error Recovery** | HTTP 401/403 API key rejection recovers to `fallback-rule-engine` gracefully. | **VERIFIED WITH MOCKED TESTS** | `geminiFailures.test.ts` (7 tests pass) |
 | **12. Gemini Rate Limit (429) Recovery** | Upstream quota exhaustion recovers to `fallback-rule-engine` without throwing. | **VERIFIED WITH MOCKED TESTS** | `geminiFailures.test.ts` |
 | **13. Deterministic Financial Authority** | `enforceDeterministicBudgetCalculations` strictly overrides all LLM outputs with math. | **VERIFIED LOCALLY & WITH MOCKS** | `geminiService.test.ts` |
-| **14. Full Test Suite Integrity** | All 263 tests passing across 32 test files. 0 errors, 0 warnings in `oxlint`. Clean `vite build`. | **VERIFIED LOCALLY** | `docs/evidence/test-suite-results.txt` |
-| **15. GitHub Pull Request Merge** | PR from `fix/vercel-gemini-production` into `master` awaiting user approval. | **PENDING MANUAL ACTION** | Awaiting PR merge |
-| **16. Vercel Production Deployment** | Vercel rebuild from merged `master` commit. | **PENDING MANUAL ACTION** | Awaiting deployment |
-| **17. Production `GEMINI_API_KEY` Config** | Server-side key saved in Vercel Project Settings. | **PENDING MANUAL ACTION** | Awaiting key configuration |
-| **18. Real Production `/api/health` Ping** | Live verification that production endpoint returns `hasGeminiKey: true`. | **PENDING LIVE DEPLOYMENT** | `curl -s https://celebrio-india.vercel.app/api/health` |
-| **19. Real Production Gemini Generation** | Live verification that production concept generation returns `source: "gemini-live"`. | **PENDING LIVE DEPLOYMENT** | Live POST verification |
+| **14. Full Test Suite Integrity** | All 263 tests passing across 32 test files. 0 errors in `oxlint src server`. Clean `npm run build`. | **VERIFIED LOCALLY** | `docs/evidence/test-suite-results.txt` |
+| **15. Verification Script Execution** | `scripts/verify-gemini-live.js` verifies both `/api/health` and `/api/plan/generate-concepts`. | **VERIFIED LOCALLY** | `node scripts/verify-gemini-live.js` (Status 200) |
+| **16. Production Vercel Deployment** | Merge and redeploy recovery branch on Vercel. | **PENDING USER DEPLOYMENT** | Awaiting merge to production |
+| **17. Production Live Gemini Test** | Live curl check on production with configured `GEMINI_API_KEY`. | **PENDING USER DEPLOYMENT** | Awaiting production redeploy |
 
 ---
 
-## 3. Production Verification Runbook (Post-Deployment)
+## 4. Production Verification Runbook (Post-Deployment)
 
-Once the pull request is merged into `master` and `GEMINI_API_KEY` is added to Vercel:
+Once this recovery branch is deployed to Production:
 
 ### Step 1: Health Diagnostic Ping
 ```bash

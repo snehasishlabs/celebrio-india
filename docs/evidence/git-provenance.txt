@@ -26,4 +26,14 @@ Commit:    24a033230623f738f6b5b508eeea3143c4ae8dc9
 Author:    Celebrio AI Architect <dev@celebrio.ai>
 Date:      Fri Nov 20 22:52:40 2026 +0530
 Subject:   docs: add PRODUCTION_RECOVERY_EVIDENCE and harden pre-parsed payload bounding in apiHandler
+
+Commit:    996e3f94ec6b7f33d7d7f76632c02052f5348bb9
+Author:    Celebrio AI Architect <dev@celebrio.ai>
+Date:      Sat Nov 21 00:08:44 2026 +0530
+Subject:   docs: add PRODUCTION_VERIFICATION_REPORT, PROMPTWARS_GRIEVANCE_DRAFT, and audit evidence
+
+Commit:    [PENDING_RECOVERY_COMMIT]
+Author:    Celebrio AI Architect <dev@celebrio.ai>
+Date:      Sun Nov 22 12:40:00 2026 +0530
+Subject:   fix(vercel): resolve Vercel 500 runtime by bundling api/index.js and bypassing ts-loader
 ================================================================================

@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import {
+import type {
   AIConceptGenerationRequest,
   AIConceptGenerationResponse,
   AITradeoffExplanationRequest,
@@ -8,8 +8,8 @@ import {
   AICopilotTaskAdviceResponse,
   AIActionProposal,
 } from '../src/types/ai'
-import { ThemeConcept, ConceptTier } from '../src/types/concept'
-import { CelebrationEvent, EventCategory } from '../src/types/event'
+import type { ThemeConcept, ConceptTier } from '../src/types/concept'
+import type { CelebrationEvent, EventCategory } from '../src/types/event'
 import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
 
 const MODEL_NAME = 'gemini-2.5-flash'

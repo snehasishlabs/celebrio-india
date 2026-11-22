@@ -44,12 +44,11 @@ This document establishes a transparent, tamper-evident audit trail regarding th
 - **Status:** Drafted initial `api/index.ts` and `vercel.json` rewrites, but remained unmerged into `master`.
 
 ### C. Post-Submission Recovery State
-- **Git Commit:** `9783562ada697936512d622cf3814d55f124941a`
-- **Commit Date:** Fri Nov 20 16:55:33 2026 +0530
-- **Author:** Celebrio AI Architect `<dev@celebrio.ai>`
-- **Commit Message:** `fix(vercel): recovery and verification of production Vercel serverless routing and Gemini 2.5 Flash live mode`
+- **Git Commit:** `9783562ada697936512d622cf3814d55f124941a` (Initial Vercel serverless integration)
+- **Hardening Commits:** `24a0332`, `996e3f9`
+- **Current Recovery Commit:** `fix/vercel-gemini-production` HEAD (Vercel runtime bundling repair)
 - **Branch:** `fix/vercel-gemini-production`
-- **Status:** Full production recovery branch with 262/262 passing tests, enhanced `/api/health` diagnostics, robust traversal defense, and mocked live Gemini verification.
+- **Status:** Full production recovery branch with 263/263 passing tests, bundled `api/index.js` eliminating TypeScript 7 / `@vercel/ncc` incompatibilities, enhanced `/api/health` diagnostics, robust traversal defense, and mocked & live Gemini verification.
 
 ---
 

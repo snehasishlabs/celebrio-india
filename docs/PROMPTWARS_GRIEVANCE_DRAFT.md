@@ -86,3 +86,4 @@ Sincerely,
 Repository: https://github.com/snehasishlabs/celebrio-india  
 Production URL: https://celebrio-india.vercel.app/  
 Branch: `fix/vercel-gemini-production`
+
