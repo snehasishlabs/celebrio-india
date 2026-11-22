@@ -326,6 +326,11 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
   } catch (error: unknown) {
     // Log sanitized error without leaking API keys, private data, or headers
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const sanitizedError = errorMessage
+      .replace(/AIza[0-9A-Za-z-_]{35}/g, '[REDACTED]')
+      .replace(/key=[^&\s]+/g, 'key=[REDACTED]')
+      .slice(0, 300)
+    console.error('[Gemini Service Error]:', sanitizedError)
     // Fall back to deterministic engine gracefully
     const mockEvent: CelebrationEvent = {
       id: request.eventId,
@@ -367,7 +372,7 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
       generatedAt: now,
       disclaimer:
         'Generated via Celebrio Fallback Engine. Live AI call was unavailable or encountered an error.',
-      notes: `Provider status: ${errorMessage.startsWith('AI_TIMEOUT') ? 'Request timed out' : 'Fallback recovery activated'}.`,
+      notes: `Provider status: ${errorMessage.startsWith('AI_TIMEOUT') ? 'Request timed out' : `Fallback recovery activated (${sanitizedError})`}.`,
     }
   }
 }

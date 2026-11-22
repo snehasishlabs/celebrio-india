@@ -42678,6 +42678,8 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
 		};
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : "Unknown error";
+		const sanitizedError = errorMessage.replace(/AIza[0-9A-Za-z-_]{35}/g, "[REDACTED]").replace(/key=[^&\s]+/g, "key=[REDACTED]").slice(0, 300);
+		console.error("[Gemini Service Error]:", sanitizedError);
 		return {
 			source: "deterministic-demo",
 			model: "fallback-rule-engine",
@@ -42707,7 +42709,7 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
 			}), request.totalBudget, request.currency),
 			generatedAt: now,
 			disclaimer: "Generated via Celebrio Fallback Engine. Live AI call was unavailable or encountered an error.",
-			notes: `Provider status: ${errorMessage.startsWith("AI_TIMEOUT") ? "Request timed out" : "Fallback recovery activated"}.`
+			notes: `Provider status: ${errorMessage.startsWith("AI_TIMEOUT") ? "Request timed out" : `Fallback recovery activated (${sanitizedError})`}.`
 		};
 	}
 }
