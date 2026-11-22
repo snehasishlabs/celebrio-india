@@ -46,9 +46,6 @@ async function generateContentWithFallback(
           config: {
             responseMimeType: 'application/json',
             temperature,
-            thinkingConfig: {
-              thinkingBudget: 0,
-            },
           },
         }),
         new Promise<never>((_, reject) =>
@@ -64,19 +61,7 @@ async function generateContentWithFallback(
       lastError = err
       const errStr = err instanceof Error ? err.message : String(err)
       console.warn(`[Gemini Model Attempt] ${modelName} failed or timed out:`, errStr.slice(0, 250))
-      if (
-        errStr.includes('404') ||
-        errStr.includes('NOT_FOUND') ||
-        errStr.includes('no longer available') ||
-        errStr.includes('503') ||
-        errStr.includes('UNAVAILABLE') ||
-        errStr.includes('high demand') ||
-        errStr.includes('AI_TIMEOUT') ||
-        errStr.includes('timed out')
-      ) {
-        continue
-      }
-      throw err
+      continue
     }
   }
 
