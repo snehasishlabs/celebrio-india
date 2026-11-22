@@ -42436,12 +42436,12 @@ function generateThemeConcepts(event) {
 // server/geminiService.ts
 const CANDIDATE_MODELS = [
 	"gemini-2.5-flash",
-	"gemini-flash-latest",
+	"gemini-3.5-flash-lite",
+	"gemini-3.8-flash",
 	"gemini-3.5-flash",
-	"gemini-2.5-flash-lite",
-	"gemini-3.8-flash"
+	"gemini-flash-latest"
 ];
-const TIMEOUT_MS = 12e3;
+const TIMEOUT_MS = 15e3;
 const BASE_PRICE_DISCLAIMER = "Estimated approximation based on regional vendor averages. Not a verified commercial quotation.";
 /**
 * Executes a Gemini generateContent call, gracefully trying candidate models
