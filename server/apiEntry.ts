@@ -1,6 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { handleApiRequest } from './apiHandler'
 
+export const config = {
+  maxDuration: 60,
+}
+export const maxDuration = 60
+
 /**
  * Serverless Function entry point.
  * Delegates all /api/* requests to the central Celebrio AI API handler.

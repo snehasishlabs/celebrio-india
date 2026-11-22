@@ -42437,10 +42437,9 @@ function generateThemeConcepts(event) {
 const CANDIDATE_MODELS = [
 	"gemini-2.5-flash",
 	"gemini-3.8-flash",
-	"gemini-2.0-flash",
-	"gemini-1.5-flash"
+	"gemini-2.0-flash"
 ];
-const TIMEOUT_MS = 15e3;
+const TIMEOUT_MS = 25e3;
 const BASE_PRICE_DISCLAIMER = "Estimated approximation based on regional vendor averages. Not a verified commercial quotation.";
 /**
 * Executes a Gemini generateContent call, gracefully trying candidate models
@@ -42456,7 +42455,7 @@ async function generateContentWithFallback(ai, prompt, temperature, timeoutMs) {
 				responseMimeType: "application/json",
 				temperature
 			}
-		}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("AI_TIMEOUT: Gemini response timed out")), timeoutMs))])).text || "");
+		}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error(`AI_TIMEOUT: Gemini response timed out for ${modelName}`)), timeoutMs))])).text || "");
 		if (text) return {
 			text,
 			activeModel: modelName
@@ -42464,7 +42463,8 @@ async function generateContentWithFallback(ai, prompt, temperature, timeoutMs) {
 	} catch (err) {
 		lastError = err;
 		const errStr = err instanceof Error ? err.message : String(err);
-		if (errStr.includes("404") || errStr.includes("NOT_FOUND") || errStr.includes("no longer available") || errStr.includes("503") || errStr.includes("UNAVAILABLE") || errStr.includes("high demand")) continue;
+		console.warn(`[Gemini Model Attempt] ${modelName} failed or timed out:`, errStr.slice(0, 250));
+		if (errStr.includes("404") || errStr.includes("NOT_FOUND") || errStr.includes("no longer available") || errStr.includes("503") || errStr.includes("UNAVAILABLE") || errStr.includes("high demand") || errStr.includes("AI_TIMEOUT") || errStr.includes("timed out")) continue;
 		throw err;
 	}
 	throw lastError || /* @__PURE__ */ new Error("AI_EMPTY_RESPONSE: No response text returned by model");
@@ -42568,7 +42568,7 @@ REQUIRED CONCEPTS (3 distinct tiers):
 2. tier: "creative-distinctive" (Signature character, bespoke guest interactions, uses ~98% of budget)
 3. tier: "premium" (Uncompromising elegance, white-glove hospitality, fully utilizes budget)
 
-Return ONLY a JSON array of 3 concept objects. Each object MUST match this schema:
+Return ONLY a JSON array of 3 concept objects. Keep descriptions concise and evocative (maximum 2 sentences per field). Each object MUST match this schema:
 {
   "id": "concept-${request.eventId}-<tier>",
   "eventId": "${request.eventId}",
@@ -42732,7 +42732,7 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
 			}), request.totalBudget, request.currency),
 			generatedAt: now,
 			disclaimer: "Generated via Celebrio Fallback Engine. Live AI call was unavailable or encountered an error.",
-			notes: `Provider status: ${errorMessage.startsWith("AI_TIMEOUT") ? "Request timed out" : `Fallback recovery activated (${sanitizedError})`}.`
+			notes: `Provider status: ${errorMessage.includes("AI_TIMEOUT") || errorMessage.includes("timed out") ? "Request timed out" : `Fallback recovery activated (${sanitizedError})`}.`
 		};
 	}
 }
@@ -43894,6 +43894,8 @@ async function handleApiRequest(req, res) {
 	}
 }
 // server/apiEntry.ts
+const config = { maxDuration: 60 };
+const maxDuration = 60;
 /**
 * Serverless Function entry point.
 * Delegates all /api/* requests to the central Celebrio AI API handler.
@@ -43921,4 +43923,4 @@ async function handler(req, res) {
 		}
 	}
 }
-export { handler as default };
+export { config, handler as default, maxDuration };

@@ -13,8 +13,8 @@ import type { CelebrationEvent, EventCategory } from '../src/types/event'
 import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
 
 const MODEL_NAME = 'gemini-2.5-flash'
-const CANDIDATE_MODELS = [MODEL_NAME, 'gemini-3.8-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
-const TIMEOUT_MS = 15000
+const CANDIDATE_MODELS = [MODEL_NAME, 'gemini-3.8-flash', 'gemini-2.0-flash']
+const TIMEOUT_MS = 25000
 
 const BASE_PRICE_DISCLAIMER =
   'Estimated approximation based on regional vendor averages. Not a verified commercial quotation.'
@@ -43,7 +43,7 @@ async function generateContentWithFallback(
           },
         }),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('AI_TIMEOUT: Gemini response timed out')), timeoutMs),
+          setTimeout(() => reject(new Error(`AI_TIMEOUT: Gemini response timed out for ${modelName}`)), timeoutMs),
         ),
       ])
 
@@ -54,13 +54,16 @@ async function generateContentWithFallback(
     } catch (err: unknown) {
       lastError = err
       const errStr = err instanceof Error ? err.message : String(err)
+      console.warn(`[Gemini Model Attempt] ${modelName} failed or timed out:`, errStr.slice(0, 250))
       if (
         errStr.includes('404') ||
         errStr.includes('NOT_FOUND') ||
         errStr.includes('no longer available') ||
         errStr.includes('503') ||
         errStr.includes('UNAVAILABLE') ||
-        errStr.includes('high demand')
+        errStr.includes('high demand') ||
+        errStr.includes('AI_TIMEOUT') ||
+        errStr.includes('timed out')
       ) {
         continue
       }
@@ -209,7 +212,7 @@ REQUIRED CONCEPTS (3 distinct tiers):
 2. tier: "creative-distinctive" (Signature character, bespoke guest interactions, uses ~98% of budget)
 3. tier: "premium" (Uncompromising elegance, white-glove hospitality, fully utilizes budget)
 
-Return ONLY a JSON array of 3 concept objects. Each object MUST match this schema:
+Return ONLY a JSON array of 3 concept objects. Keep descriptions concise and evocative (maximum 2 sentences per field). Each object MUST match this schema:
 {
   "id": "concept-${request.eventId}-<tier>",
   "eventId": "${request.eventId}",
@@ -417,7 +420,7 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
       generatedAt: now,
       disclaimer:
         'Generated via Celebrio Fallback Engine. Live AI call was unavailable or encountered an error.',
-      notes: `Provider status: ${errorMessage.startsWith('AI_TIMEOUT') ? 'Request timed out' : `Fallback recovery activated (${sanitizedError})`}.`,
+      notes: `Provider status: ${errorMessage.includes('AI_TIMEOUT') || errorMessage.includes('timed out') ? 'Request timed out' : `Fallback recovery activated (${sanitizedError})`}.`,
     }
   }
 }
