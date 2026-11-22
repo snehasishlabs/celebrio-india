@@ -13,7 +13,7 @@ import type { CelebrationEvent, EventCategory } from '../src/types/event'
 import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
 
 const MODEL_NAME = 'gemini-2.5-flash'
-const CANDIDATE_MODELS = [MODEL_NAME, 'gemini-3.8-flash', 'gemini-2.0-flash']
+const CANDIDATE_MODELS = [MODEL_NAME, 'gemini-3.8-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
 const TIMEOUT_MS = 15000
 
 const BASE_PRICE_DISCLAIMER =
@@ -54,7 +54,14 @@ async function generateContentWithFallback(
     } catch (err: unknown) {
       lastError = err
       const errStr = err instanceof Error ? err.message : String(err)
-      if (errStr.includes('404') || errStr.includes('NOT_FOUND') || errStr.includes('no longer available')) {
+      if (
+        errStr.includes('404') ||
+        errStr.includes('NOT_FOUND') ||
+        errStr.includes('no longer available') ||
+        errStr.includes('503') ||
+        errStr.includes('UNAVAILABLE') ||
+        errStr.includes('high demand')
+      ) {
         continue
       }
       throw err

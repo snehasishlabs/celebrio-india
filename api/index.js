@@ -42437,7 +42437,8 @@ function generateThemeConcepts(event) {
 const CANDIDATE_MODELS = [
 	"gemini-2.5-flash",
 	"gemini-3.8-flash",
-	"gemini-2.0-flash"
+	"gemini-2.0-flash",
+	"gemini-1.5-flash"
 ];
 const TIMEOUT_MS = 15e3;
 const BASE_PRICE_DISCLAIMER = "Estimated approximation based on regional vendor averages. Not a verified commercial quotation.";
@@ -42463,7 +42464,7 @@ async function generateContentWithFallback(ai, prompt, temperature, timeoutMs) {
 	} catch (err) {
 		lastError = err;
 		const errStr = err instanceof Error ? err.message : String(err);
-		if (errStr.includes("404") || errStr.includes("NOT_FOUND") || errStr.includes("no longer available")) continue;
+		if (errStr.includes("404") || errStr.includes("NOT_FOUND") || errStr.includes("no longer available") || errStr.includes("503") || errStr.includes("UNAVAILABLE") || errStr.includes("high demand")) continue;
 		throw err;
 	}
 	throw lastError || /* @__PURE__ */ new Error("AI_EMPTY_RESPONSE: No response text returned by model");
