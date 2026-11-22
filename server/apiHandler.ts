@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import {
   isGeminiConfigured,
+  listGeminiModels,
   generateConceptsWithGemini,
   explainTradeoffsWithGemini,
   explainUrgentTasksWithGemini,
@@ -300,6 +301,10 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
     // 1. Health check endpoint
     if (url === '/api/health' && method === 'GET') {
       const configured = isGeminiConfigured()
+      let availableModels: string[] | undefined = undefined
+      if (req.url && req.url.includes('models=1')) {
+        availableModels = await listGeminiModels()
+      }
       sendJson(res, 200, {
         status: 'ok',
         hasGeminiKey: configured,
@@ -308,6 +313,7 @@ export async function handleApiRequest(req: IncomingMessage, res: ServerResponse
         geminiStatus: configured ? 'configured' : 'unconfigured',
         fallbackMode: configured ? 'ready-as-backup' : 'active-primary',
         version: '1.0.0',
+        ...(availableModels ? { availableModels } : {}),
       })
       return true
     }

@@ -42435,7 +42435,7 @@ function generateThemeConcepts(event) {
 }
 // server/geminiService.ts
 const CANDIDATE_MODELS = ["gemini-2.5-flash", "gemini-3.8-flash"];
-const TIMEOUT_MS = 3e4;
+const TIMEOUT_MS = 5e4;
 const BASE_PRICE_DISCLAIMER = "Estimated approximation based on regional vendor averages. Not a verified commercial quotation.";
 /**
 * Executes a Gemini generateContent call, gracefully trying candidate models
@@ -42473,6 +42473,20 @@ async function generateContentWithFallback(ai, prompt, temperature, timeoutMs) {
 function isGeminiConfigured() {
 	const key = process.env.GEMINI_API_KEY;
 	return typeof key === "string" && key.trim().length > 0;
+}
+/**
+* Lists available models from the Google GenAI provider for diagnostics.
+*/
+async function listGeminiModels() {
+	if (!isGeminiConfigured()) return [];
+	try {
+		const pager = await new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }).models.list();
+		const names = [];
+		for await (const m of pager) if (m && typeof m === "object" && "name" in m && typeof m.name === "string") names.push(m.name);
+		return names;
+	} catch (err) {
+		return [`ERROR: ${(err instanceof Error ? err.message : String(err)).slice(0, 200)}`];
+	}
 }
 /**
 * Strips potential markdown code blocks (e.g. ```json ... ```) from model output.
@@ -43801,6 +43815,8 @@ async function handleApiRequest(req, res) {
 		const url = route.path;
 		if (url === "/api/health" && method === "GET") {
 			const configured = isGeminiConfigured();
+			let availableModels = void 0;
+			if (req.url && req.url.includes("models=1")) availableModels = await listGeminiModels();
 			sendJson(res, 200, {
 				status: "ok",
 				hasGeminiKey: configured,
@@ -43808,7 +43824,8 @@ async function handleApiRequest(req, res) {
 				mode: configured ? "live" : "demo",
 				geminiStatus: configured ? "configured" : "unconfigured",
 				fallbackMode: configured ? "ready-as-backup" : "active-primary",
-				version: "1.0.0"
+				version: "1.0.0",
+				...availableModels ? { availableModels } : {}
 			});
 			return true;
 		}

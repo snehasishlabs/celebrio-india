@@ -14,7 +14,7 @@ import { generateThemeConcepts } from '../src/services/ideas/conceptGenerator'
 
 const MODEL_NAME = 'gemini-2.5-flash'
 const CANDIDATE_MODELS = [MODEL_NAME, 'gemini-3.8-flash']
-const TIMEOUT_MS = 30000
+const TIMEOUT_MS = 50000
 
 const BASE_PRICE_DISCLAIMER =
   'Estimated approximation based on regional vendor averages. Not a verified commercial quotation.'
@@ -84,6 +84,27 @@ async function generateContentWithFallback(
 export function isGeminiConfigured(): boolean {
   const key = process.env.GEMINI_API_KEY
   return typeof key === 'string' && key.trim().length > 0
+}
+
+/**
+ * Lists available models from the Google GenAI provider for diagnostics.
+ */
+export async function listGeminiModels(): Promise<string[]> {
+  if (!isGeminiConfigured()) return []
+  try {
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+    const pager = await ai.models.list()
+    const names: string[] = []
+    for await (const m of pager) {
+      if (m && typeof m === 'object' && 'name' in m && typeof m.name === 'string') {
+        names.push(m.name)
+      }
+    }
+    return names
+  } catch (err: unknown) {
+    const errStr = err instanceof Error ? err.message : String(err)
+    return [`ERROR: ${errStr.slice(0, 200)}`]
+  }
 }
 
 /**
