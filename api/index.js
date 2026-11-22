@@ -42434,9 +42434,40 @@ function generateThemeConcepts(event) {
 	}
 }
 // server/geminiService.ts
-const MODEL_NAME = "gemini-2.5-flash";
+const CANDIDATE_MODELS = [
+	"gemini-2.5-flash",
+	"gemini-3.8-flash",
+	"gemini-2.0-flash"
+];
 const TIMEOUT_MS = 15e3;
 const BASE_PRICE_DISCLAIMER = "Estimated approximation based on regional vendor averages. Not a verified commercial quotation.";
+/**
+* Executes a Gemini generateContent call, gracefully trying candidate models
+* if Google's API returns a 404 / deprecation for newer API keys.
+*/
+async function generateContentWithFallback(ai, prompt, temperature, timeoutMs) {
+	let lastError = null;
+	for (const modelName of CANDIDATE_MODELS) try {
+		const text = cleanJsonOutput((await Promise.race([ai.models.generateContent({
+			model: modelName,
+			contents: prompt,
+			config: {
+				responseMimeType: "application/json",
+				temperature
+			}
+		}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("AI_TIMEOUT: Gemini response timed out")), timeoutMs))])).text || "");
+		if (text) return {
+			text,
+			activeModel: modelName
+		};
+	} catch (err) {
+		lastError = err;
+		const errStr = err instanceof Error ? err.message : String(err);
+		if (errStr.includes("404") || errStr.includes("NOT_FOUND") || errStr.includes("no longer available")) continue;
+		throw err;
+	}
+	throw lastError || /* @__PURE__ */ new Error("AI_EMPTY_RESPONSE: No response text returned by model");
+}
 /**
 * Checks whether a valid Gemini API key is configured in server environment variables.
 * Never exposed to browser or client code.
@@ -42517,8 +42548,7 @@ async function generateConceptsWithGemini(request) {
 		notes: "To enable live Gemini AI generation, configure GEMINI_API_KEY in your server environment (.env)."
 	};
 	try {
-		const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-		const prompt = `You are Celebrio AI, a world-class celebration architect and event designer.
+		const { text: responseText, activeModel } = await generateContentWithFallback(new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }), `You are Celebrio AI, a world-class celebration architect and event designer.
 Generate 3 distinct, comprehensive, and imaginative celebration concepts for an upcoming ${request.category}.
 
 PARAMETERS:
@@ -42575,15 +42605,8 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
     "advantages": [string, string, string],
     "compromises": [string, string]
   }
-}`;
-		const cleanedText = cleanJsonOutput((await Promise.race([ai.models.generateContent({
-			model: MODEL_NAME,
-			contents: prompt,
-			config: {
-				responseMimeType: "application/json",
-				temperature: .7
-			}
-		}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("AI_TIMEOUT: Gemini response timed out")), TIMEOUT_MS))])).text || "");
+}`, .7, TIMEOUT_MS);
+		const cleanedText = cleanJsonOutput(responseText);
 		let parsed;
 		try {
 			parsed = JSON.parse(cleanedText);
@@ -42595,84 +42618,83 @@ Return ONLY a JSON array of 3 concept objects. Each object MUST match this schem
 		else if (parsed && typeof parsed === "object" && Array.isArray(parsed.concepts)) rawConcepts = parsed.concepts;
 		else throw new Error("AI_MALFORMED_OUTPUT: Response does not contain a concepts array");
 		if (rawConcepts.length < 3) throw new Error("AI_INCOMPLETE_OUTPUT: Model returned fewer than 3 concepts");
-		const validatedConcepts = enforceDeterministicBudgetCalculations([
-			"budget-conscious",
-			"creative-distinctive",
-			"premium"
-		].map((tier, idx) => {
-			const item = rawConcepts[idx] || rawConcepts.find((c) => c.tier === tier) || rawConcepts[0];
-			const decor = item.decor && typeof item.decor === "object" ? item.decor : {};
-			const fnb = item.foodAndBeverage && typeof item.foodAndBeverage === "object" ? item.foodAndBeverage : {};
-			const ent = item.entertainment && typeof item.entertainment === "object" ? item.entertainment : {};
-			const gx = item.guestExperience && typeof item.guestExperience === "object" ? item.guestExperience : {};
-			const to = item.tradeoffs && typeof item.tradeoffs === "object" ? item.tradeoffs : {};
-			return {
-				id: item.id || `concept-${request.eventId}-${tier}`,
-				eventId: request.eventId,
-				tier,
-				title: String(item.title || `${tier} Celebration Concept`).slice(0, 80),
-				tagline: String(item.tagline || "Curated celebration aesthetic").slice(0, 100),
-				description: String(item.description || "Thoughtfully curated celebratory design").slice(0, 500),
-				colorPalette: Array.isArray(item.colorPalette) && item.colorPalette.length > 0 ? item.colorPalette.slice(0, 4).map((rawColor) => {
-					const c = rawColor && typeof rawColor === "object" ? rawColor : {};
-					return {
-						name: String(c.name || "Accent").slice(0, 30),
-						hex: String(c.hex || "#1B4332").slice(0, 10)
-					};
-				}) : [
-					{
-						name: "Ivory",
-						hex: "#FAF6F0"
-					},
-					{
-						name: "Forest",
-						hex: "#1B4332"
-					},
-					{
-						name: "Terracotta",
-						hex: "#C86D51"
-					},
-					{
-						name: "Gold",
-						hex: "#C5A059"
-					}
-				],
-				decor: {
-					focalPoint: String(decor.focalPoint || "Bespoke central installation").slice(0, 200),
-					lighting: String(decor.lighting || "Ambient warm wash lighting").slice(0, 200),
-					tableSettings: String(decor.tableSettings || "Refined linen and tableware").slice(0, 200),
-					botanicals: String(decor.botanicals || "Seasonal florals and foliage").slice(0, 200)
-				},
-				foodAndBeverage: {
-					serviceStyle: String(fnb.serviceStyle || "Curated plated service").slice(0, 150),
-					highlights: Array.isArray(fnb.highlights) ? fnb.highlights.slice(0, 4).map((h) => String(h).slice(0, 100)) : ["Chef selection", "Seasonal produce"],
-					signatureDrink: String(fnb.signatureDrink || "Signature Celebration Spritz").slice(0, 100)
-				},
-				entertainment: {
-					mainAct: String(ent.mainAct || "Live musical ensemble").slice(0, 150),
-					interactiveElements: Array.isArray(ent.interactiveElements) ? ent.interactiveElements.slice(0, 3).map((e) => String(e).slice(0, 100)) : ["Guest keepsake station"]
-				},
-				guestExperience: {
-					arrivalMoment: String(gx.arrivalMoment || "Welcome beverage reception").slice(0, 150),
-					takeawayFavor: String(gx.takeawayFavor || "Artisanal celebration keepsake").slice(0, 150),
-					comfortFeatures: Array.isArray(gx.comfortFeatures) ? gx.comfortFeatures.slice(0, 3).map((f) => String(f).slice(0, 100)) : ["Comfort lounge vignettes"]
-				},
-				costEstimation: {
-					estimatedTotal: 0,
-					varianceFromBudget: 0,
-					percentOfBudget: 0,
-					disclaimer: BASE_PRICE_DISCLAIMER
-				},
-				tradeoffs: {
-					advantages: Array.isArray(to.advantages) ? to.advantages.slice(0, 4).map((a) => String(a).slice(0, 150)) : ["High guest satisfaction", "Tailored design"],
-					compromises: Array.isArray(to.compromises) ? to.compromises.slice(0, 3).map((c) => String(c).slice(0, 150)) : ["Standard lead-time required"]
-				}
-			};
-		}), request.totalBudget, request.currency);
 		return {
 			source: "gemini-live",
-			model: MODEL_NAME,
-			concepts: validatedConcepts,
+			model: activeModel,
+			concepts: enforceDeterministicBudgetCalculations([
+				"budget-conscious",
+				"creative-distinctive",
+				"premium"
+			].map((tier, idx) => {
+				const item = rawConcepts[idx] || rawConcepts.find((c) => c.tier === tier) || rawConcepts[0];
+				const decor = item.decor && typeof item.decor === "object" ? item.decor : {};
+				const fnb = item.foodAndBeverage && typeof item.foodAndBeverage === "object" ? item.foodAndBeverage : {};
+				const ent = item.entertainment && typeof item.entertainment === "object" ? item.entertainment : {};
+				const gx = item.guestExperience && typeof item.guestExperience === "object" ? item.guestExperience : {};
+				const to = item.tradeoffs && typeof item.tradeoffs === "object" ? item.tradeoffs : {};
+				return {
+					id: item.id || `concept-${request.eventId}-${tier}`,
+					eventId: request.eventId,
+					tier,
+					title: String(item.title || `${tier} Celebration Concept`).slice(0, 80),
+					tagline: String(item.tagline || "Curated celebration aesthetic").slice(0, 100),
+					description: String(item.description || "Thoughtfully curated celebratory design").slice(0, 500),
+					colorPalette: Array.isArray(item.colorPalette) && item.colorPalette.length > 0 ? item.colorPalette.slice(0, 4).map((rawColor) => {
+						const c = rawColor && typeof rawColor === "object" ? rawColor : {};
+						return {
+							name: String(c.name || "Accent").slice(0, 30),
+							hex: String(c.hex || "#1B4332").slice(0, 10)
+						};
+					}) : [
+						{
+							name: "Ivory",
+							hex: "#FAF6F0"
+						},
+						{
+							name: "Forest",
+							hex: "#1B4332"
+						},
+						{
+							name: "Terracotta",
+							hex: "#C86D51"
+						},
+						{
+							name: "Gold",
+							hex: "#C5A059"
+						}
+					],
+					decor: {
+						focalPoint: String(decor.focalPoint || "Bespoke central installation").slice(0, 200),
+						lighting: String(decor.lighting || "Ambient warm wash lighting").slice(0, 200),
+						tableSettings: String(decor.tableSettings || "Refined linen and tableware").slice(0, 200),
+						botanicals: String(decor.botanicals || "Seasonal florals and foliage").slice(0, 200)
+					},
+					foodAndBeverage: {
+						serviceStyle: String(fnb.serviceStyle || "Curated plated service").slice(0, 150),
+						highlights: Array.isArray(fnb.highlights) ? fnb.highlights.slice(0, 4).map((h) => String(h).slice(0, 100)) : ["Chef selection", "Seasonal produce"],
+						signatureDrink: String(fnb.signatureDrink || "Signature Celebration Spritz").slice(0, 100)
+					},
+					entertainment: {
+						mainAct: String(ent.mainAct || "Live musical ensemble").slice(0, 150),
+						interactiveElements: Array.isArray(ent.interactiveElements) ? ent.interactiveElements.slice(0, 3).map((e) => String(e).slice(0, 100)) : ["Guest keepsake station"]
+					},
+					guestExperience: {
+						arrivalMoment: String(gx.arrivalMoment || "Welcome beverage reception").slice(0, 150),
+						takeawayFavor: String(gx.takeawayFavor || "Artisanal celebration keepsake").slice(0, 150),
+						comfortFeatures: Array.isArray(gx.comfortFeatures) ? gx.comfortFeatures.slice(0, 3).map((f) => String(f).slice(0, 100)) : ["Comfort lounge vignettes"]
+					},
+					costEstimation: {
+						estimatedTotal: 0,
+						varianceFromBudget: 0,
+						percentOfBudget: 0,
+						disclaimer: BASE_PRICE_DISCLAIMER
+					},
+					tradeoffs: {
+						advantages: Array.isArray(to.advantages) ? to.advantages.slice(0, 4).map((a) => String(a).slice(0, 150)) : ["High guest satisfaction", "Tailored design"],
+						compromises: Array.isArray(to.compromises) ? to.compromises.slice(0, 3).map((c) => String(c).slice(0, 150)) : ["Standard lead-time required"]
+					}
+				};
+			}), request.totalBudget, request.currency),
 			generatedAt: now,
 			disclaimer: BASE_PRICE_DISCLAIMER
 		};
@@ -42741,8 +42763,7 @@ async function explainTradeoffsWithGemini(request) {
 	};
 	if (!isGeminiConfigured()) return getDeterministicTradeoff();
 	try {
-		const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-		const prompt = `You are Celebrio AI's Adaptive Scenario Planner.
+		const { text, activeModel } = await generateContentWithFallback(new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }), `You are Celebrio AI's Adaptive Scenario Planner.
 A client is simulating a plan shift for their ${request.baseline.category}.
 
 SCENARIO SHIFT:
@@ -42759,19 +42780,11 @@ Return ONLY a valid JSON object matching this schema:
   "entertainmentAlternatives": [string, string],
   "budgetSavingTips": [string, string, string],
   "guestExperienceRiskMitigation": [string, string]
-}`;
-		const text = cleanJsonOutput((await Promise.race([ai.models.generateContent({
-			model: MODEL_NAME,
-			contents: prompt,
-			config: {
-				responseMimeType: "application/json",
-				temperature: .6
-			}
-		}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("AI_TIMEOUT: Trade-off generation timed out")), TIMEOUT_MS))])).text || "");
+}`, .6, TIMEOUT_MS);
 		const parsed = JSON.parse(text) || {};
 		return {
 			source: "gemini-live",
-			model: MODEL_NAME,
+			model: activeModel,
 			strategicSummary: String(parsed.strategicSummary || "Adaptive scenario analysis complete").slice(0, 300),
 			culinaryRecommendations: Array.isArray(parsed.culinaryRecommendations) ? parsed.culinaryRecommendations.slice(0, 3).map((r) => String(r).slice(0, 150)) : ["Curate seasonal menu selections"],
 			entertainmentAlternatives: Array.isArray(parsed.entertainmentAlternatives) ? parsed.entertainmentAlternatives.slice(0, 3).map((r) => String(r).slice(0, 150)) : ["Optimize entertainment schedule"],
@@ -43251,8 +43264,7 @@ async function explainUrgentTasksWithGemini(request) {
 	};
 	if (!isGeminiConfigured()) return getDeterministicAdvice();
 	try {
-		const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-		const prompt = `You are Celebrio AI's Copilot, an expert celebration advisor specializing in Indian and regional cultural celebrations.
+		const { text, activeModel } = await generateContentWithFallback(new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }), `You are Celebrio AI's Copilot, an expert celebration advisor specializing in Indian and regional cultural celebrations.
 A user is planning:
 - Title: "${request.eventTitle}" (${request.category})
 - Destination: ${request.city || "Metropolitan City"}
@@ -43302,15 +43314,7 @@ Return ONLY a valid JSON object matching this schema:
     "impactSummary": string,
     "payload": object
   }
-}`;
-		const text = cleanJsonOutput((await Promise.race([ai.models.generateContent({
-			model: MODEL_NAME,
-			contents: prompt,
-			config: {
-				responseMimeType: "application/json",
-				temperature: .5
-			}
-		}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error("AI_TIMEOUT: Copilot advice timed out")), TIMEOUT_MS))])).text || "");
+}`, .5, TIMEOUT_MS);
 		const parsed = JSON.parse(text) || {};
 		let structuredAction = void 0;
 		if (parsed.proposedAction && typeof parsed.proposedAction === "object") {
@@ -43328,7 +43332,7 @@ Return ONLY a valid JSON object matching this schema:
 		}
 		return {
 			source: "gemini-live",
-			model: MODEL_NAME,
+			model: activeModel,
 			headline: String(parsed.headline || `Urgent Milestones for ${request.eventTitle}`).slice(0, 150),
 			strategicSummary: String(parsed.strategicSummary || "Strategic roadmap generated.").slice(0, 350),
 			urgentTaskAnalyses: Array.isArray(parsed.urgentTaskAnalyses) ? parsed.urgentTaskAnalyses.slice(0, 5).map((rawItem, idx) => {
