@@ -42434,12 +42434,8 @@ function generateThemeConcepts(event) {
 	}
 }
 // server/geminiService.ts
-const CANDIDATE_MODELS = [
-	"gemini-2.5-flash",
-	"gemini-3.8-flash",
-	"gemini-2.0-flash"
-];
-const TIMEOUT_MS = 25e3;
+const CANDIDATE_MODELS = ["gemini-2.5-flash", "gemini-3.8-flash"];
+const TIMEOUT_MS = 3e4;
 const BASE_PRICE_DISCLAIMER = "Estimated approximation based on regional vendor averages. Not a verified commercial quotation.";
 /**
 * Executes a Gemini generateContent call, gracefully trying candidate models
@@ -42453,7 +42449,8 @@ async function generateContentWithFallback(ai, prompt, temperature, timeoutMs) {
 			contents: prompt,
 			config: {
 				responseMimeType: "application/json",
-				temperature
+				temperature,
+				thinkingConfig: { thinkingBudget: 0 }
 			}
 		}), new Promise((_, reject) => setTimeout(() => reject(/* @__PURE__ */ new Error(`AI_TIMEOUT: Gemini response timed out for ${modelName}`)), timeoutMs))])).text || "");
 		if (text) return {
